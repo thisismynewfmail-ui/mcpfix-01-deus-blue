@@ -1642,6 +1642,301 @@ html[data-theme="deusex"] .toast {
   box-shadow: inset 1px 1px 0 rgba(255,255,255,0.12), 0 6px 20px rgba(0,0,0,0.5);
 }
 html[data-theme="deusex"] .toast .title { color: #eef2f8; }
+
+/* ════════════════════════════════════════════════════════════════════
+   ALTERNATE SKIN · PART 2 — "UNATCO / OmniBrain Augment" · FULL COVERAGE
+   ────────────────────────────────────────────────────────────────────
+   The block above restyles the Settings window. This block carries the
+   exact same Deus Ex (2000) Options-menu language — gunmetal beveled
+   panels, glossy UNATCO-blue title strips, conspiracy-gold accents,
+   recessed inset value fields, hard 1px black edges, square corners —
+   across EVERY remaining surface: the chat list, the conversation pane,
+   messages / tool calls / thinking blocks, the composer, the right-hand
+   OPS · MCP · TELEMETRY · SCHEDULER rail, the status bar, and the header
+   instrument cluster. Still a pure restyle: identical DOM / JS / settings
+   / sync bus. Keyed off html[data-theme="deusex"]; persists to
+   settings.json and mirrors live across every connected window.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── Reusable Deus-Ex surface tokens (merged into the skin's :root) ── */
+html[data-theme="deusex"] {
+  --dx-edge:       #0a0d10;                                             /* hard black hairline       */
+  --dx-inset:      #0e1217;                                            /* recessed value-field well */
+  --dx-raised:     linear-gradient(180deg,#2b323a 0%,#222932 100%);    /* gunmetal panel            */
+  --dx-raised-hi:  linear-gradient(180deg,#46505b 0%,#323a44 55%,#2a313a 100%); /* hovered panel    */
+  --dx-blue:       linear-gradient(180deg,#5a7cb2 0%,#345086 46%,#223860 100%); /* glossy title bar  */
+  --dx-blue-btn:   linear-gradient(180deg,#4f74b4 0%,#2f5391 55%,#23406f 100%); /* "Render 3D" chip  */
+  --dx-red:        linear-gradient(180deg,#b9503c 0%,#7e3022 100%);    /* danger / stop             */
+  --dx-bevel:      inset 1px 1px 0 rgba(255,255,255,0.16), inset -1px -1px 0 rgba(0,0,0,0.55); /* raised */
+  --dx-bevel-in:   inset 2px 2px 4px rgba(0,0,0,0.7), inset -1px -1px 0 rgba(255,255,255,0.05); /* sunk */
+}
+
+/* ─────────────────── Conversation pane / backdrop ─────────────────── */
+html[data-theme="deusex"] main {
+  background:
+    linear-gradient(180deg, rgba(20,26,33,0) 0%, rgba(8,11,15,0.65) 100%),
+    repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 70px),
+    repeating-linear-gradient(0deg,  var(--grid) 0 1px, transparent 1px 70px),
+    radial-gradient(ellipse at 50% -10%, #12161c 0%, #090c10 72%);
+}
+html[data-theme="deusex"] .reg { border-color: #5a6675; opacity: 0.35; }
+html[data-theme="deusex"] .chat-scroll::-webkit-scrollbar-thumb {
+  background: var(--dx-raised); border: 2px solid #1b2128; box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .chat-scroll::-webkit-scrollbar-thumb:hover { background: var(--dx-raised-hi); }
+
+/* Empty-state schematic + diagnostic readout → recessed console plate */
+html[data-theme="deusex"] .empty-chat .emblem {
+  color: #cdd8ee;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6), 0 0 16px rgba(138,166,214,0.22);
+}
+html[data-theme="deusex"] .empty-chat .check {
+  background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in);
+}
+html[data-theme="deusex"] .empty-chat .check::before {
+  background: #222932; color: var(--amber);
+}
+
+/* ─────────────────────────── Messages ─────────────────────────── */
+html[data-theme="deusex"] .msg.assistant .msg-body { box-shadow: -2px 0 12px rgba(138,166,214,0.08); }
+html[data-theme="deusex"] .msg-body code {
+  background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #9fb6e0;
+  box-shadow: inset 1px 1px 2px rgba(0,0,0,0.6);
+}
+html[data-theme="deusex"] .msg-body pre {
+  background: #0c1015; border: 1px solid var(--dx-edge); border-left: 2px solid var(--amber);
+  box-shadow: inset 2px 2px 6px rgba(0,0,0,0.6); color: #c8d0da;
+}
+html[data-theme="deusex"] .msg-body pre code { box-shadow: none; }
+html[data-theme="deusex"] .msg-body h1 { color: var(--amber); }
+html[data-theme="deusex"] .msg-body th { background: #1b2128; color: var(--amber); }
+html[data-theme="deusex"] .msg.roll-marker .msg-body { background: rgba(255,255,255,0.03); border-left-color: #5a6675; }
+
+/* Thinking block → gunmetal cartridge with gold header */
+html[data-theme="deusex"] .think-block {
+  background: linear-gradient(180deg,#262d36,#1e242b); border: 1px solid var(--dx-edge);
+  box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .think-head { color: var(--amber); }
+html[data-theme="deusex"] .think-head:hover { background: rgba(255,255,255,0.045); }
+html[data-theme="deusex"] .think-block.open .think-head { border-bottom-color: var(--dx-edge); }
+html[data-theme="deusex"] .think-content::-webkit-scrollbar-thumb { background: #3a424c; }
+
+/* Tool calls → gunmetal instrument cards, status carried by the left rail */
+html[data-theme="deusex"] .tool-call {
+  background: linear-gradient(180deg,#262d36,#1e242b);
+  border: 1px solid var(--dx-edge); border-left: 2px solid var(--magenta);
+  box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .tool-call.result      { border-left-color: var(--green); }
+html[data-theme="deusex"] .tool-call.result.err  { border-left-color: var(--crit); }
+html[data-theme="deusex"] .tool-call-head:hover  { background: rgba(255,255,255,0.05); }
+html[data-theme="deusex"] .tool-call-detail      { border-top-color: var(--dx-edge); }
+html[data-theme="deusex"] .tool-call-body::-webkit-scrollbar-thumb,
+html[data-theme="deusex"] .tool-call-result::-webkit-scrollbar-thumb { background: #3a424c; }
+
+/* In-chat image frames → square gunmetal mounts (drop the angled SAC corners) */
+html[data-theme="deusex"] .img-frame {
+  clip-path: none; background: #0c1015; border: 1px solid var(--dx-edge);
+  box-shadow: var(--dx-bevel), inset 0 0 0 1px #20262d;
+}
+html[data-theme="deusex"] .img-frame::before,
+html[data-theme="deusex"] .img-frame::after { border-color: var(--amber); opacity: 0.55; }
+html[data-theme="deusex"] .img-frame:hover { border-color: var(--amber); box-shadow: var(--dx-bevel), 0 0 14px rgba(217,164,65,0.18); }
+html[data-theme="deusex"] .msg-images-head { background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #aab4c4; }
+html[data-theme="deusex"] .msg-images-head:hover { color: var(--amber); }
+html[data-theme="deusex"] .img-lightbox img { border: 1px solid var(--dx-edge); box-shadow: 0 0 40px rgba(0,0,0,0.7), var(--dx-bevel); }
+html[data-theme="deusex"] .img-lightbox .lb-close {
+  background: var(--dx-raised); color: #d3d9e2; border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .img-lightbox .lb-close:hover { color: var(--amber); background: var(--dx-raised-hi); }
+
+/* ────────────────────────── Composer / TX ────────────────────────── */
+html[data-theme="deusex"] .composer-wrap {
+  background: var(--dx-raised); border-top: 2px solid var(--dx-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
+}
+html[data-theme="deusex"] .composer-wrap::before { content: '▣ DATA ENTRY // TX'; background: #222932; color: var(--amber); }
+html[data-theme="deusex"] .composer .prompt { color: var(--amber); text-shadow: none; }
+html[data-theme="deusex"] .composer textarea {
+  background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #d7dde6; box-shadow: var(--dx-bevel-in);
+}
+html[data-theme="deusex"] .composer textarea:focus {
+  border-color: var(--amber); box-shadow: var(--dx-bevel-in), 0 0 0 1px rgba(217,164,65,0.5);
+}
+html[data-theme="deusex"] .composer-wrap.drag { border-top-color: var(--cyan); box-shadow: inset 0 0 0 1px var(--cyan); }
+html[data-theme="deusex"] .composer-wrap.drag::after { background: rgba(7,9,11,0.6); color: var(--cyan); }
+html[data-theme="deusex"] .send-btn {
+  clip-path: none; background: var(--dx-blue-btn); color: #eef3fb; border: 1px solid var(--dx-edge);
+  box-shadow: var(--dx-bevel); text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+}
+html[data-theme="deusex"] .send-btn:hover { filter: brightness(1.12); background: var(--dx-blue-btn); box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .send-btn:active { box-shadow: var(--dx-bevel-in); transform: none; }
+html[data-theme="deusex"] .send-btn:disabled { background: var(--dx-raised); color: var(--text-faint); }
+html[data-theme="deusex"] .send-btn.stop { background: var(--dx-red); color: #fbe7e2; }
+html[data-theme="deusex"] .attach-btn {
+  clip-path: none; background: var(--dx-raised); border: 1px solid var(--dx-edge); color: #aab4c4; box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .attach-btn:hover { color: var(--amber); border-color: var(--dx-edge); background: var(--dx-raised-hi); box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .attach-btn.armed { color: var(--amber); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .attach-thumb { clip-path: none; border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .attach-thumb .attach-rm { color: var(--magenta); border-color: var(--magenta); background: rgba(7,9,11,0.85); }
+html[data-theme="deusex"] .attach-thumb .attach-rm:hover { background: var(--magenta); color: #1a0e0b; }
+html[data-theme="deusex"] .composer-hint .key { color: #aab4c4; }
+html[data-theme="deusex"] .stream-cursor::after { color: var(--amber); }
+
+/* ─────────────── Side rails (CHATS · OPS · MCP · TELEMETRY) ─────────────── */
+html[data-theme="deusex"] aside { background: var(--dx-raised); }
+html[data-theme="deusex"] aside.left  { border-right: 2px solid var(--dx-edge); }
+html[data-theme="deusex"] aside.right { border-left:  2px solid var(--dx-edge); }
+html[data-theme="deusex"] aside::-webkit-scrollbar-thumb { background: #3a424c; }
+html[data-theme="deusex"] .side-section { border-bottom: 1px solid var(--dx-edge); box-shadow: inset 0 1px 0 rgba(255,255,255,0.045); }
+html[data-theme="deusex"] .side-section::before { background: var(--amber); opacity: 0.6; }
+html[data-theme="deusex"] .side-section + .side-section::before { background: var(--cyan); opacity: 0.5; }
+html[data-theme="deusex"] .side-head { color: var(--amber); border-bottom: 1px solid var(--dx-edge); }
+html[data-theme="deusex"] .side-head .num { color: var(--text-dim); }
+html[data-theme="deusex"] .empty-msg { color: var(--text-faint); }
+
+/* Mini-buttons in section headers */
+html[data-theme="deusex"] .side-head .mini-btn:hover { color: var(--amber); background: var(--dx-raised-hi); box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .side-head .mini-btn.primary,
+html[data-theme="deusex"] .mini-btn.primary {
+  background: var(--dx-blue-btn); color: #eef3fb; border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .side-head .mini-btn.primary:hover { filter: brightness(1.12); background: var(--dx-blue-btn); }
+
+/* Chat list rows → gunmetal cards; ACTIVE row = the signature glossy-blue selection */
+html[data-theme="deusex"] .chat-row {
+  clip-path: none; background: var(--dx-raised);
+  border: 1px solid var(--dx-edge); border-left: 2px solid #2a313a; box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .chat-row:hover { background: var(--dx-raised-hi); border-left-color: var(--cyan); }
+html[data-theme="deusex"] .chat-row.active {
+  background: var(--dx-blue-btn); border: 1px solid var(--dx-edge); border-left: 2px solid var(--amber); box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .chat-row.active .nm   { color: #ffffff; }
+html[data-theme="deusex"] .chat-row.active .meta { color: #cdd8ee; }
+html[data-theme="deusex"] .chat-row .lamp { background: #2a313a; }
+html[data-theme="deusex"] .chat-row:hover .lamp { background: var(--cyan); }
+html[data-theme="deusex"] .chat-row.active .lamp { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+html[data-theme="deusex"] .chat-row .menu-btn:hover { color: var(--amber); }
+html[data-theme="deusex"] .chat-row .rename-input { background: var(--dx-inset); border: 1px solid var(--amber); color: #e6ebf2; }
+
+/* Pop-over menus → gunmetal dropdowns with blue hover */
+html[data-theme="deusex"] .chat-pop,
+html[data-theme="deusex"] .chat-menu-pop {
+  background: var(--dx-raised); border: 1px solid var(--dx-edge); box-shadow: 0 8px 24px rgba(0,0,0,0.6), var(--dx-bevel);
+}
+html[data-theme="deusex"] .chat-pop button,
+html[data-theme="deusex"] .chat-menu-pop button { color: #cdd5df; border-bottom-color: var(--dx-edge); }
+html[data-theme="deusex"] .chat-pop button:hover,
+html[data-theme="deusex"] .chat-menu-pop button:hover { background: var(--dx-blue-btn); color: #ffffff; }
+html[data-theme="deusex"] .chat-pop button.danger:hover,
+html[data-theme="deusex"] .chat-menu-pop button.danger:hover { background: var(--dx-red); color: #ffffff; }
+html[data-theme="deusex"] .chat-menu-pop hr { border-top-color: var(--dx-edge); }
+
+/* OPS / ACTIVE-SESSION action buttons */
+html[data-theme="deusex"] .side-action {
+  background: var(--dx-raised); border: 1px solid var(--dx-edge); color: #cdd5df; box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .side-action:hover { color: var(--amber); border-color: var(--dx-edge); background: var(--dx-raised-hi); box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .side-action.primary { background: var(--dx-blue-btn); color: #eef3fb; }
+html[data-theme="deusex"] .side-action.primary:hover { filter: brightness(1.1); background: var(--dx-blue-btn); }
+html[data-theme="deusex"] .side-action.danger:hover { color: #ffffff; border-color: var(--dx-edge); background: var(--dx-red); box-shadow: var(--dx-bevel); }
+
+/* MCP / node rows + per-server power switch */
+html[data-theme="deusex"] .server-row { border-bottom: 1px solid var(--dx-edge); }
+html[data-theme="deusex"] .server-row:hover { background: rgba(255,255,255,0.03); }
+html[data-theme="deusex"] .server-row .switch { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .server-row .switch::after { background: linear-gradient(180deg,#6b7480,#3a424c); }
+html[data-theme="deusex"] .server-row.enabled .switch { background: var(--dx-blue-btn); border-color: var(--dx-edge); }
+html[data-theme="deusex"] .server-row.enabled .switch::after { background: linear-gradient(180deg,#f0c860,#d9a441); box-shadow: 0 0 4px rgba(217,164,65,0.7); }
+html[data-theme="deusex"] .server-row .tip { background: #1b2128; border: 1px solid var(--cyan); color: #d7dde6; }
+
+/* Telemetry readout grid */
+html[data-theme="deusex"] .stat-grid .lbl { color: var(--amber); }
+html[data-theme="deusex"] .stat-grid .val { color: #e6ebf2; }
+
+/* Scheduler form + queued jobs */
+html[data-theme="deusex"] .scheduler-form textarea,
+html[data-theme="deusex"] .scheduler-form select,
+html[data-theme="deusex"] .scheduler-form input[type=text] {
+  background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #d7dde6; box-shadow: var(--dx-bevel-in);
+}
+html[data-theme="deusex"] .scheduler-form textarea:focus,
+html[data-theme="deusex"] .scheduler-form select:focus,
+html[data-theme="deusex"] .scheduler-form input[type=text]:focus {
+  border-color: var(--amber); box-shadow: var(--dx-bevel-in), 0 0 0 1px rgba(217,164,65,0.4);
+}
+html[data-theme="deusex"] .scheduler-job { background: var(--dx-raised); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .scheduler-job .job-countdown { color: var(--cyan); }
+html[data-theme="deusex"] .scheduler-job .job-cancel { background: var(--dx-raised); border: 1px solid var(--dx-edge); color: #aab4c4; box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .scheduler-job .job-cancel:hover { color: var(--crit); border-color: var(--crit); }
+html[data-theme="deusex"] .sched-repeat-badge { color: var(--amber); }
+
+/* ───────────────────── Header instrument cluster ───────────────────── */
+html[data-theme="deusex"] header::before { background: repeating-linear-gradient(90deg, rgba(255,255,255,0.45) 0 5px, transparent 5px 17px); opacity: 0.3; }
+html[data-theme="deusex"] header::after  { background: linear-gradient(90deg, transparent, rgba(0,0,0,0.55) 50%, transparent); opacity: 0.8; }
+html[data-theme="deusex"] .brand .glyph {
+  background: var(--dx-raised); border: 1px solid var(--dx-edge); color: var(--amber); box-shadow: var(--dx-bevel); animation: none;
+}
+html[data-theme="deusex"] .brand .glyph::after { border-color: rgba(205,216,238,0.22); }
+html[data-theme="deusex"] .brand .row1 { color: #cdd8ee; }
+html[data-theme="deusex"] .pill { clip-path: none; background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #aeb7c4; box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .pill .lbl { color: #7e8a99; }
+html[data-theme="deusex"] .pill .val { color: #e6ebf2; }
+html[data-theme="deusex"] .pill.warn { color: var(--amber); border-color: var(--amber); }
+html[data-theme="deusex"] .pill.crit { color: var(--crit); border-color: var(--crit); }
+html[data-theme="deusex"] .pill.lan  { color: var(--magenta); border-color: var(--magenta); }
+html[data-theme="deusex"] .ctx-meter { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .ctx-meter .fill { background: linear-gradient(90deg, var(--cyan), var(--amber) 70%, var(--crit) 92%); box-shadow: none; }
+html[data-theme="deusex"] .hdr-panel-toggles { border-left-color: rgba(0,0,0,0.4); }
+html[data-theme="deusex"] .panel-toggle { background: var(--dx-raised); border: 1px solid var(--dx-edge); color: #aab4c4; box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .panel-toggle:hover { color: var(--amber); border-color: var(--dx-edge); box-shadow: var(--dx-bevel); }
+html[data-theme="deusex"] .panel-toggle.active { color: var(--amber); background: var(--dx-raised-hi); border-color: var(--dx-edge); }
+html[data-theme="deusex"] .panel-toggle::after,
+html[data-theme="deusex"] .panel-toggle:hover::after { border-color: transparent; }
+
+/* ───────────────────────── Status bar (foot) ───────────────────────── */
+html[data-theme="deusex"] footer {
+  background: var(--dx-raised); border-top: 2px solid var(--dx-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1); color: var(--text-dim);
+}
+html[data-theme="deusex"] footer::before { background: repeating-linear-gradient(90deg, var(--amber) 0 5px, transparent 5px 14px); opacity: 0.25; }
+html[data-theme="deusex"] footer .val { color: #cdd5df; }
+html[data-theme="deusex"] footer .compaction-state { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] footer .compaction-state.busy { color: var(--amber); border-color: var(--amber); }
+html[data-theme="deusex"] footer .net-pill { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
+html[data-theme="deusex"] footer .blink { color: var(--amber); }
+
+/* ───────── Settings window — description plates + DX option rows ───────── */
+/* Per-field help text → recessed Deus-Ex "description" plate (gold tick). */
+html[data-theme="deusex"] .field .help,
+html[data-theme="deusex"] .sect > .help {
+  background: rgba(0,0,0,0.28); border: 1px solid var(--dx-edge); border-left: 2px solid var(--amber);
+  box-shadow: var(--dx-bevel-in); padding: 6px 9px; margin-top: 5px;
+}
+html[data-theme="deusex"] .field .help code,
+html[data-theme="deusex"] .sect > .help code {
+  background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #9fb6e0; padding: 0 4px;
+}
+/* Test / bridge / piper readouts → sunk console wells */
+html[data-theme="deusex"] .test-result { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .test-result.ok   { border-color: var(--green); }
+html[data-theme="deusex"] .test-result.err  { border-color: var(--crit); }
+html[data-theme="deusex"] .test-result.busy { border-color: var(--amber); }
+html[data-theme="deusex"] #tool-roster,
+html[data-theme="deusex"] #piper-voice-list { background: var(--dx-inset); border: 1px solid var(--dx-edge) !important; box-shadow: var(--dx-bevel-in); }
+
+/* Option toggles → label-left / value-right, exactly like the DX menu rows */
+html[data-theme="deusex"] .toggle {
+  display: flex; flex-direction: row-reverse; justify-content: space-between; align-items: center; width: 100%;
+}
+html[data-theme="deusex"] .toggle .slot { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .toggle .slot::after { background: linear-gradient(180deg,#6b7480,#3a424c); box-shadow: inset 1px 1px 0 rgba(255,255,255,0.2); }
+html[data-theme="deusex"] .toggle input:checked + .slot { background: var(--dx-blue-btn); border-color: var(--dx-edge); }
+html[data-theme="deusex"] .toggle input:checked + .slot::after { background: linear-gradient(180deg,#f0c860,#d9a441); box-shadow: 0 0 5px rgba(217,164,65,0.7); }
 </style>
 </head>
 <body>
