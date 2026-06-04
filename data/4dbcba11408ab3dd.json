@@ -1,0 +1,22 @@
+{
+  "id": "4dbcba11408ab3dd",
+  "name": "Session 12",
+  "created": 1778461329098,
+  "updated": 1778461353695,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Send a test email to \"roboticsco@gmail.com\".",
+      "_ts": 1778461345267
+    },
+    {
+      "role": "assistant",
+      "content": "\n\nI'll send you a test email using Gmail's web interface in Concise Mode.",
+      "reasoning": "The user wants me to send an email, but there's no actual email tool available in my set of tools. I have browser navigation and form-filling capabilities though, so let me navigate to Gmail (or some other email service), fill out the test email fields, and hit \"send\".\n\nLet me start by navigating to a Gmail compose page or any webmail interface where I can create an email.\n",
+      "tool_calls": [],
+      "_ts": 1778461345269,
+      "_streaming": false,
+      "_streamingThink": false
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "51a04057ea1b5358",
+  "name": "Scheduled Job",
+  "created": 1778526602545,
+  "updated": 1778526666033,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Open the browser to google.com.",
+      "_ts": 1778526602618
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n_[stopped]_",
+      "reasoning": "The user wants",
+      "tool_calls": [],
+      "_ts": 1778526602656,
+      "_streaming": false,
+      "_streamingThink": false
+    }
+  ]
+}

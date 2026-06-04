@@ -1,0 +1,22 @@
+{
+  "id": "06764f88684a9cd0",
+  "name": "Session 41",
+  "created": 1780421512365,
+  "updated": 1780421725517,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Use the browser and respond to the reddit comments on your recent post.",
+      "_ts": 1780421516501
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n_[stopped]_",
+      "reasoning": "The user wants me to use the browser to respond to Reddit comments on \"my recent post",
+      "tool_calls": [],
+      "_ts": 1780421516502,
+      "_streaming": false,
+      "_streamingThink": false
+    }
+  ]
+}

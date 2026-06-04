@@ -1,0 +1,22 @@
+{
+  "id": "8931cf15f57cc4e1",
+  "name": "Scheduled Job",
+  "created": 1778526721486,
+  "updated": 1778526731080,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Open the browser to google.com.",
+      "_ts": 1778526721574
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n_[stream error: HTTP 502: {\"error\": \"proxy (URLError): <urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>\", \"retries\": 3}]_",
+      "reasoning": "",
+      "tool_calls": [],
+      "_ts": 1778526721574,
+      "_streaming": false,
+      "_streamingThink": false
+    }
+  ]
+}

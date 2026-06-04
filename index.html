@@ -1,0 +1,4491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CHATSGI / TERMINAL — Section 9 · Stand Alone Complex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Major+Mono+Display&display=swap" rel="stylesheet">
+<style>
+/* ──────────────────────────────────────────────────────────────
+   CHATSGI / TERMINAL  ·  Section 9  ·  rev. 2.0
+   Visual language : Ghost in the Shell — Stand Alone Complex (2002)
+   ────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg:           #02080d;
+  --bg-1:         #061116;
+  --bg-2:         #0a1a22;
+  --bg-3:         #03090e;
+  --bg-glass:     rgba(8,22,30,0.55);
+  --line:         #0e2a36;
+  --line-soft:    #082028;
+  --line-strong:  #194858;
+  --grid:         rgba(80,180,210,0.04);
+  --text:         #d3eef5;
+  --text-dim:     #6fa6b4;
+  --text-faint:   #3e6a78;
+  --cyan:         #00e6ff;
+  --cyan-soft:    #38b4c8;
+  --cyan-deep:    #006c80;
+  --magenta:      #ff2a6d;
+  --amber:        #ffb84a;
+  --green:        #4cf09a;
+  --warn:         #ffd166;
+  --crit:         #ff4060;
+  --mono:         'Share Tech Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --display:      'Chakra Petch', system-ui, sans-serif;
+  --display-alt:  'Major Mono Display', monospace;
+
+  --grain: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.86' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.05  0 0 0 0 0.18  0 0 0 0 0.22  0 0 0 0.18 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--display);
+  background: radial-gradient(ellipse at 30% -10%, #051c25 0%, var(--bg) 55%) fixed;
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  position: relative;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: var(--grain);
+  opacity: 0.30;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: overlay;
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(0,230,255,0.022) 0 1px, transparent 1px 3px),
+    linear-gradient(0deg, rgba(0,230,255,0.04) 0%, transparent 18%);
+  pointer-events: none;
+  z-index: 9998;
+}
+@keyframes hudPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+@keyframes blink { 50% { opacity: 0.2; } }
+@keyframes scan {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes sweep {
+  0% { stroke-dashoffset: 1000; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 0 1px rgba(0,230,255,0.35), 0 0 18px rgba(0,230,255,0.12); }
+  50%     { box-shadow: 0 0 0 1px rgba(0,230,255,0.75), 0 0 28px rgba(0,230,255,0.25); }
+}
+@keyframes rotateSlow { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes flicker {
+  0%,19%,21%,23%,25%,54%,56%,100% { opacity: 1; }
+  20%,24%,55% { opacity: 0.4; }
+}
+
+/* roaming scan-line over the chat surface */
+.scanline {
+  position: absolute; left: 0; right: 0; top: 0;
+  height: 80px;
+  background: linear-gradient(180deg, transparent, rgba(0,230,255,0.07), transparent);
+  pointer-events: none;
+  z-index: 6;
+  animation: scan 7s linear infinite;
+  mix-blend-mode: screen;
+}
+
+/* ──────────── App shell ──────────── */
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  grid-template-columns: var(--left-w, 280px) minmax(0, 1fr) var(--right-w, 300px);
+  grid-template-areas:
+    "head head head"
+    "side main rside"
+    "foot foot foot";
+  height: 100vh; width: 100vw;
+  transition: grid-template-columns 0.25s ease;
+}
+.app.left-collapsed  { --left-w: 0px; }
+.app.right-collapsed { --right-w: 0px; }
+.app.left-collapsed aside.left  { transform: translateX(-100%); }
+.app.right-collapsed aside.right { transform: translateX(100%); }
+
+/* Header-mounted panel toggles — kept tiny and unobtrusive */
+.panel-toggle {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--text-faint);
+  width: 22px; height: 22px;
+  display: inline-grid; place-items: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  letter-spacing: 0;
+  padding: 0;
+  user-select: none;
+}
+.panel-toggle:hover {
+  color: var(--cyan);
+  border-color: var(--cyan-soft);
+  box-shadow: 0 0 8px rgba(0,230,255,0.25);
+}
+.panel-toggle.active {
+  color: var(--cyan);
+  border-color: var(--cyan-soft);
+  background: rgba(0,230,255,0.08);
+}
+.panel-toggle::after {
+  content: ''; position: absolute;
+  inset: -2px; border: 1px dashed transparent;
+  pointer-events: none;
+  transition: border-color 0.15s;
+}
+.panel-toggle:hover::after { border-color: rgba(0,230,255,0.18); }
+
+/* ──────────── Header ──────────── */
+header {
+  grid-area: head;
+  border-bottom: 1px solid var(--line);
+  background:
+    linear-gradient(180deg, rgba(0,230,255,0.04) 0%, transparent 100%),
+    linear-gradient(90deg, #051820 0%, #03101a 100%);
+  padding: 10px 22px 8px 22px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+  z-index: 10;
+}
+header::before {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--cyan) 0 5px, transparent 5px 17px);
+  opacity: 0.55;
+}
+header::after {
+  content: '';
+  position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--cyan) 35%, var(--cyan) 65%, transparent 100%);
+  opacity: 0.55;
+}
+
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand .glyph {
+  width: 42px; height: 42px;
+  border: 1px solid var(--cyan-soft);
+  position: relative;
+  display: grid; place-items: center;
+  color: var(--cyan);
+  font-family: var(--display-alt);
+  font-size: 20px;
+  background: radial-gradient(circle at center, rgba(0,230,255,0.12) 0%, transparent 70%);
+  animation: glowPulse 3.4s ease-in-out infinite;
+}
+.brand .glyph::after {
+  content: '';
+  position: absolute; inset: -4px;
+  border: 1px dashed rgba(0,230,255,0.25);
+  animation: rotateSlow 22s linear infinite;
+  pointer-events: none;
+}
+.brand .titles { display: flex; flex-direction: column; line-height: 1; }
+.brand h1 {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.30em;
+  color: var(--text);
+}
+.brand h1 .slash { color: var(--cyan); margin: 0 6px; font-weight: 400; }
+.brand h1 .sub { color: var(--cyan-soft); font-weight: 400; font-size: 0.62em; letter-spacing: 0.32em; }
+.brand .row1 {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-faint);
+  letter-spacing: 0.30em;
+  text-transform: uppercase;
+  margin-top: 5px;
+}
+
+.header-status {
+  display: flex; gap: 8px; align-items: center;
+  flex-wrap: wrap; justify-content: flex-end;
+}
+.hdr-panel-toggles {
+  display: inline-flex; gap: 4px;
+  padding: 2px 4px;
+  border-left: 1px dashed var(--line-strong);
+  margin-left: 2px;
+}
+.pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-1);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  user-select: none;
+  position: relative;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.pill .lbl { color: var(--text-faint); }
+.pill .val { color: var(--text); }
+.pill .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text-faint);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.pill.online .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.pill.offline .dot { background: var(--crit); box-shadow: 0 0 6px var(--crit); }
+.pill.connecting .dot { background: var(--amber); animation: blink 1s infinite; }
+.pill.warn { color: var(--amber); border-color: var(--amber); }
+.pill.crit { color: var(--crit); border-color: var(--crit); }
+.pill.lan { color: var(--magenta); border-color: var(--magenta); }
+.pill.lan .dot { background: var(--magenta); box-shadow: 0 0 8px var(--magenta); }
+
+.ctx-meter {
+  width: 82px; height: 6px;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  position: relative; overflow: hidden;
+}
+.ctx-meter .fill {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: linear-gradient(90deg, var(--cyan), var(--amber) 70%, var(--crit) 92%);
+  width: 0%;
+  transition: width 0.4s ease;
+  box-shadow: 0 0 6px var(--cyan);
+}
+.ctx-meter .marker {
+  position: absolute; top: -1px; bottom: -1px;
+  width: 1px; background: var(--text-faint); left: 70%;
+}
+
+.icon-btn {
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  color: var(--text-dim);
+  width: 30px; height: 30px;
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: color 0.2s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  font-family: var(--mono);
+  font-size: 13px;
+  position: relative;
+}
+.icon-btn:hover { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,230,255,0.25); }
+
+/* ──────────── Sidebar ──────────── */
+aside {
+  background: linear-gradient(180deg, #04141d 0%, #020a10 100%);
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+  transition: transform 0.25s ease;
+  min-width: 0;
+}
+aside.left  { grid-area: side; border-right: 1px solid var(--line); }
+aside.right { grid-area: rside; border-left:  1px solid var(--line); }
+aside.left::before {
+  content: '';
+  position: absolute; right: 0; top: 0; bottom: 0; width: 1px;
+  background: linear-gradient(180deg, transparent, var(--cyan-deep) 40%, var(--cyan-deep) 60%, transparent);
+  opacity: 0.4;
+}
+aside.right::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0; width: 1px;
+  background: linear-gradient(180deg, transparent, var(--cyan-deep) 40%, var(--cyan-deep) 60%, transparent);
+  opacity: 0.4;
+}
+aside::-webkit-scrollbar { width: 6px; }
+aside::-webkit-scrollbar-thumb { background: var(--line-strong); }
+aside::-webkit-scrollbar-track { background: transparent; }
+
+.side-section {
+  border-bottom: 1px solid var(--line-soft);
+  padding: 12px 14px;
+  position: relative;
+}
+.side-section::before {
+  content: '';
+  position: absolute; top: 8px; left: 0;
+  width: 3px; height: 14px;
+  background: var(--cyan-deep);
+  opacity: 0.55;
+}
+.side-section + .side-section::before { background: var(--cyan-soft); opacity: 0.35; }
+.side-head {
+  display: flex; align-items: center; justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--cyan-soft);
+  margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 1px dashed var(--line-soft);
+}
+.side-head .num { color: var(--text-faint); font-size: 9px; letter-spacing: 0.1em; opacity: 0.7; }
+.side-head .right { display: flex; gap: 4px; }
+.side-head .mini-btn {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em;
+  background: transparent; border: 1px solid var(--line-strong);
+  color: var(--text-faint); padding: 2px 6px; cursor: pointer;
+  transition: all 0.15s;
+}
+.side-head .mini-btn:hover { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 6px rgba(0,230,255,0.18); }
+.side-head .mini-btn.primary {
+  color: var(--cyan);
+  border-color: var(--cyan-soft);
+  background: rgba(0,230,255,0.06);
+}
+.side-head .mini-btn.primary:hover { background: rgba(0,230,255,0.14); }
+
+/* chat list — compact "instrument card" rows */
+.chat-list { display: flex; flex-direction: column; gap: 4px; }
+.chat-row {
+  display: grid; grid-template-columns: 14px 1fr auto;
+  gap: 6px;
+  padding: 6px 8px 6px 6px;
+  border: 1px solid var(--line-soft);
+  border-left: 2px solid var(--line-strong);
+  background: linear-gradient(90deg, rgba(0,108,128,0.04) 0%, transparent 80%);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  font-family: var(--mono);
+  font-size: 11px;
+  position: relative;
+  min-width: 0;
+  overflow: visible;
+  align-items: center;
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%);
+}
+.chat-row .lamp {
+  width: 6px; height: 6px;
+  background: var(--line-strong);
+  align-self: start;
+  margin-top: 4px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.chat-row:hover .lamp { background: var(--cyan-soft); }
+.chat-row.active .lamp { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+.chat-row .body { min-width: 0; }
+.chat-row.compact .nm { font-size: 10.5px; }
+.chat-row.compact .meta { font-size: 8.5px; }
+.chat-row .rename-input {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--cyan);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 3px 6px;
+  outline: none;
+}
+.chat-row:hover { background: rgba(0,230,255,0.05); border-left-color: var(--cyan-soft); }
+.chat-row.active {
+  border-color: var(--cyan-soft);
+  border-left: 2px solid var(--cyan);
+  background: rgba(0,230,255,0.08);
+  box-shadow: 0 0 12px rgba(0,230,255,0.10) inset;
+}
+.chat-row .nm {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+.chat-row.active .nm { color: var(--cyan); }
+.chat-row .meta { color: var(--text-faint); font-size: 9px; letter-spacing: 0.12em; }
+.chat-row .menu-btn {
+  background: transparent; border: 0;
+  color: var(--text-faint); font-size: 14px;
+  cursor: pointer; padding: 0 4px;
+  line-height: 1;
+}
+.chat-row .menu-btn:hover { color: var(--cyan); }
+.chat-pop {
+  position: absolute;
+  right: 4px; top: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--cyan-soft);
+  z-index: 60;
+  min-width: 150px;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.55);
+  display: none;
+}
+.chat-pop.open { display: block; }
+.chat-pop button {
+  display: block; width: 100%; text-align: left;
+  padding: 7px 10px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  font-family: inherit; font-size: inherit; letter-spacing: inherit;
+}
+.chat-pop button:hover { background: rgba(0,230,255,0.08); color: var(--cyan); }
+.chat-pop button:last-child { border-bottom: none; }
+.chat-pop button.danger:hover { color: var(--crit); background: rgba(255,64,96,0.08); }
+
+/* Chat header dropdown (consolidated New/Rename/Export/Copy menu) */
+.chat-menu-wrap { position: relative; }
+.chat-menu-pop {
+  position: absolute;
+  right: 0; top: calc(100% + 4px);
+  background: var(--bg-1);
+  border: 1px solid var(--cyan-soft);
+  z-index: 80;
+  min-width: 180px;
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.6), 0 0 18px rgba(0,230,255,0.08);
+  display: none;
+}
+.chat-menu-pop.open { display: block; }
+.chat-menu-pop button {
+  display: block; width: 100%; text-align: left;
+  padding: 8px 12px;
+  background: transparent;
+  color: var(--text-dim);
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  font: inherit; letter-spacing: inherit;
+}
+.chat-menu-pop button:hover { background: rgba(0,230,255,0.10); color: var(--cyan); }
+.chat-menu-pop button:last-child { border-bottom: none; }
+.chat-menu-pop button.danger:hover { color: var(--crit); background: rgba(255,64,96,0.10); }
+.chat-menu-pop hr {
+  border: 0; border-top: 1px dashed var(--line-strong); margin: 0;
+}
+
+/* MCP server row toggle */
+.server-row .switch {
+  width: 24px; height: 12px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  position: relative;
+  cursor: pointer;
+  margin-right: 4px;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.server-row .switch::after {
+  content: ''; position: absolute; top: 1px; left: 1px;
+  width: 8px; height: 8px;
+  background: var(--text-faint);
+  transition: left 0.15s, background 0.15s;
+}
+.server-row.enabled .switch { background: rgba(0,230,255,0.18); border-color: var(--cyan); }
+.server-row.enabled .switch::after { left: 13px; background: var(--cyan); box-shadow: 0 0 4px var(--cyan); }
+.server-row.disabled .marker { background: var(--text-faint); opacity: 0.5; }
+.server-row.disabled .name   { color: var(--text-faint); text-decoration: line-through; opacity: 0.7; }
+
+.server-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 8px;
+  padding: 6px 4px;
+  font-family: var(--mono); font-size: 10.5px;
+  color: var(--text);
+  border-bottom: 1px dashed var(--line-soft);
+  cursor: pointer;
+  transition: background 0.15s;
+  position: relative;
+}
+.server-row:last-child { border-bottom: none; }
+.server-row:hover { background: rgba(0,230,255,0.04); }
+.server-row .marker {
+  width: 7px; height: 7px;
+  background: var(--text-faint);
+  flex-shrink: 0;
+}
+.server-row.online   .marker { background: var(--green);  box-shadow: 0 0 5px var(--green); }
+.server-row.starting .marker { background: var(--amber);  animation: blink 1.2s infinite; }
+.server-row.error    .marker,
+.server-row.crashed  .marker { background: var(--crit); }
+.server-row .name { letter-spacing: 0.04em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.server-row .count { font-size: 9px; color: var(--text-faint); letter-spacing: 0.1em; }
+
+.empty-msg {
+  font-family: var(--mono); font-size: 10px; color: var(--text-faint);
+  line-height: 1.7; letter-spacing: 0.04em;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px 12px;
+  font-family: var(--mono); font-size: 10px;
+}
+.stat-grid .lbl { color: var(--text-faint); letter-spacing: 0.14em; text-transform: uppercase; }
+.stat-grid .val { color: var(--text); font-weight: 500; text-align: right; }
+
+.side-action {
+  display: block; width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s;
+  margin-top: 5px;
+}
+.side-action:hover { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,230,255,0.18); }
+.side-action.danger:hover { color: var(--crit); border-color: var(--crit); box-shadow: 0 0 8px rgba(255,64,96,0.18); }
+.side-action.primary { color: var(--cyan); border-color: var(--cyan-soft); }
+.side-action.primary:hover { background: rgba(0,230,255,0.08); }
+.active-session-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 4px; }
+.active-session-grid .side-action { margin-top: 0; padding: 6px 8px; font-size: 9.5px; letter-spacing: 0.12em; }
+.active-session-grid .side-action.danger { grid-column: 1 / span 2; }
+
+/* ──────────── Scheduler ──────────── */
+.scheduler-form { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.scheduler-form textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--line-strong);
+  color: var(--text); font-family: var(--mono); font-size: 10px;
+  padding: 6px 8px; outline: none; resize: vertical; min-height: 48px;
+  transition: border-color 0.15s;
+}
+.scheduler-form textarea:focus { border-color: var(--cyan); box-shadow: 0 0 6px rgba(0,230,255,0.18); }
+.scheduler-form .field { margin-bottom: 0; }
+.scheduler-form select, .scheduler-form input[type=text] {
+  width: 100%; background: var(--bg); border: 1px solid var(--line-strong);
+  color: var(--text); font-family: var(--mono); font-size: 10px;
+  padding: 6px 8px; outline: none;
+}
+.scheduler-form select:focus, .scheduler-form input[type=text]:focus { border-color: var(--cyan); }
+.scheduler-form select { cursor: pointer; appearance: auto; }
+.sched-time-row { display: grid; grid-template-columns: 1fr 80px; gap: 6px; align-items: start; }
+.sched-controls { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; margin-top: 2px; }
+.scheduler-job-list { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.scheduler-job {
+  display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center;
+  padding: 6px 8px; border: 1px solid var(--line-soft); background: var(--bg-1);
+  font-family: var(--mono); font-size: 9.5px;
+}
+.scheduler-job .job-prompt { color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scheduler-job .job-schedule { color: var(--text-faint); font-size: 8.5px; letter-spacing: 0.08em; }
+.scheduler-job .job-countdown { color: var(--cyan); letter-spacing: 0.1em; min-width: 55px; text-align: right; font-size: 9px; }
+.scheduler-job .job-cancel { background: transparent; border: 1px solid var(--line-strong); color: var(--text-faint); cursor: pointer; padding: 2px 6px; font-family: var(--mono); font-size: 9px; }
+.scheduler-job .job-cancel:hover { color: var(--crit); border-color: var(--crit); }
+.scheduler-job.fired { opacity: 0.5; }
+.scheduler-job.fired .job-countdown { color: var(--green); }
+.sched-empty { font-family: var(--mono); font-size: 10px; color: var(--text-faint); font-style: italic; }
+.sched-repeat-badge { color: var(--amber); font-size: 8px; letter-spacing: 0.12em; }
+
+/* ──────────── Main chat ──────────── */
+main {
+  grid-area: main;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(0,108,128,0.05) 100%),
+    repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 70px),
+    repeating-linear-gradient(0deg,  var(--grid) 0 1px, transparent 1px 70px);
+}
+.reg { position: absolute; width: 18px; height: 18px; border: 1px solid var(--cyan-soft); opacity: 0.4; pointer-events: none; z-index: 5; }
+.reg.tl { top: 10px;  left: 10px;  border-right: 0; border-bottom: 0; }
+.reg.tr { top: 10px;  right: 10px; border-left: 0;  border-bottom: 0; }
+.reg.bl { bottom: 10px; left: 10px;  border-right: 0; border-top: 0; }
+.reg.br { bottom: 10px; right: 10px; border-left: 0;  border-top: 0; }
+
+.chat-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 28px 40px 24px 40px;
+  scroll-behavior: smooth;
+  position: relative;
+  min-width: 0;
+}
+.chat-scroll::-webkit-scrollbar { width: 10px; }
+.chat-scroll::-webkit-scrollbar-track { background: transparent; }
+.chat-scroll::-webkit-scrollbar-thumb { background: var(--line-strong); border: 2px solid var(--bg); }
+.chat-scroll::-webkit-scrollbar-thumb:hover { background: var(--cyan-deep); }
+
+/* Empty state */
+.empty-chat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 18px;
+  color: var(--text-faint);
+  text-align: center;
+}
+.empty-chat .emblem {
+  font-family: var(--display);
+  font-size: 64px;
+  font-weight: 700;
+  letter-spacing: 0.32em;
+  color: var(--cyan);
+  opacity: 0.85;
+  text-shadow: 0 0 18px rgba(0,230,255,0.45);
+  line-height: 1;
+}
+.empty-chat .schematic { width: 220px; height: 220px; opacity: 0.85; }
+.empty-chat .tagline {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  max-width: 520px;
+}
+.empty-chat .check {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  color: var(--text-dim);
+  border: 1px solid var(--line-strong);
+  padding: 14px 22px;
+  background: var(--bg-glass);
+  line-height: 1.9;
+  text-align: left;
+  position: relative;
+  min-width: 380px;
+}
+.empty-chat .check::before {
+  content: '> FIG. 0 · DIAGNOSTIC READOUT';
+  position: absolute;
+  top: -7px; left: 12px;
+  background: var(--bg);
+  padding: 0 6px;
+  font-size: 8px;
+  letter-spacing: 0.24em;
+  color: var(--cyan-soft);
+}
+.empty-chat .check .key { color: var(--text-faint); }
+.empty-chat .check .val { color: var(--text); }
+.empty-chat .check .ok  { color: var(--green); }
+.empty-chat .check .bad { color: var(--crit); }
+
+/* Message rows */
+.msg {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 18px;
+  margin-bottom: 20px;
+  align-items: start;
+  min-width: 0;
+  max-width: 100%;
+}
+.msg-meta {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  text-align: right;
+  padding-top: 6px;
+  line-height: 1.6;
+}
+.msg-meta .role { font-weight: 600; }
+.msg-meta .role.user      { color: var(--amber); }
+.msg-meta .role.assistant { color: var(--cyan); }
+.msg-meta .role.tool      { color: var(--magenta); }
+.msg-meta .role.system    { color: var(--text-dim); }
+.msg-meta .ts  { display: block; opacity: 0.6; font-size: 9px; margin-top: 2px; }
+.msg-meta .idx { display: block; opacity: 0.5; font-size: 9px; }
+
+.msg-body {
+  border-left: 2px solid var(--line-strong);
+  padding: 4px 0 4px 16px;
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--text);
+  word-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+.msg-body > * { max-width: 100%; min-width: 0; }
+.msg-body img, .msg-body video, .msg-body svg, .msg-body iframe { max-width: 100%; height: auto; }
+.msg.user      .msg-body { border-left-color: var(--amber); }
+.msg.assistant .msg-body { border-left-color: var(--cyan); box-shadow: -2px 0 12px rgba(0,230,255,0.06); }
+.msg.tool      .msg-body { border-left-color: var(--magenta); }
+.msg.system    .msg-body { border-left-color: var(--text-faint); }
+
+/* ── In-chat image attachments (framed, foldable/hideable) ── */
+.msg-images { margin: 8px 0 4px; }
+.msg-images-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding: 4px 8px;
+  background: var(--bg-1);
+  border: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--cyan-soft);
+  cursor: pointer;
+  user-select: none;
+}
+.msg-images-head:hover { color: var(--cyan); border-color: var(--line-strong); }
+.msg-images-head .arrow { display: inline-block; transition: transform 0.15s; color: var(--cyan); }
+.msg-images.open .msg-images-head .arrow { transform: rotate(90deg); }
+.msg-images-head .img-toggle-hint { color: var(--text-faint); font-size: 9px; }
+.msg-images-grid { display: none; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.msg-images.open .msg-images-grid { display: flex; }
+/* The in-theme frame border around each chat image */
+.img-frame {
+  position: relative;
+  padding: 4px;
+  background: var(--bg-3);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 12px rgba(0,230,255,0.07), inset 0 0 0 1px var(--line-soft);
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.img-frame::before {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 8px; height: 8px;
+  border-top: 1px solid var(--cyan); border-left: 1px solid var(--cyan);
+  opacity: 0.7; pointer-events: none;
+}
+.img-frame::after {
+  content: '';
+  position: absolute; bottom: 3px; right: 3px;
+  width: 8px; height: 8px;
+  border-bottom: 1px solid var(--cyan); border-right: 1px solid var(--cyan);
+  opacity: 0.7; pointer-events: none;
+}
+.img-frame:hover { border-color: var(--cyan); box-shadow: 0 0 16px rgba(0,230,255,0.22); }
+.img-frame img {
+  display: block;
+  max-width: 320px;
+  max-height: 320px;
+  width: auto; height: auto;
+  cursor: zoom-in;
+}
+
+/* ── Fullscreen image lightbox ── */
+.img-lightbox {
+  position: fixed; inset: 0; z-index: 9000;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(2,8,13,0.92);
+  backdrop-filter: blur(3px);
+  cursor: zoom-out;
+}
+.img-lightbox.open { display: flex; }
+.img-lightbox img {
+  max-width: 92vw; max-height: 88vh;
+  border: 1px solid var(--cyan);
+  box-shadow: 0 0 40px rgba(0,230,255,0.25);
+  background: var(--bg-3);
+  padding: 4px;
+}
+.img-lightbox .lb-close {
+  position: absolute; top: 18px; right: 22px;
+  background: var(--bg-1); color: var(--cyan);
+  border: 1px solid var(--cyan);
+  font-family: var(--mono); font-size: 12px;
+  padding: 4px 10px; cursor: pointer;
+}
+.img-lightbox .lb-close:hover { background: var(--cyan); color: #02080d; }
+
+.msg-body p { margin-bottom: 0.7em; }
+.msg-body p:last-child { margin-bottom: 0; }
+.msg-body code {
+  font-family: var(--mono);
+  background: var(--bg-2);
+  padding: 1px 6px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--cyan);
+}
+.msg-body pre {
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--cyan-soft);
+  padding: 10px 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 8px 0;
+  color: var(--text);
+  max-width: 100%;
+  white-space: pre;
+}
+.msg-body pre code { white-space: pre; }
+.msg-body table { display: block; overflow-x: auto; max-width: 100%; }
+.msg-body pre code { background: none; border: none; padding: 0; color: inherit; }
+.msg-body ul, .msg-body ol { margin: 0.4em 0 0.8em 1.4em; }
+.msg-body li { margin-bottom: 0.2em; }
+.msg-body a { color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; }
+.msg-body strong { font-weight: 600; color: var(--text); }
+.msg-body em { font-style: italic; color: var(--cyan-soft); }
+.msg-body h1, .msg-body h2, .msg-body h3 {
+  font-family: var(--display); font-weight: 600;
+  margin: 0.6em 0 0.4em 0; letter-spacing: 0.06em;
+}
+.msg-body h1 { font-size: 1.35em; color: var(--cyan); }
+.msg-body h2 { font-size: 1.18em; }
+.msg-body h3 { font-size: 1.05em; }
+.msg-body table { border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+.msg-body th, .msg-body td { border: 1px solid var(--line); padding: 4px 8px; text-align: left; }
+.msg-body th { background: var(--bg-1); color: var(--cyan); font-weight: 600; }
+
+/* Thinking block */
+.think-block {
+  margin: 6px 0 12px 0;
+  border: 1px solid var(--line-strong);
+  background: rgba(0,108,128,0.06);
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+}
+.think-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--cyan-soft);
+  user-select: none;
+  transition: background 0.15s;
+}
+.think-head:hover { background: rgba(0,230,255,0.05); }
+.think-head .arrow { transition: transform 0.2s; display: inline-block; }
+.think-block.open .think-head { border-bottom: 1px solid var(--line); }
+.think-block.open .think-head .arrow { transform: rotate(90deg); }
+.think-content {
+  display: none;
+  padding: 9px 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  color: var(--text-dim);
+  max-height: 360px;
+  overflow-y: auto;
+}
+.think-block.open .think-content { display: block; }
+.think-block.streaming .think-head::after {
+  content: '●'; color: var(--amber); margin-left: 8px; animation: blink 1s infinite;
+}
+
+/* Tool calls — single-line by default, compact instrument readout */
+.tool-call {
+  margin: 4px 0;
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--magenta);
+  background: rgba(255,42,109,0.04);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  max-width: 100%;
+  overflow: hidden;
+}
+.tool-call.result { border-left-color: var(--green); background: rgba(76,240,154,0.04); }
+.tool-call.result.err { border-left-color: var(--crit); background: rgba(255,64,96,0.06); }
+.tool-call-head {
+  padding: 4px 10px;
+  color: var(--magenta);
+  letter-spacing: 0.10em;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+  min-width: 0;
+}
+.tool-call.result .tool-call-head { color: var(--green); }
+.tool-call.result.err .tool-call-head { color: var(--crit); }
+.tool-call-head:hover { background: rgba(255,255,255,0.04); }
+.tool-call-head .lhs { display: inline-flex; gap: 6px; align-items: center; min-width: 0; }
+.tool-call-head .name { font-weight: 600; color: var(--text); white-space: nowrap; }
+.tool-call-head .preview {
+  color: var(--text-faint);
+  font-size: 10px;
+  letter-spacing: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+/* Folded by default: keep the call's content (args/result preview) fully
+   enclosed in the collapsed bubble — nothing leaks into the head until opened. */
+.tool-call:not(.open) .tool-call-head .preview { display: none; }
+.tool-call-head .arrow { transition: transform 0.2s; display: inline-block; }
+.tool-call.open .tool-call-head .arrow { transform: rotate(90deg); }
+.tool-call-head .id-tag {
+  font-size: 9px; opacity: 0.5;
+  letter-spacing: 0.04em;
+  font-family: var(--mono);
+}
+/* Animated "notice" on the folded bubble — token-size readout + a pulsing
+   lamp so a collapsed tool call still gives live feedback at a glance. */
+.tool-call-head .tok-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  font-family: var(--mono);
+  white-space: nowrap;
+}
+.tool-call-head .tok-badge .pulse-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  color: var(--magenta);
+  background: currentColor;
+  animation: tcPulse 1.6s ease-in-out infinite;
+}
+.tool-call.result .tok-badge .pulse-dot { color: var(--green); }
+.tool-call.result.err .tok-badge .pulse-dot { color: var(--crit); }
+@keyframes tcPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.75); box-shadow: 0 0 0 currentColor; }
+  50%      { opacity: 1;   transform: scale(1.15); box-shadow: 0 0 7px currentColor; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tool-call-head .tok-badge .pulse-dot { animation: none; opacity: 0.8; }
+}
+.tool-call-detail { display: none; border-top: 1px dashed var(--line); }
+.tool-call.open .tool-call-detail { display: block; }
+.tool-call-body {
+  padding: 6px 10px;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+  font-size: 10.5px;
+}
+.tool-call-result {
+  padding: 6px 10px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 240px;
+  overflow: auto;
+  font-size: 10.5px;
+}
+.tool-call-result.err { color: var(--crit); }
+
+/* Rolling-context marker — small, system-style */
+.msg.roll-marker .msg-body {
+  border-left-color: var(--cyan-deep);
+  background: rgba(0,108,128,0.06);
+  padding: 6px 12px;
+}
+.msg.roll-marker { margin-bottom: 10px; opacity: 0.85; }
+
+/* Composer */
+.composer-wrap {
+  border-top: 1px solid var(--line);
+  background: linear-gradient(0deg, #03101a 0%, #04141d 100%);
+  padding: 12px 22px 14px 22px;
+  position: relative;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.composer-wrap.drag {
+  border-top-color: var(--cyan);
+  box-shadow: inset 0 0 0 1px var(--cyan), inset 0 0 24px rgba(0,230,255,0.12);
+}
+.composer-wrap.drag::after {
+  content: '⬡ DROP IMAGE TO ATTACH';
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.24em;
+  color: var(--cyan);
+  background: rgba(2,8,13,0.55);
+  pointer-events: none;
+}
+.composer-wrap::before {
+  content: '> INPUT // TX';
+  position: absolute;
+  top: -8px; left: 22px;
+  background: var(--bg);
+  padding: 0 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  color: var(--cyan-soft);
+}
+.composer {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+.composer .prompt {
+  color: var(--cyan);
+  font-family: var(--mono);
+  font-size: 16px;
+  padding-bottom: 10px;
+  letter-spacing: 0.1em;
+  user-select: none;
+  text-shadow: 0 0 8px rgba(0,230,255,0.4);
+}
+.composer textarea {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 9px 12px;
+  resize: none;
+  min-height: 42px;
+  max-height: 220px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.composer textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,230,255,0.18);
+}
+.composer textarea::placeholder { color: var(--text-faint); font-style: italic; }
+.composer-actions { display: flex; gap: 6px; flex-direction: column; }
+.send-btn {
+  padding: 10px 22px;
+  background: var(--cyan);
+  color: #02080d;
+  border: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.05s, box-shadow 0.15s;
+  min-width: 110px;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.send-btn:hover { background: #6df3ff; box-shadow: 0 0 16px rgba(0,230,255,0.35); }
+.send-btn:active { transform: translateY(1px); }
+.send-btn:disabled { background: var(--line-strong); color: var(--text-faint); cursor: not-allowed; }
+.send-btn.stop { background: var(--magenta); color: #02080d; }
+
+/* ── Image attach button (sits above TRANSMIT) ── */
+.attach-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 8px;
+  min-width: 110px;
+  background: var(--bg-1);
+  color: var(--cyan-soft);
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  clip-path: polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px);
+}
+.attach-btn:hover {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,230,255,0.25);
+  background: var(--bg-2);
+}
+.attach-btn:active { transform: translateY(1px); }
+.attach-btn.armed {
+  color: var(--cyan);
+  border-color: var(--cyan);
+  box-shadow: 0 0 10px rgba(0,230,255,0.3) inset;
+}
+
+/* ── Pending-attachment tray (preview before sending) ── */
+.attach-tray { display: none; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.attach-tray.has { display: flex; }
+.attach-thumb {
+  position: relative;
+  width: 58px; height: 58px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg-3);
+  overflow: hidden;
+  clip-path: polygon(5px 0, 100% 0, 100% calc(100% - 5px), calc(100% - 5px) 100%, 0 100%, 0 5px);
+}
+.attach-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.attach-thumb .attach-rm {
+  position: absolute; top: 1px; right: 1px;
+  width: 16px; height: 16px; line-height: 14px; text-align: center;
+  padding: 0;
+  background: rgba(2,8,13,0.82);
+  color: var(--magenta);
+  border: 1px solid var(--magenta);
+  font-family: var(--mono); font-size: 9px;
+  cursor: pointer;
+}
+.attach-thumb .attach-rm:hover { background: var(--magenta); color: #02080d; }
+
+.composer-hint {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-faint);
+  letter-spacing: 0.12em;
+  margin-top: 6px;
+  display: flex; justify-content: space-between;
+}
+.composer-hint .key { color: var(--text-dim); }
+
+/* Footer status console with compaction indicator */
+footer {
+  grid-area: foot;
+  border-top: 1px solid var(--line);
+  background: #03101a;
+  padding: 6px 18px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  position: relative;
+  z-index: 10;
+}
+footer::before {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: repeating-linear-gradient(90deg, var(--cyan) 0 5px, transparent 5px 14px);
+  opacity: 0.30;
+}
+footer .group { display: flex; align-items: center; gap: 6px; }
+footer .lbl { opacity: 0.7; }
+footer .val { color: var(--text-dim); }
+footer .spacer { flex: 1; }
+footer .blink { animation: blink 1s infinite; color: var(--magenta); }
+footer .compaction-state {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--line-strong);
+  color: var(--text-dim);
+  background: rgba(0,0,0,0.3);
+}
+footer .compaction-state.busy {
+  color: var(--amber);
+  border-color: var(--amber);
+  background: rgba(255,184,74,0.08);
+  animation: blink 1.6s infinite;
+}
+footer .compaction-state .spinner {
+  width: 8px; height: 8px;
+  border: 1px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  display: inline-block;
+  animation: rotateSlow 1s linear infinite;
+}
+footer .compaction-state:not(.busy) .spinner { display: none; }
+footer .net-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--line-strong);
+}
+footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
+
+/* Settings drawer */
+.drawer-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+  z-index: 1000;
+  display: none;
+}
+.drawer-backdrop.open { display: block; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 620px; max-width: 100vw;
+  background: var(--bg-1);
+  border-left: 1px solid var(--cyan);
+  z-index: 1001;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex; flex-direction: column;
+  box-shadow: -20px 0 60px rgba(0,0,0,0.7), -2px 0 20px rgba(0,230,255,0.15);
+}
+.drawer.open { transform: translateX(0); }
+.drawer-head {
+  padding: 14px 22px 12px 22px;
+  border-bottom: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: end;
+  background: linear-gradient(180deg, #061a24 0%, #04131a 100%);
+  position: relative;
+}
+.drawer-head::before {
+  content: '';
+  position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--cyan) 0 5px, transparent 5px 17px);
+  opacity: 0.55;
+}
+.drawer-head h2 {
+  font-family: var(--display);
+  font-size: 18px; letter-spacing: 0.28em;
+  color: var(--text); font-weight: 700;
+}
+.drawer-head .sub {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.22em; color: var(--cyan-soft);
+  text-transform: uppercase; margin-top: 4px;
+}
+.drawer-body { flex: 1; overflow-y: auto; }
+.drawer-body::-webkit-scrollbar { width: 8px; }
+.drawer-body::-webkit-scrollbar-thumb { background: var(--line-strong); }
+
+.sect {
+  border-bottom: 1px solid var(--line-soft);
+  padding: 16px 22px;
+  position: relative;
+}
+.sect-head {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.sect-head .num {
+  color: var(--text-faint);
+  border: 1px solid var(--line-strong);
+  padding: 2px 7px;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+.field { display: grid; gap: 4px; margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.field .help {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--text-faint);
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+}
+.field input[type=text], .field input[type=password], .field input[type=number],
+.field textarea, .field select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field input:focus, .field textarea:focus, .field select:focus {
+  border-color: var(--cyan);
+  box-shadow: 0 0 8px rgba(0,230,255,0.20);
+}
+.field textarea { resize: vertical; min-height: 92px; line-height: 1.5; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.field-row.three { grid-template-columns: 1fr 1fr 1fr; }
+
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn {
+  padding: 7px 14px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { color: var(--cyan); border-color: var(--cyan); }
+.btn.primary { background: var(--cyan); color: #02080d; border-color: var(--cyan); font-weight: 600; }
+.btn.primary:hover { background: #6df3ff; box-shadow: 0 0 12px rgba(0,230,255,0.35); }
+.btn.amber { border-color: var(--amber); color: var(--amber); }
+.btn.amber:hover { background: var(--amber); color: #02080d; }
+.btn.danger { border-color: var(--crit); color: var(--crit); }
+.btn.danger:hover { background: var(--crit); color: #02080d; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.toggle {
+  display: inline-flex; align-items: center; gap: 10px;
+  cursor: pointer;
+  font-family: var(--mono); font-size: 11px;
+  color: var(--text); letter-spacing: 0.06em;
+}
+.toggle input { display: none; }
+.toggle .slot {
+  width: 36px; height: 18px; background: var(--bg);
+  border: 1px solid var(--line-strong);
+  position: relative; transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+.toggle .slot::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 12px; height: 12px;
+  background: var(--text-faint);
+  transition: left 0.15s, background 0.15s;
+}
+.toggle input:checked + .slot { background: rgba(0,230,255,0.18); border-color: var(--cyan); }
+.toggle input:checked + .slot::after { left: 20px; background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
+
+.test-result {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 8px 10px;
+  border: 1px dashed var(--line);
+  color: var(--text-dim);
+  margin-top: 6px;
+  display: none;
+  line-height: 1.55;
+  letter-spacing: 0.04em;
+  white-space: pre-wrap;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.test-result.ok   { display: block; border-color: var(--green); color: var(--green); }
+.test-result.err  { display: block; border-color: var(--crit);  color: var(--crit); }
+.test-result.busy { display: block; border-color: var(--amber); color: var(--amber); }
+
+.toast {
+  position: fixed; top: 80px; right: 24px;
+  background: var(--bg-1);
+  border: 1px solid var(--cyan);
+  border-left: 3px solid var(--cyan);
+  padding: 10px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  z-index: 800;
+  transform: translateX(120%);
+  transition: transform 0.3s ease;
+  max-width: 340px;
+  line-height: 1.5;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+}
+.toast.show { transform: translateX(0); }
+.toast .title { color: var(--text); margin-bottom: 4px; font-weight: 600; }
+
+.stream-cursor::after {
+  content: '▌'; color: var(--cyan);
+  animation: blink 1s step-start infinite;
+  margin-left: 2px;
+}
+
+.server-row .tip {
+  display: none;
+  position: absolute;
+  left: 100%; top: 0;
+  background: var(--bg-2);
+  border: 1px solid var(--cyan-soft);
+  padding: 8px 10px;
+  font-size: 9.5px;
+  color: var(--text);
+  z-index: 30;
+  width: 280px;
+  margin-left: 8px;
+  line-height: 1.5;
+  pointer-events: none;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1100px) {
+  .app { grid-template-columns: var(--left-w, 220px) minmax(0, 1fr) var(--right-w, 240px); }
+}
+@media (max-width: 820px) {
+  .app {
+    grid-template-columns: var(--left-w, 0px) minmax(0, 1fr) var(--right-w, 0px);
+    grid-template-areas:
+      "head head head"
+      "main main main"
+      "foot foot foot";
+  }
+  aside.left, aside.right {
+    position: fixed; top: 0; bottom: 0; width: 280px; z-index: 60;
+    box-shadow: 0 0 30px rgba(0,0,0,0.6);
+  }
+  aside.left  { left: 0; transform: translateX(-100%); }
+  aside.right { right: 0; transform: translateX(100%); }
+  .app:not(.left-collapsed)  aside.left  { transform: translateX(0); }
+  .app:not(.right-collapsed) aside.right { transform: translateX(0); }
+  .msg { grid-template-columns: 70px 1fr; gap: 10px; }
+  .chat-scroll { padding: 22px 16px; }
+  .composer-wrap { padding: 12px 14px; }
+  .drawer { width: 100vw; }
+  .brand h1 { font-size: 18px; }
+}
+
+/* ───────────── Interface-skin toggle (top of settings) ───────────── */
+.theme-switch .theme-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+}
+.theme-row-label {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--text);
+}
+.theme-chip {
+  min-width: 232px; padding: 9px 16px; cursor: pointer; text-align: center;
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+  background: rgba(0,230,255,0.10); color: var(--cyan);
+  border: 1px solid var(--cyan);
+  transition: all 0.15s;
+}
+.theme-chip:hover { background: var(--cyan); color: #02080d; box-shadow: 0 0 12px rgba(0,230,255,0.35); }
+.theme-chip::after { content: ' ⇄'; opacity: 0.6; }
+
+/* ════════════════════════════════════════════════════════════════════
+   ALTERNATE SKIN  ·  "UNATCO / OmniBrain Augment"
+   A visual parody of the Deus Ex (2000) Options menu — gunmetal beveled
+   panels, glossy blue title bar, gold accents, recessed inset value
+   fields. Pure restyle: identical DOM, JS, settings and sync bus. The
+   active skin is keyed off html[data-theme] and lives in settings.theme,
+   so it persists to settings.json and mirrors across every synced window.
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="deusex"] {
+  --bg:           #07090b;
+  --bg-1:         #1b2128;
+  --bg-2:         #262d36;
+  --bg-3:         #0d1115;
+  --bg-glass:     rgba(30,37,45,0.62);
+  --line:         #3c454f;
+  --line-soft:    #20262d;
+  --line-strong:  #5a6675;
+  --grid:         rgba(180,195,215,0.035);
+  --text:         #cfd5de;
+  --text-dim:     #9aa4b1;
+  --text-faint:   #6b7480;
+  --cyan:         #8aa6d6;   /* general accent → steel blue   */
+  --cyan-soft:    #6f80a0;
+  --cyan-deep:    #33425e;
+  --magenta:      #c2604f;
+  --amber:        #d9a441;   /* Deus Ex conspiracy gold        */
+  --green:        #87c069;
+  --warn:         #d9a441;
+  --crit:         #c2533f;
+  --display:      'Tahoma','Verdana','Geneva',system-ui,sans-serif;
+  --mono:         'Tahoma','Verdana','Geneva',system-ui,sans-serif;
+}
+/* Strip the GitS HUD atmospherics — Deus Ex menus are flat & metallic */
+html[data-theme="deusex"] body {
+  background: radial-gradient(ellipse at 50% -20%, #11151b 0%, #07090b 62%) fixed;
+}
+html[data-theme="deusex"] body::before { opacity: 0.06; mix-blend-mode: normal; }
+html[data-theme="deusex"] body::after  { background: none; }
+html[data-theme="deusex"] .scanline    { display: none; }
+
+/* Header → glossy blue UNATCO command bar */
+html[data-theme="deusex"] header {
+  background: linear-gradient(180deg,#4f6ea4 0%,#2c4878 48%,#1c3056 100%);
+  border-bottom: 2px solid #0a0d10;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 2px 6px rgba(0,0,0,0.5);
+}
+html[data-theme="deusex"] .brand h1,
+html[data-theme="deusex"] .brand .glyph { color: #eef2f8; text-shadow: 0 1px 2px rgba(0,0,0,0.55); }
+
+/* The Options window: raised gunmetal panel with hard bevel */
+html[data-theme="deusex"] .drawer {
+  background: linear-gradient(180deg,#2b323a 0%,#222932 100%);
+  border: 2px solid #0a0d10;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.14),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    -22px 0 60px rgba(0,0,0,0.7);
+}
+/* Title bar — the signature glossy blue "Options" strip */
+html[data-theme="deusex"] .drawer-head {
+  background: linear-gradient(180deg,#5a7cb2 0%,#345086 46%,#223860 100%);
+  border-bottom: 2px solid #0a0d10;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.4);
+  padding: 10px 18px;
+}
+html[data-theme="deusex"] .drawer-head::before { display: none; }
+html[data-theme="deusex"] .drawer-head h2 { font-size: 0; letter-spacing: 0; }
+html[data-theme="deusex"] .drawer-head h2::before {
+  content: 'Options';
+  font-family: 'Tahoma','Verdana',sans-serif;
+  font-size: 19px; font-weight: 700; letter-spacing: 0.02em;
+  color: #eef2f8; text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+html[data-theme="deusex"] .drawer-head .sub { color: #cdd8ee; letter-spacing: 0.1em; text-transform: none; }
+
+/* Section grouping + beveled § index chip */
+html[data-theme="deusex"] .sect { border-bottom: 1px solid #0a0d10; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
+html[data-theme="deusex"] .sect-head { color: var(--amber); }
+html[data-theme="deusex"] .sect-head .num {
+  color: #e6ebf2; border: 1px solid #0a0d10;
+  background: linear-gradient(180deg,#3a434d,#262d35);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.18), inset -1px -1px 0 rgba(0,0,0,0.5);
+}
+html[data-theme="deusex"] .field label { color: #aeb7c4; }
+
+/* Inputs / selects / textareas → recessed inset value fields */
+html[data-theme="deusex"] .field input[type=text],
+html[data-theme="deusex"] .field input[type=password],
+html[data-theme="deusex"] .field input[type=number],
+html[data-theme="deusex"] .field textarea,
+html[data-theme="deusex"] .field select {
+  background: #0e1217; border: 1px solid #0a0d10; color: #d7dde6;
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.7), inset -1px -1px 0 rgba(255,255,255,0.06);
+}
+html[data-theme="deusex"] .field input:focus,
+html[data-theme="deusex"] .field textarea:focus,
+html[data-theme="deusex"] .field select:focus {
+  border-color: var(--amber);
+  box-shadow: inset 2px 2px 4px rgba(0,0,0,0.7), 0 0 0 1px rgba(217,164,65,0.5);
+}
+
+/* Beveled metal buttons — the "Restore Defaults / OK / Cancel" parody */
+html[data-theme="deusex"] .btn,
+html[data-theme="deusex"] .icon-btn,
+html[data-theme="deusex"] .mini-btn {
+  background: linear-gradient(180deg,#3c454f 0%,#2a313a 55%,#222831 100%);
+  border: 1px solid #0a0d10; color: #d3d9e2;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.18), inset -1px -1px 0 rgba(0,0,0,0.55);
+}
+html[data-theme="deusex"] .btn:hover,
+html[data-theme="deusex"] .icon-btn:hover,
+html[data-theme="deusex"] .mini-btn:hover {
+  color: var(--amber);
+  background: linear-gradient(180deg,#46505b 0%,#323a44 55%,#2a313a 100%);
+  border-color: #0a0d10;
+}
+html[data-theme="deusex"] .btn:active { box-shadow: inset 2px 2px 4px rgba(0,0,0,0.6); }
+html[data-theme="deusex"] .btn.primary {
+  background: linear-gradient(180deg,#4f74b4 0%,#2f5391 55%,#23406f 100%);
+  color: #eef3fb; border-color: #0a0d10;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3), inset -1px -1px 0 rgba(0,0,0,0.5);
+}
+html[data-theme="deusex"] .btn.primary:hover { color: #fff; filter: brightness(1.12); }
+html[data-theme="deusex"] .btn.amber {
+  background: linear-gradient(180deg,#e6b352,#a87b22); color: #1a130a; border-color: #0a0d10;
+}
+html[data-theme="deusex"] .btn.amber:hover { filter: brightness(1.1); color: #1a130a; }
+html[data-theme="deusex"] .btn.danger {
+  background: linear-gradient(180deg,#b9503c,#7e3022); color: #fbe7e2; border-color: #0a0d10;
+}
+html[data-theme="deusex"] .btn.danger:hover { filter: brightness(1.12); color: #fff; }
+
+/* Toggles → recessed switch with gold knob (on) / blue track */
+html[data-theme="deusex"] .toggle { color: #cfd5de; }
+html[data-theme="deusex"] .toggle .slot {
+  background: #0e1217; border: 1px solid #0a0d10;
+  box-shadow: inset 2px 2px 3px rgba(0,0,0,0.7);
+}
+html[data-theme="deusex"] .toggle .slot::after {
+  background: linear-gradient(180deg,#6b7480,#3a424c);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.2);
+}
+html[data-theme="deusex"] .toggle input:checked + .slot {
+  background: linear-gradient(180deg,#2f5391,#23406f); border-color: #0a0d10;
+}
+html[data-theme="deusex"] .toggle input:checked + .slot::after {
+  background: linear-gradient(180deg,#f0c860,#d9a441);
+  box-shadow: 0 0 4px rgba(217,164,65,0.7);
+}
+
+/* The skin toggle itself → the blue "Render 3D"-style selected value chip */
+html[data-theme="deusex"] .theme-row-label { color: #cfd5de; }
+html[data-theme="deusex"] .theme-chip {
+  background: linear-gradient(180deg,#4f74b4 0%,#2f5391 55%,#23406f 100%);
+  color: #eef3fb; border: 1px solid #0a0d10;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3), inset -1px -1px 0 rgba(0,0,0,0.5);
+}
+html[data-theme="deusex"] .theme-chip:hover {
+  color: #fff; filter: brightness(1.12);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3), inset -1px -1px 0 rgba(0,0,0,0.5);
+}
+
+/* Misc chrome */
+html[data-theme="deusex"] .drawer-backdrop { background: rgba(0,0,0,0.72); }
+html[data-theme="deusex"] .drawer-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg,#4a535e,#2a313a); border: 1px solid #0a0d10;
+}
+html[data-theme="deusex"] .toast {
+  background: linear-gradient(180deg,#2b323a,#222932);
+  border: 1px solid #0a0d10; border-left: 3px solid var(--amber); color: var(--amber);
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.12), 0 6px 20px rgba(0,0,0,0.5);
+}
+html[data-theme="deusex"] .toast .title { color: #eef2f8; }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <header>
+    <div class="brand">
+      <div class="glyph">⌬</div>
+      <div class="titles">
+        <h1>CHATSGI<span class="slash">/</span><span class="sub">TERMINAL</span></h1>
+        <div class="row1">Section 9 · Stand Alone Complex · MCP Bridge · LAN-Sync · rev 2.1</div>
+      </div>
+    </div>
+    <div></div>
+    <div class="header-status">
+      <div class="pill" id="pill-conn" title="Endpoint connection">
+        <span class="dot"></span>
+        <span class="lbl">LINK</span>
+        <span class="val" id="conn-status">UNTESTED</span>
+      </div>
+      <div class="pill" id="pill-mcp" title="MCP backend">
+        <span class="dot"></span>
+        <span class="lbl">MCP</span>
+        <span class="val" id="mcp-status">—</span>
+      </div>
+      <div class="pill" title="Active model">
+        <span class="lbl">MDL</span>
+        <span class="val" id="model-name">—</span>
+      </div>
+      <div class="pill" id="pill-ctx" title="Context utilization">
+        <span class="lbl">CTX</span>
+        <span class="val" id="ctx-text">0%</span>
+        <div class="ctx-meter"><div class="fill" id="ctx-fill"></div><div class="marker" id="ctx-marker"></div></div>
+      </div>
+      <div class="pill" id="pill-sync" title="LAN sync state">
+        <span class="dot"></span>
+        <span class="lbl">SYNC</span>
+        <span class="val" id="sync-status">…</span>
+      </div>
+      <span class="hdr-panel-toggles" title="Show / hide side panels">
+        <button class="panel-toggle" id="toggle-left"  title="Toggle CHATS panel"  aria-label="Toggle chats panel"   aria-pressed="true">◧</button>
+        <button class="panel-toggle" id="toggle-right" title="Toggle OPS / TELEMETRY panel" aria-label="Toggle options panel" aria-pressed="true">◨</button>
+      </span>
+      <button class="icon-btn" id="btn-settings" title="Settings (⌘,)">⚙</button>
+    </div>
+  </header>
+
+  <aside class="left" id="aside-left">
+
+    <div class="side-section">
+      <div class="side-head">
+        <span>◢ CHATS<span class="num" id="chat-count" style="margin-left:8px;"></span></span>
+        <span class="right chat-menu-wrap">
+          <button class="mini-btn primary" id="btn-chat-menu" title="Session actions" aria-expanded="false">▾ SESSION</button>
+          <div class="chat-menu-pop" id="chat-menu-pop">
+            <button data-act="new">▸ NEW SESSION</button>
+            <hr/>
+            <button data-act="rename">▸ RENAME ACTIVE</button>
+            <button data-act="duplicate">▸ DUPLICATE ACTIVE</button>
+            <button data-act="copy">▸ COPY ACTIVE TO CLIPBOARD</button>
+            <button data-act="export">▸ EXPORT ACTIVE (JSON)</button>
+            <hr/>
+            <button data-act="delete" class="danger">▸ DELETE ACTIVE</button>
+          </div>
+        </span>
+      </div>
+      <div class="chat-list" id="chat-list"></div>
+    </div>
+
+  </aside>
+
+  <main>
+    <span class="reg tl"></span><span class="reg tr"></span>
+    <span class="reg bl"></span><span class="reg br"></span>
+    <div class="scanline"></div>
+
+    <div class="chat-scroll" id="chat-scroll">
+      <div class="empty-chat" id="empty-chat">
+        <svg class="schematic" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">
+          <g stroke="var(--cyan-soft)" stroke-width="0.6" opacity="0.85">
+            <circle cx="110" cy="110" r="92"/>
+            <circle cx="110" cy="110" r="78" stroke-dasharray="3 4"/>
+            <circle cx="110" cy="110" r="54"/>
+            <circle cx="110" cy="110" r="32" stroke-dasharray="2 3"/>
+          </g>
+          <g stroke="var(--cyan)" stroke-width="0.8">
+            <path d="M110 10 L110 30 M110 190 L110 210 M10 110 L30 110 M190 110 L210 110"/>
+          </g>
+          <g stroke="var(--magenta)" stroke-width="1">
+            <path d="M110 110 L168 70" stroke-dasharray="1000" style="animation: sweep 4s linear infinite"/>
+          </g>
+          <circle cx="110" cy="110" r="4" fill="var(--cyan)"/>
+          <g font-family="Share Tech Mono" font-size="6" fill="var(--cyan-soft)" letter-spacing="2">
+            <text x="110" y="6" text-anchor="middle">N</text>
+            <text x="110" y="218" text-anchor="middle">S</text>
+            <text x="3" y="113">W</text>
+            <text x="211" y="113">E</text>
+            <text x="110" y="146" text-anchor="middle" fill="var(--text-faint)">SECTION-09</text>
+            <text x="110" y="156" text-anchor="middle" fill="var(--text-faint)">STAND-ALONE / COMPLEX</text>
+          </g>
+        </svg>
+        <div class="emblem">CHATSGI</div>
+        <div class="tagline">Maintenance Terminal · Awaiting transmission</div>
+        <div class="check" id="empty-check"></div>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <div class="prompt">▸</div>
+        <div>
+          <div class="attach-tray" id="attach-tray"></div>
+          <textarea id="input" placeholder="Shift+Enter for newline. Enter to send." rows="1"></textarea>
+          <div class="composer-hint">
+            <span><span class="key">[ENTER]</span> send · <span class="key">[SHIFT+ENTER]</span> newline · <span class="key">[ESC]</span> stop · <span class="key">[⬡]</span> attach image</span>
+            <span id="streaming-indicator"></span>
+          </div>
+        </div>
+        <div class="composer-actions">
+          <input type="file" id="img-input" accept="image/*" multiple hidden />
+          <button class="attach-btn" id="btn-attach" title="Attach image · or paste from clipboard" aria-label="Attach image">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="1.5"></rect>
+              <circle cx="8.5" cy="9" r="1.6"></circle>
+              <path d="M21 16l-5-5L7 20"></path>
+            </svg>
+          </button>
+          <button class="send-btn" id="btn-send">TRANSMIT</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="right" id="aside-right">
+
+    <div class="side-section">
+      <div class="side-head">
+        <span>◢ OPS</span>
+        <span class="right">
+          <button class="mini-btn" id="btn-open-settings" title="Open settings drawer">⚙ MORE</button>
+        </span>
+      </div>
+      <button class="side-action primary" id="btn-restart-mcp">▸ RESTART MCP</button>
+      <button class="side-action" id="btn-roll-now">▸ ROLL CONTEXT NOW</button>
+    </div>
+
+    <div class="side-section">
+      <div class="side-head"><span>◢ ACTIVE SESSION</span><span class="num" id="active-session-name">—</span></div>
+      <div class="active-session-grid">
+        <button class="side-action" data-act-act="rename"    title="Rename active chat">▸ RENAME</button>
+        <button class="side-action" data-act-act="duplicate" title="Duplicate active chat">▸ DUPLICATE</button>
+        <button class="side-action" data-act-act="copy"      title="Copy active chat to clipboard">▸ COPY TEXT</button>
+        <button class="side-action" data-act-act="export"    title="Export active chat as JSON">▸ EXPORT JSON</button>
+        <button class="side-action danger" data-act-act="delete" title="Delete active chat">▸ DELETE</button>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-head"><span>◢ MCP / NODES</span><span class="num">§ 2</span></div>
+      <div id="server-list">
+        <div class="empty-msg">No MCP servers configured.<br/>Edit <code style="font-size:9px;background:var(--bg-2);padding:1px 4px;">tools.json</code> in settings → § 5.</div>
+      </div>
+      <div style="margin-top:8px; font-family:var(--mono); font-size:8.5px; color:var(--text-faint); letter-spacing:0.14em; line-height:1.6;">
+        ▸ TOGGLE switches enable / disable per server.<br/>
+        ▸ Disabled servers are not started and their tools are withheld from the model.
+      </div>
+    </div>
+
+    <div class="side-section">
+      <div class="side-head"><span>◢ TELEMETRY</span><span class="num">§ 3</span></div>
+      <div class="stat-grid">
+        <div class="lbl">Messages</div><div class="val" id="stat-msgs">0</div>
+        <div class="lbl">Tokens</div><div class="val" id="stat-tokens">0</div>
+        <div class="lbl">Tools</div><div class="val" id="stat-tools">0</div>
+        <div class="lbl">Servers</div><div class="val" id="stat-servers">0 / 0</div>
+        <div class="lbl">Held</div><div class="val" id="stat-compactions">0</div>
+        <div class="lbl">Threshold</div><div class="val" id="stat-threshold">70%</div>
+        <div class="lbl">Backend</div><div class="val" id="stat-backend">—</div>
+        <div class="lbl">Network</div><div class="val" id="stat-network">LOCAL</div>
+      </div>
+    </div>
+
+    <div class="side-section" id="scheduler-section">
+      <div class="side-head"><span>◢ SCHEDULER</span><span class="num">§ 4</span></div>
+      <div class="scheduler-form">
+        <textarea id="sched-prompt" placeholder="Enter prompt for scheduled job…"></textarea>
+        <div class="field">
+          <label>DAY OF WEEK</label>
+          <select id="sched-day">
+            <option value="0">Sunday</option>
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+          </select>
+        </div>
+        <div class="sched-time-row">
+          <div class="field">
+            <label>TIME (HH:MM:SS)</label>
+            <input type="text" id="sched-time" placeholder="12:00:00" value="12:00:00" />
+          </div>
+          <div class="field">
+            <label>AM/PM</label>
+            <select id="sched-ampm">
+              <option value="AM">AM</option>
+              <option value="PM">PM</option>
+            </select>
+          </div>
+        </div>
+        <div class="sched-controls">
+          <label class="toggle">
+            <input type="checkbox" id="sched-repeat" />
+            <span class="slot"></span>
+            REPEAT WEEKLY
+          </label>
+          <button class="side-action primary" id="btn-schedule">▸ SCHEDULE</button>
+        </div>
+      </div>
+      <div id="sched-job-list" class="scheduler-job-list">
+        <div class="sched-empty">No scheduled jobs.</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <footer>
+    <div class="group"><span class="lbl">SYS</span><span class="val">CHATSGI-TERM v2.0</span></div>
+    <div class="group"><span class="lbl">EP</span><span class="val" id="foot-ep">—</span></div>
+    <div class="group"><span class="lbl">CTX</span><span class="val" id="foot-ctx">0 / 64200</span></div>
+    <div class="group">
+      <span class="lbl">ROLL</span>
+      <span class="compaction-state" id="foot-cmp">
+        <span class="spinner"></span>
+        <span id="foot-cmp-text">idle</span>
+      </span>
+    </div>
+    <div class="group"><span class="lbl">MCP</span><span class="val" id="foot-mcp">0/0</span></div>
+    <div class="group"><span class="lbl">CHAT</span><span class="val" id="foot-chat">—</span></div>
+    <div class="spacer"></div>
+    <div class="group">
+      <span class="net-pill" id="foot-net"><span>LOCAL</span></span>
+    </div>
+    <div class="group"><span class="lbl">REC</span><span class="val blink">●</span></div>
+    <div class="group"><span class="val" id="foot-clock">--:--:--</span></div>
+  </footer>
+</div>
+
+<div class="toast" id="toast">
+  <div class="title">CONTEXT ROLL</div>
+  <div id="toast-body">Rolling conversation buffer…</div>
+</div>
+
+<!-- Image lightbox -->
+<div class="img-lightbox" id="img-lightbox">
+  <button class="lb-close" id="lb-close" title="Close (Esc)">✕ CLOSE</button>
+  <img id="lb-img" src="" alt="attachment" />
+</div>
+
+<!-- Settings drawer -->
+<div class="drawer-backdrop" id="drawer-backdrop"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <div>
+      <h2>SETTINGS</h2>
+      <div class="sub">Configuration panel · Section 9 · rev. 2.0</div>
+    </div>
+    <button class="icon-btn" id="btn-close-drawer">✕</button>
+  </div>
+  <div class="drawer-body">
+
+    <div class="sect theme-switch" id="sect-theme">
+      <div class="sect-head"><span class="num">§ 0</span><span>INTERFACE SKIN</span></div>
+      <div class="theme-row">
+        <div class="theme-row-label">Visual Theme</div>
+        <button class="theme-chip" id="btn-theme-toggle" type="button" title="Swap interface skin" aria-label="Swap interface skin">
+          <span id="theme-chip-val">STAND ALONE COMPLEX</span>
+        </button>
+      </div>
+      <div class="help" style="font-family:var(--mono); font-size:9.5px; color:var(--text-faint); line-height:1.6; margin-top:8px;">
+        Swaps the entire interface skin — <strong>SECTION 9 / Stand Alone Complex</strong> (teal HUD) ⇄
+        <strong>UNATCO / OmniBrain Augment</strong> (Deus Ex gunmetal &amp; gold). Skin only: every
+        setting, value, MCP state and chat is shared between themes. Switching mirrors live to every
+        connected window via the sync bus.
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 1</span><span>ENDPOINT</span></div>
+      <div class="field">
+        <label>OpenAI-compatible base URL</label>
+        <input type="text" id="cfg-endpoint" placeholder="http://localhost:8080/v1" />
+        <div class="help">e.g. <code>http://localhost:8080/v1</code> (llama.cpp) · <code>http://localhost:11434/v1</code> (ollama) · <code>https://api.openai.com/v1</code></div>
+      </div>
+      <div class="field">
+        <label>API Key (optional)</label>
+        <input type="password" id="cfg-apikey" placeholder="sk-… or leave empty" />
+      </div>
+      <label class="toggle" style="margin: 10px 0;">
+        <input type="checkbox" id="cfg-proxy" />
+        <span class="slot"></span>
+        <span>ROUTE THROUGH BACKEND PROXY (recommended; avoids CORS)</span>
+      </label>
+      <div class="row-actions">
+        <button class="btn primary" id="btn-test">▸ TEST CONNECTION</button>
+        <button class="btn" id="btn-fetch-models">▸ LIST MODELS</button>
+      </div>
+      <div class="test-result" id="test-result"></div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 2</span><span>MODEL &amp; SAMPLING</span></div>
+      <div class="field">
+        <label>Model Name</label>
+        <input type="text" id="cfg-model" placeholder="e.g. gpt-4o-mini, llama-3.1-8b" />
+        <div class="help">Free-text. Use LIST MODELS to populate from the endpoint.</div>
+      </div>
+      <div id="model-options" style="display:none; margin-top:6px;"></div>
+      <div class="field-row">
+        <div class="field"><label>Temperature</label><input type="number" id="cfg-temp" min="0" max="2" step="0.05" /></div>
+        <div class="field"><label>Max Output Tokens</label><input type="number" id="cfg-max-tokens" min="64" step="64" /></div>
+      </div>
+      <div class="field-row three">
+        <div class="field"><label>Top P</label><input type="number" id="cfg-top-p" min="0" max="1" step="0.01" /></div>
+        <div class="field"><label>Top K</label><input type="number" id="cfg-top-k" min="0" step="1" /></div>
+        <div class="field"><label>Min P</label><input type="number" id="cfg-min-p" min="0" max="1" step="0.01" /></div>
+      </div>
+      <div class="field-row three">
+        <div class="field"><label>Repeat Penalty</label><input type="number" id="cfg-repeat-pen" min="0" max="2" step="0.01" /></div>
+        <div class="field"><label>Freq. Penalty</label><input type="number" id="cfg-freq-pen" min="-2" max="2" step="0.01" /></div>
+        <div class="field"><label>Pres. Penalty</label><input type="number" id="cfg-pres-pen" min="-2" max="2" step="0.01" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Seed (0 = random)</label><input type="number" id="cfg-seed" min="0" step="1" /></div>
+        <div class="field"><label>Stop Sequences (comma-sep)</label><input type="text" id="cfg-stop" placeholder="e.g. </s>,<|end|>" /></div>
+      </div>
+      <div class="help" style="font-family:var(--mono); font-size:9.5px; color:var(--text-faint); line-height:1.6;">
+        Standard params sent via the OpenAI body. Non-standard (Top-K, Min-P, Repeat-Penalty) are sent both directly and inside <code>extra_body</code> for llama.cpp / koboldcpp / ollama compatibility. Set 0 / 1 / blank to disable.
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 3</span><span>CONTEXT &amp; ROLLING WINDOW</span></div>
+      <div class="field-row">
+        <div class="field"><label>Context Window (tokens)</label><input type="number" id="cfg-ctx" min="1024" step="1024" /></div>
+        <div class="field">
+          <label>Roll Threshold (%)</label>
+          <input type="number" id="cfg-threshold" min="30" max="95" step="1" />
+          <div class="help">Cuts at <code id="cfg-threshold-eff" style="color:var(--cyan);">—</code> tok (context × threshold).</div>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Context Depth (recent pairs)</label>
+          <input type="number" id="cfg-depth" min="1" max="64" step="1" />
+          <div class="help">Most-recent message pairs always kept in the model's window.</div>
+        </div>
+        <div class="field"><label>Max Tool-Call Recursion</label><input type="number" id="cfg-max-recursion" min="1" max="64" step="1" /></div>
+      </div>
+      <div class="help" style="font-family:var(--mono); font-size:9.5px; color:var(--text-faint); line-height:1.6;">
+        ◢ ROLLING CONTEXT WINDOW · The full conversation is <em>always</em> kept in this terminal —
+        nothing is ever deleted from the chat. Only the model's view rolls: once usage crosses the
+        cutoff (context × threshold%), the oldest <em>middle</em> turns "flutter off" and peel away as
+        they age. Always preserved: the system prompt, the <em>first two</em> back-and-forth exchanges
+        (anchoring the original task), and the most-recent <code>Context Depth</code> pairs. Widening
+        the context window or threshold re-admits older turns. Tool-call / tool-result rounds stay
+        whole so the trace never orphans a <code>tool_call_id</code>. Indicator: <code>CTX</code> meter.
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 4</span><span>SYSTEM PROMPT / TEMPLATE</span></div>
+      <div class="field">
+        <label>Assistant Display Name</label>
+        <input type="text" id="cfg-assistant-name" placeholder="e.g. HERMES (default: ASSI)" maxlength="32" />
+        <div class="help">Display only — relabels assistant turns in this terminal. <strong>Never</strong> sent to the model; leave blank for the default <code>[ASSI]</code> tag.</div>
+      </div>
+      <div class="field">
+        <label>System Prompt (override)</label>
+        <textarea id="cfg-sysprompt" rows="6" placeholder="You are a precise, helpful AI agent…"></textarea>
+      </div>
+      <div class="row-actions">
+        <button class="btn amber" id="btn-fetch-template">▸ FETCH FROM MODEL</button>
+        <button class="btn" id="btn-restore-fetched">▸ USE FETCHED</button>
+        <button class="btn" id="btn-default-prompt">▸ DEFAULT</button>
+      </div>
+      <div class="field" style="margin-top:10px;">
+        <label>Detected Chat Template / Default System</label>
+        <textarea id="cfg-detected" rows="5" readonly placeholder="(not fetched)"></textarea>
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 5</span><span>TOOLS / MCP</span></div>
+      <div class="field">
+        <label>tools.json (saved on backend, restarts MCP servers on save)</label>
+        <textarea id="cfg-tools" rows="12" placeholder='{"mcpServers":{...}}' spellcheck="false"></textarea>
+      </div>
+      <div class="row-actions">
+        <button class="btn primary" id="btn-save-tools">▸ SAVE &amp; RESTART MCP</button>
+        <button class="btn" id="btn-load-tools-file">▸ LOAD FILE</button>
+        <input type="file" id="tools-file-input" accept=".json,application/json" style="display:none" />
+        <button class="btn" id="btn-reload-tools">▸ RELOAD FROM DISK</button>
+      </div>
+      <div class="test-result" id="bridge-result"></div>
+      <div class="field" style="margin-top:12px;">
+        <label>Live tool roster</label>
+        <div id="tool-roster" style="font-family:var(--mono); font-size:10px; color:var(--text-dim); border:1px dashed var(--line-strong); padding:8px 10px; max-height:160px; overflow-y:auto; line-height:1.7;">(no tools)</div>
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 6</span><span>BEHAVIOR</span></div>
+      <label class="toggle" style="margin-bottom:10px; display:flex;">
+        <input type="checkbox" id="cfg-thinking" />
+        <span class="slot"></span>
+        <span>ENABLE THINKING / REASONING</span>
+      </label>
+      <label class="toggle" style="margin-bottom:10px; display:flex;">
+        <input type="checkbox" id="cfg-think-collapsed" />
+        <span class="slot"></span>
+        <span>COLLAPSE THINKING BY DEFAULT</span>
+      </label>
+      <label class="toggle" style="margin-bottom:10px; display:flex;">
+        <input type="checkbox" id="cfg-tools-collapsed" />
+        <span class="slot"></span>
+        <span>COLLAPSE TOOL CALLS BY DEFAULT</span>
+      </label>
+      <label class="toggle" style="margin-bottom:10px; display:flex;">
+        <input type="checkbox" id="cfg-stream" />
+        <span class="slot"></span>
+        <span>STREAM RESPONSES</span>
+      </label>
+      <label class="toggle" style="margin-bottom:10px; display:flex;">
+        <input type="checkbox" id="cfg-tools-enabled" />
+        <span class="slot"></span>
+        <span>SEND TOOLS TO MODEL</span>
+      </label>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 7</span><span>SPEECH / VOICE OUTPUT</span></div>
+
+      <label class="toggle" style="margin-bottom:6px; display:flex;">
+        <input type="checkbox" id="cfg-sound" />
+        <span class="slot"></span>
+        <span>ENABLE VOICE FEEDBACK (response audio)</span>
+      </label>
+      <div class="help" style="font-family:var(--mono); font-size:9.5px; color:var(--text-faint); line-height:1.6; margin:0 0 14px 46px;">
+        Master switch — toggles audio playback on/off only. The synthesis method below is remembered independently.
+      </div>
+
+      <div class="field">
+        <label>TTS Engine</label>
+        <select id="cfg-tts-engine">
+          <option value="sfx">VILLAGER TALK · synthesised blips (Animal-Crossing style)</option>
+          <option value="piper">PIPER TTS · neural speech (offline · pip install piper-tts)</option>
+        </select>
+        <div class="help">Switch between the streaming blip SFX and full neural text-to-speech. Piper synthesises one block at a time as the reply streams, so speech starts almost immediately.</div>
+      </div>
+
+      <!-- Villager-talk SFX options -->
+      <div id="tts-sfx-opts">
+        <div class="field-row" style="margin-top:6px;">
+          <div class="field"><label>SFX Volume</label><input type="number" id="cfg-sound-vol" min="0" max="1" step="0.05" /></div>
+          <div class="field"><label>SFX Pitch</label><input type="number" id="cfg-sound-pitch" min="0.3" max="2.5" step="0.05" /></div>
+        </div>
+      </div>
+
+      <!-- Piper TTS options -->
+      <div id="tts-piper-opts" style="display:none;">
+        <div class="field">
+          <label>Piper Voice</label>
+          <select id="cfg-piper-voice"><option value="">(scanning…)</option></select>
+          <div class="help">Drop <code>&lt;voice&gt;.onnx</code> + <code>&lt;voice&gt;.onnx.json</code> pairs into the <code>voices/</code> folder next to <code>start.py</code>, then RESCAN. Voices: <code>huggingface.co/rhasspy/piper-voices</code>.</div>
+        </div>
+        <div class="field-row" style="margin-top:6px;">
+          <div class="field"><label>Volume</label><input type="number" id="cfg-piper-vol" min="0" max="1" step="0.05" /></div>
+          <div class="field"><label>Speed (×, higher = faster)</label><input type="number" id="cfg-piper-rate" min="0.4" max="2.0" step="0.05" /></div>
+        </div>
+        <div class="row-actions" style="margin-top:4px;">
+          <button class="btn" id="btn-piper-rescan">▸ RESCAN VOICES</button>
+          <button class="btn amber" id="btn-piper-previews">▸ GENERATE MISSING PREVIEWS</button>
+        </div>
+        <div class="test-result" id="piper-result"></div>
+        <div class="field" style="margin-top:12px;">
+          <label>Installed Voices</label>
+          <div id="piper-voice-list" style="font-family:var(--mono); font-size:10px; color:var(--text-dim); border:1px dashed var(--line-strong); padding:8px 10px; max-height:240px; overflow-y:auto; line-height:1.7;">(scanning…)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 8</span><span>NETWORK</span></div>
+      <label class="toggle" style="margin-bottom:10px; display:flex;">
+        <input type="checkbox" id="cfg-network" />
+        <span class="slot"></span>
+        <span>LAN VISIBILITY (bind 0.0.0.0)</span>
+      </label>
+      <div class="help" style="font-family:var(--mono); font-size:9.5px; color:var(--text-faint); line-height:1.6;">
+        When enabled, the terminal binds to all interfaces so other machines on the local network can open the URL. Every connected browser (this machine, other PCs, secondary monitors) sees the same chat and settings in real time via the sync bus.<br/>
+        <span style="color:var(--amber);">RESTART REQUIRED</span> after toggling. Always live: SSE event bus keeps connected sessions mirrored.
+      </div>
+    </div>
+
+    <div class="sect" style="border-bottom:none;">
+      <div class="sect-head"><span class="num">§ 9</span><span>STORAGE</span></div>
+      <div class="row-actions">
+        <button class="btn primary" id="btn-save">▸ SAVE</button>
+        <button class="btn" id="btn-reload">▸ RELOAD FROM DISK</button>
+        <button class="btn" id="btn-reset">▸ RESET TO DEFAULTS</button>
+        <button class="btn danger" id="btn-purge-conv">▸ PURGE ACTIVE CHAT</button>
+      </div>
+      <div class="help" style="margin-top:10px; font-family:var(--mono); font-size:9.5px; color:var(--text-faint); letter-spacing:0.04em;">
+        Settings live in <code>settings.json</code>; chats in <code>chats.json</code>; MCP config in <code>tools.json</code>. All next to <code>start.py</code>.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ───────────────── Backend constants ───────────────── */
+const API = '';
+const ORIGIN_ID = (() => {
+  let v = null;
+  try { v = sessionStorage.getItem('chatsgi.origin'); } catch {}
+  if (!v) { v = 'b' + Math.random().toString(36).slice(2, 10); try { sessionStorage.setItem('chatsgi.origin', v); } catch {} }
+  return v;
+})();
+
+const DEFAULTS = {
+  endpoint: 'http://localhost:8080/v1',
+  apiKey: '',
+  model: '',
+  temperature: 0.7,
+  maxTokens: 2048,
+  context: 64200,
+  threshold: 70,
+  contextDepth: 6,          // most-recent message pairs always kept in the model's window
+  systemPrompt: 'You are a precise, helpful AI agent operating inside the CHATSGI terminal. Use the MCP tools provided when they help; report your work clearly and cite tool results.',
+  assistantName: '',        // display-only label for assistant turns; never sent to the model
+  detectedPrompt: '',
+  thinkingEnabled: false,
+  thinkCollapsed: true,
+  streaming: true,
+  toolsEnabled: true,
+  toolsCollapsed: true,
+  useProxy: true,
+  soundEnabled: true,       // master VOICE FEEDBACK switch (gates both engines)
+  soundVolume: 0.35,        // villager-talk SFX volume
+  soundPitch: 1.0,          // villager-talk SFX pitch
+  ttsEngine: 'sfx',         // 'sfx' (villager blips) | 'piper' (neural speech)
+  piperVoice: '',           // selected Piper voice key
+  piperVolume: 0.9,         // Piper playback volume (0..1)
+  piperRate: 1.0,           // Piper speed multiplier (higher = faster)
+  networkVisible: false,
+  maxToolRecursion: 16,
+  minP: 0.0,
+  topP: 1.0,
+  topK: 0,
+  repeatPenalty: 1.0,
+  frequencyPenalty: 0.0,
+  presencePenalty: 0.0,
+  stopSequences: '',
+  seed: 0,
+  mcpEnabled: {},
+  leftCollapsed: false,
+  rightCollapsed: false,
+  theme: 'sac',             // interface skin: 'sac' (Stand Alone Complex) | 'deusex' (UNATCO / Deus Ex)
+};
+
+const state = {
+  settings: { ...DEFAULTS },
+  chats: [],           // {id, name, created, updated, size}
+  activeChatId: null,
+  messages: [],        // active chat's messages
+  tools: [],
+  servers: [],
+  status: {
+    connected: null,
+    streaming: false,
+    compacting: false,
+    compactions: 0,
+    contextUsed: 0,
+    backendOk: null,
+    syncOk: false,
+  },
+  abortCtrl: null,
+  saveTimer: null,
+  pendingImages: [],   // attachments staged in the composer, not yet sent
+  popoverChatId: null,
+  scheduler: {
+    nextId: 1,
+    jobs: [],
+  },
+};
+
+const $ = id => document.getElementById(id);
+const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ───────────────── Token estimator ───────────────── */
+const estTok = t => t ? Math.ceil(String(t).length / 4) : 0;
+function msgTokens(m) {
+  let t = 4 + estTok(m.content) + estTok(m.reasoning) + estTok(m.name);
+  if (Array.isArray(m.tool_calls)) for (const tc of m.tool_calls) t += estTok(tc.function?.name) + estTok(tc.function?.arguments) + 8;
+  // Vision inputs aren't text tokens — the base64 payload is NOT counted; use a
+  // flat per-image estimate so the context window stays roughly accurate.
+  if (Array.isArray(m.images)) t += m.images.length * 480;
+  return t;
+}
+function totalTokens() {
+  let t = estTok(state.settings.systemPrompt) + 8;
+  for (const m of state.messages) {
+    if (m._rolled || m._compaction) continue;   // UI markers don't count
+    t += msgTokens(m);
+  }
+  if (state.settings.toolsEnabled && state.tools.length) t += estTok(JSON.stringify(state.tools));
+  return t;
+}
+
+/* ───────────────── Markdown ───────────────── */
+function renderMarkdown(src) {
+  if (!src) return '';
+  let s = src;
+  const codeBlocks = [];
+  s = s.replace(/```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
+    const i = codeBlocks.length;
+    codeBlocks.push(`<pre><code class="lang-${escapeHtml(lang)}">${escapeHtml(code.replace(/\n$/,''))}</code></pre>`);
+    return ` CB${i} `;
+  });
+  s = escapeHtml(s);
+  s = s.replace(/`([^`\n]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>');
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  s = s.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  s = s.replace(/(?:^|\n)((?:[-*] .+(?:\n|$))+)/g, (_, b) => '\n<ul>' + b.trim().split(/\n/).map(l => l.replace(/^[-*] /,'')).map(i => `<li>${i}</li>`).join('') + '</ul>');
+  s = s.replace(/(?:^|\n)((?:\d+\. .+(?:\n|$))+)/g, (_, b) => '\n<ol>' + b.trim().split(/\n/).map(l => l.replace(/^\d+\. /,'')).map(i => `<li>${i}</li>`).join('') + '</ol>');
+  s = s.split(/\n{2,}/).map(p => /^\s*<(ul|ol|h1|h2|h3|pre|blockquote|table)/.test(p) ? p : `<p>${p.replace(/\n/g,'<br/>')}</p>`).join('\n');
+  s = s.replace(/ CB(\d+) /g, (_, i) => codeBlocks[+i]);
+  return s;
+}
+
+/* ───────────────── API ───────────────── */
+async function apiGet(path) {
+  const r = await fetch(API + path, { headers: { 'X-Origin-Id': ORIGIN_ID } });
+  if (!r.ok) throw new Error(`GET ${path} → ${r.status}`);
+  return r.json();
+}
+async function apiPost(path, body, method = 'POST') {
+  const r = await fetch(API + path, {
+    method, headers: {'Content-Type':'application/json', 'X-Origin-Id': ORIGIN_ID},
+    body: body !== undefined ? JSON.stringify(body || {}) : undefined,
+  });
+  const j = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(j.error || `${method} ${path} → ${r.status}`);
+  return j;
+}
+
+async function loadConfig() {
+  try {
+    const s = await apiGet('/api/config');
+    state.settings = { ...DEFAULTS, ...s };
+    state.status.backendOk = true;
+  } catch { state.status.backendOk = false; }
+}
+async function saveConfig() {
+  try {
+    const s = await apiPost('/api/config', state.settings);
+    state.settings = { ...DEFAULTS, ...s };
+  } catch (e) { showToast('SAVE FAILED', e.message, 'red'); }
+}
+
+async function loadChatsIndex() {
+  try {
+    const j = await apiGet('/api/chats');
+    state.chats = j.chats || [];
+    state.activeChatId = j.active;
+  } catch { state.chats = []; state.activeChatId = null; }
+}
+async function loadActiveChat() {
+  if (!state.activeChatId) return;
+  try {
+    const j = await apiGet('/api/chats/' + state.activeChatId);
+    state.messages = (j.chat?.messages) || [];
+  } catch { state.messages = []; }
+}
+async function persistActiveChat() {
+  if (!state.activeChatId) return;
+  try {
+    await apiPost('/api/chats/' + state.activeChatId, { messages: state.messages });
+  } catch {}
+}
+function queuePersist() {
+  clearTimeout(state.saveTimer);
+  state.saveTimer = setTimeout(persistActiveChat, 350);
+}
+
+async function loadToolsConfig() { try { return await apiGet('/api/tools-config'); } catch { return { mcpServers: {} }; } }
+async function saveToolsConfig(cfg) { return apiPost('/api/tools-config', cfg); }
+
+async function refreshServers() {
+  try {
+    const j = await apiGet('/api/servers');
+    state.servers = j.servers || [];
+    const t = await apiGet('/api/tools');
+    state.tools = t.tools || [];
+    renderServers();
+    renderToolRoster();
+    updateStatus();
+  } catch {
+    state.servers = []; state.tools = [];
+    renderServers(); updateStatus();
+  }
+}
+
+/* ───────────────── SSE event bus ───────────────── */
+let _evt = null;
+function connectEvents() {
+  try { if (_evt) _evt.close(); } catch {}
+  _evt = new EventSource('/api/events');
+  _evt.onopen = () => { state.status.syncOk = true; updateStatus(); };
+  _evt.onerror = () => { state.status.syncOk = false; updateStatus(); setTimeout(connectEvents, 4000); };
+  _evt.onmessage = (m) => {
+    let evt; try { evt = JSON.parse(m.data); } catch { return; }
+    if (!evt || evt.origin === ORIGIN_ID) return; // ignore our own echoes
+    handleEvent(evt);
+  };
+}
+function handleEvent(evt) {
+  if (evt.kind === 'settings') {
+    state.settings = { ...DEFAULTS, ...evt.payload };
+    applyTheme();
+    if ($('drawer').classList.contains('open')) applyToForm();
+    applySideCollapsedFromSettings();
+    updateStatus(); renderEmptyCheck(); renderMessages();
+  } else if (evt.kind === 'tools-config') {
+    refreshServers();
+  } else if (evt.kind === 'mcp') {
+    state.servers = evt.payload.servers || [];
+    state.tools = evt.payload.tools || [];
+    renderServers(); renderToolRoster(); updateStatus();
+  } else if (evt.kind === 'chats') {
+    state.chats = evt.payload.chats || [];
+    if (evt.payload.active && evt.payload.active !== state.activeChatId) {
+      state.activeChatId = evt.payload.active;
+      loadActiveChat().then(()=>{ renderMessages(); updateStatus(); });
+    }
+    renderChatList();
+  } else if (evt.kind === 'chat') {
+    // update in-place if this is the active chat; refresh index summary
+    if (evt.payload.id === state.activeChatId) {
+      state.messages = evt.payload.messages || [];
+      renderMessages(); updateStatus();
+    }
+    // bump local index entry
+    const ix = state.chats.findIndex(c => c.id === evt.payload.id);
+    if (ix >= 0) {
+      state.chats[ix].name = evt.payload.name || state.chats[ix].name;
+      state.chats[ix].updated = evt.payload.updated;
+      state.chats[ix].size = (evt.payload.messages || []).length;
+      renderChatList();
+    }
+  } else if (evt.kind === 'speak') {
+    // A reply spoken on another window — mirror it here so audio plays
+    // through every synced terminal, not just the live one.
+    RemoteSpeech.handle(evt.payload);
+  }
+}
+
+/* ───────────────── Render ───────────────── */
+function fmtTs(ts) { if (!ts) return ''; return new Date(ts).toTimeString().slice(0, 8); }
+function oneLinePreview(s, n) {
+  if (s == null) return '';
+  let t = String(s).replace(/\s+/g, ' ').trim();
+  if (t.length > n) t = t.slice(0, n - 1) + '…';
+  return t;
+}
+function fmtAgo(ts) {
+  if (!ts) return '';
+  const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s/60) + 'm';
+  if (s < 86400) return Math.floor(s/3600) + 'h';
+  return Math.floor(s/86400) + 'd';
+}
+
+function renderChatList() {
+  const list = $('chat-list');
+  const cc = $('chat-count');
+  if (cc) cc.textContent = state.chats.length ? `· ${String(state.chats.length).padStart(2,'0')}` : '';
+  const an = $('active-session-name');
+  if (an) {
+    const cur = state.chats.find(c => c.id === state.activeChatId);
+    an.textContent = cur ? oneLinePreview(cur.name || '(untitled)', 18) : '—';
+  }
+  if (!state.chats.length) { list.innerHTML = '<div class="empty-msg">No chats yet. Use ▾ SESSION → NEW SESSION.</div>'; return; }
+  list.innerHTML = state.chats.map(c => `
+    <div class="chat-row compact ${c.id === state.activeChatId ? 'active' : ''}" data-id="${escapeHtml(c.id)}" title="Click to open · double-click to rename">
+      <span class="lamp" aria-hidden="true"></span>
+      <div class="body">
+        <div class="nm">${escapeHtml(c.name || '(untitled)')}</div>
+        <div class="meta">${String(c.size||0).padStart(3,'0')} MSG · ${escapeHtml(fmtAgo(c.updated))}</div>
+      </div>
+      <button class="menu-btn" data-menu="${escapeHtml(c.id)}" title="Row actions">⋮</button>
+      <div class="chat-pop" data-pop="${escapeHtml(c.id)}">
+        <button data-act="rename">▸ RENAME</button>
+        <button data-act="duplicate">▸ DUPLICATE</button>
+        <button data-act="copy">▸ COPY TEXT</button>
+        <button data-act="export">▸ EXPORT JSON</button>
+        <button data-act="delete" class="danger">▸ DELETE</button>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.chat-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('[data-menu], .chat-pop, .rename-input')) return;
+      const id = row.dataset.id;
+      if (id !== state.activeChatId) selectChat(id);
+    });
+    row.addEventListener('dblclick', (e) => {
+      if (e.target.closest('[data-menu], .chat-pop')) return;
+      e.preventDefault();
+      startInlineRename(row.dataset.id);
+    });
+  });
+  list.querySelectorAll('[data-menu]').forEach(b => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = b.dataset.menu;
+      list.querySelectorAll('.chat-pop').forEach(p => p.classList.toggle('open', p.dataset.pop === id && state.popoverChatId !== id));
+      state.popoverChatId = (state.popoverChatId === id) ? null : id;
+    });
+  });
+  list.querySelectorAll('.chat-pop button').forEach(b => {
+    b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const pop = b.closest('.chat-pop'); const id = pop.dataset.pop; const act = b.dataset.act;
+      pop.classList.remove('open'); state.popoverChatId = null;
+      await chatAction(id, act);
+    });
+  });
+}
+
+function startInlineRename(id) {
+  const row = document.querySelector(`.chat-row[data-id="${CSS.escape(id)}"]`);
+  if (!row) return;
+  const nm = row.querySelector('.nm');
+  if (!nm) return;
+  const cur = state.chats.find(c => c.id === id);
+  const old = cur?.name || '';
+  const input = document.createElement('input');
+  input.className = 'rename-input';
+  input.value = old;
+  input.maxLength = 120;
+  const parent = nm.parentNode;
+  nm.style.display = 'none';
+  parent.insertBefore(input, nm);
+  input.focus(); input.select();
+  let done = false;
+  const finish = async (save) => {
+    if (done) return; done = true;
+    const val = input.value.trim();
+    input.remove(); nm.style.display = '';
+    if (save && val && val !== old) {
+      try { await apiPost('/api/chats/' + id + '/rename', { name: val }); }
+      catch (e) { showToast('RENAME FAILED', e.message, 'red'); }
+    }
+  };
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+    else if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+  });
+  input.addEventListener('blur', () => finish(true));
+  input.addEventListener('click', e => e.stopPropagation());
+}
+
+async function chatAction(id, act) {
+  if (act === 'rename') {
+    startInlineRename(id);
+  } else if (act === 'duplicate') {
+    try {
+      const j = await apiPost('/api/chats/' + id + '/duplicate', {});
+      showToast('DUPLICATED', j.chat?.name || '', 'green');
+    } catch (e) { showToast('DUP FAILED', e.message, 'red'); }
+  } else if (act === 'copy') {
+    let target = state.messages;
+    if (id !== state.activeChatId) {
+      try { target = (await apiGet('/api/chats/' + id)).chat?.messages || []; } catch { target = []; }
+    }
+    const txt = target.map(m => `[${(m.role||'?').toUpperCase()}] ${m.content || ''}`).join('\n\n');
+    try { await navigator.clipboard.writeText(txt); showToast('COPIED', `${target.length} message(s)`, 'green'); }
+    catch { showToast('COPY FAILED', 'clipboard denied', 'red'); }
+  } else if (act === 'export') {
+    let chat = state.chats.find(c => c.id === id);
+    let messages = state.messages;
+    if (id !== state.activeChatId) {
+      try { const j = await apiGet('/api/chats/' + id); messages = j.chat?.messages || []; chat = j.chat; } catch {}
+    }
+    const blob = new Blob([JSON.stringify({ chat, messages }, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `chatsgi-${(chat?.name || 'chat').replace(/\W+/g,'_')}-${Date.now()}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+  } else if (act === 'delete') {
+    if (!confirm('Delete this chat? This cannot be undone.')) return;
+    try {
+      await apiPost('/api/chats/' + id, undefined, 'DELETE');
+      // index will be updated via SSE; also refresh now
+      await loadChatsIndex();
+      if (state.activeChatId === id || !state.chats.find(c => c.id === state.activeChatId)) {
+        state.activeChatId = state.chats[0]?.id;
+        await loadActiveChat();
+      }
+      renderChatList(); renderMessages(); updateStatus();
+    } catch (e) { showToast('DELETE FAILED', e.message, 'red'); }
+  }
+}
+
+async function selectChat(id) {
+  try {
+    await apiPost('/api/chats/active', { id });
+    state.activeChatId = id;
+    await loadActiveChat();
+    renderChatList(); renderMessages(); updateStatus();
+  } catch (e) { showToast('SELECT FAILED', e.message, 'red'); }
+}
+
+async function createChat(name) {
+  try {
+    const j = await apiPost('/api/chats', { name: name || '' });
+    await loadChatsIndex();
+    state.activeChatId = j.chat.id;
+    await loadActiveChat();
+    renderChatList(); renderMessages(); updateStatus();
+  } catch (e) { showToast('NEW CHAT FAILED', e.message, 'red'); }
+}
+
+function renderEmptyCheck() {
+  const c = state.settings;
+  const link = state.status.connected === true ? '<span class="ok">OK</span>' : (state.status.connected === false ? '<span class="bad">FAIL</span>' : 'UNTESTED');
+  const mcp = state.servers.length ? `${state.servers.filter(s=>s.status==='online').length}/${state.servers.length}` : '0/0';
+  $('empty-check').innerHTML = `
+    <div><span class="key">ENDPOINT  </span><span class="val">${escapeHtml(c.endpoint || '—')}</span></div>
+    <div><span class="key">MODEL     </span><span class="val">${escapeHtml(c.model || '—')}</span></div>
+    <div><span class="key">CONTEXT   </span><span class="val">${c.context} tok · cut ${c.threshold}% (${effectiveLimit()}) · depth ${c.contextDepth}</span></div>
+    <div><span class="key">MCP NODES </span><span class="val">${mcp} · ${state.tools.length} tools</span></div>
+    <div><span class="key">PROXY     </span><span class="val">${c.useProxy ? 'BACKEND' : 'DIRECT'}</span></div>
+    <div><span class="key">NETWORK   </span><span class="val">${c.networkVisible ? 'LAN VISIBLE' : 'LOCAL ONLY'}</span></div>
+    <div><span class="key">SYNC      </span><span class="val">${state.status.syncOk ? '<span class="ok">LIVE</span>' : 'CONNECTING…'}</span></div>
+    <div><span class="key">LINK      </span><span class="val">${link}</span></div>
+  `;
+}
+
+function renderMessages() {
+  const scroll = $('chat-scroll');
+  const empty = $('empty-chat');
+  if (state.messages.length === 0) {
+    empty.style.display = 'flex';
+    [...scroll.children].forEach(c => { if (c.id !== 'empty-chat') c.remove(); });
+    renderEmptyCheck();
+    return;
+  }
+  empty.style.display = 'none';
+  [...scroll.children].forEach(c => { if (c.id !== 'empty-chat') c.remove(); });
+  state.messages.forEach((m, i) => scroll.appendChild(buildMessageEl(m, i)));
+  requestAnimationFrame(() => { scroll.scrollTop = scroll.scrollHeight; });
+}
+
+function buildMessageEl(m, idx) {
+  const wrap = document.createElement('div');
+  wrap.className = 'msg ' + (m.role || 'system');
+  if (m._rolled || m._compaction) {
+    // Compact "marker" row for context rolls — keeps the timeline visible
+    // without dumping a summarised block into the conversation.
+    wrap.className = 'msg system roll-marker';
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    meta.innerHTML = `<span class="role system">[CTX]</span><span class="idx">#${String(idx).padStart(3,'0')}</span>`;
+    wrap.appendChild(meta);
+    const body = document.createElement('div');
+    body.className = 'msg-body';
+    const label = m._rolled
+      ? `▸ rolling context · ${m._droppedCount || '?'} older message(s) fell out of window`
+      : `▸ legacy compaction event (${estTok(m.content)} tok)`;
+    body.innerHTML = `<div style="font-family:var(--mono); font-size:10px; letter-spacing:0.14em; color:var(--text-faint); text-transform:uppercase;">${escapeHtml(label)}</div>`;
+    wrap.appendChild(body);
+    return wrap;
+  }
+  const meta = document.createElement('div');
+  meta.className = 'msg-meta';
+  const r = (m.role || 'sys').toUpperCase().slice(0, 4);
+  // Assistant turns can carry a display-only label (settings.assistantName). It is
+  // purely cosmetic for this terminal and is never included in payloads to the model.
+  const aName = (state.settings.assistantName || '').trim();
+  const roleLabel = (m.role === 'assistant' && aName) ? `[${escapeHtml(aName)}]` : `[${r}]`;
+  meta.innerHTML = `<span class="role ${m.role}">${roleLabel}</span><span class="idx">#${String(idx).padStart(3,'0')}</span><span class="ts">${fmtTs(m._ts)}</span>`;
+  wrap.appendChild(meta);
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+
+  if (m.reasoning && m.reasoning.trim()) body.appendChild(buildThinkBlock(m.reasoning, !!m._streamingThink));
+
+  if (m.content && m.content.trim()) {
+    const c = document.createElement('div');
+    c.innerHTML = renderMarkdown(m.content);
+    if (m._streaming) c.classList.add('stream-cursor');
+    body.appendChild(c);
+  } else if (m._streaming && !m.reasoning) {
+    const c = document.createElement('div');
+    c.className = 'stream-cursor';
+    c.innerHTML = '<span style="color:var(--text-faint); font-family:var(--mono); font-size:11px; letter-spacing:0.1em;">…RECEIVING…</span>';
+    body.appendChild(c);
+  }
+
+  if (Array.isArray(m.images) && m.images.length) body.appendChild(buildImagesBlock(m.images));
+
+  if (Array.isArray(m.tool_calls)) {
+    for (const tc of m.tool_calls) {
+      let raw = tc.function?.arguments ?? '';
+      let pretty = raw;
+      try { pretty = JSON.stringify(JSON.parse(raw), null, 2); } catch {}
+      const preview = oneLinePreview(raw, 120);
+      const el = document.createElement('div');
+      el.className = 'tool-call' + (state.settings.toolsCollapsed ? '' : ' open');
+      el.innerHTML = `
+        <div class="tool-call-head" title="Toggle detail">
+          <span class="lhs"><span class="arrow">▸</span><span style="color:var(--text-faint)">CALL</span><span class="name">${escapeHtml(tc.function?.name || '?')}</span></span>
+          <span class="preview">${escapeHtml(preview)}</span>
+          <span class="tok-badge" title="Approx. payload size"><span class="pulse-dot"></span>${estTok(raw)} tok</span>
+          <span class="id-tag">${escapeHtml((tc.id || '').slice(-6))}</span>
+        </div>
+        <div class="tool-call-detail">
+          <div class="tool-call-body">${escapeHtml(pretty)}</div>
+        </div>`;
+      el.querySelector('.tool-call-head').addEventListener('click', () => el.classList.toggle('open'));
+      body.appendChild(el);
+    }
+  }
+
+  if (m.role === 'tool') {
+    const preview = oneLinePreview(m.content || '', 140);
+    const head = document.createElement('div');
+    head.className = 'tool-call result' + (m._error ? ' err' : '') + (state.settings.toolsCollapsed ? '' : ' open');
+    head.innerHTML = `
+      <div class="tool-call-head" title="Toggle output">
+        <span class="lhs"><span class="arrow">▸</span><span style="color:var(--text-faint)">${m._error ? 'ERR ' : 'OUT '}</span><span class="name">${escapeHtml(m.name || '?')}</span></span>
+        <span class="preview">${escapeHtml(preview)}</span>
+        <span class="tok-badge" title="Approx. output size"><span class="pulse-dot"></span>${estTok(m.content || '')} tok</span>
+        <span class="id-tag">${escapeHtml((m.tool_call_id || '').slice(-6))}</span>
+      </div>
+      <div class="tool-call-detail">
+        <div class="tool-call-result${m._error ? ' err' : ''}">${escapeHtml(m.content || '')}</div>
+      </div>`;
+    head.querySelector('.tool-call-head').addEventListener('click', () => head.classList.toggle('open'));
+    body.appendChild(head);
+  }
+
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function buildThinkBlock(text, streaming) {
+  const open = !state.settings.thinkCollapsed;
+  const el = document.createElement('div');
+  el.className = 'think-block' + (open ? ' open' : '') + (streaming ? ' streaming' : '');
+  el.innerHTML = `
+    <div class="think-head">
+      <span><span class="arrow">▸</span> &nbsp;THINKING / REASONING TRACE</span>
+      <span style="font-size:9px;">${estTok(text)} tok</span>
+    </div>
+    <div class="think-content">${escapeHtml(text)}</div>`;
+  el.querySelector('.think-head').addEventListener('click', () => el.classList.toggle('open'));
+  return el;
+}
+
+/* ───────────────── Image attachments ───────────────── */
+
+// Foldable, in-theme framed block that displays a message's attached images.
+// Open by default; the header toggles fold/hide so they can be compressed away.
+function buildImagesBlock(images) {
+  const el = document.createElement('div');
+  el.className = 'msg-images open';
+  const n = images.length;
+  el.innerHTML = `
+    <div class="msg-images-head" title="Fold / hide image attachment${n > 1 ? 's' : ''}">
+      <span><span class="arrow">▸</span>&nbsp;◢ IMAGE ATTACHMENT${n > 1 ? 'S' : ''} · ${String(n).padStart(2, '0')}</span>
+      <span class="img-toggle-hint">fold / hide</span>
+    </div>
+    <div class="msg-images-grid">
+      ${images.map((img, i) => `<div class="img-frame"><img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.name || 'image')}" loading="lazy" data-img="${i}" /></div>`).join('')}
+    </div>`;
+  el.querySelector('.msg-images-head').addEventListener('click', () => el.classList.toggle('open'));
+  el.querySelectorAll('img[data-img]').forEach(im => {
+    im.addEventListener('click', (e) => { e.stopPropagation(); openLightbox(im.src, im.alt); });
+  });
+  return el;
+}
+
+// Render the composer's pending-attachment tray (previews before sending).
+function renderAttachTray() {
+  const tray = $('attach-tray');
+  if (!tray) return;
+  if (!state.pendingImages.length) {
+    tray.innerHTML = '';
+    tray.classList.remove('has');
+    const btn = $('btn-attach'); if (btn) btn.classList.remove('armed');
+    return;
+  }
+  tray.classList.add('has');
+  const btn = $('btn-attach'); if (btn) btn.classList.add('armed');
+  tray.innerHTML = state.pendingImages.map((img, i) => `
+    <div class="attach-thumb" title="${escapeHtml(img.name || 'image')}">
+      <img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.name || 'image')}" />
+      <button class="attach-rm" data-rm="${i}" title="Remove">✕</button>
+    </div>`).join('');
+  tray.querySelectorAll('[data-rm]').forEach(b => {
+    b.addEventListener('click', () => {
+      state.pendingImages.splice(Number(b.dataset.rm), 1);
+      renderAttachTray();
+    });
+  });
+}
+
+// Downscale + re-encode an image file to keep payloads small. Falls back to the
+// raw data URL if anything goes wrong or compression makes it larger.
+function compressImage(file, maxDim = 1280, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read failed'));
+    reader.onload = () => {
+      const raw = reader.result;
+      const img = new Image();
+      img.onerror = () => resolve({ url: raw, name: file.name || 'image', mime: file.type || 'image/png' });
+      img.onload = () => {
+        try {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          // PNG preserves transparency for small images; otherwise JPEG for size.
+          const mime = (file.type === 'image/png' && w * h <= 200000) ? 'image/png' : 'image/jpeg';
+          let url = canvas.toDataURL(mime, quality);
+          if (!url || url.length >= raw.length) url = raw;   // never inflate
+          resolve({ url, name: file.name || 'image', mime: url === raw ? (file.type || mime) : mime });
+        } catch {
+          resolve({ url: raw, name: file.name || 'image', mime: file.type || 'image/png' });
+        }
+      };
+      img.src = raw;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Accept a FileList (from the picker, paste, or drop), compress + stage them.
+async function handleImageFiles(fileList) {
+  const files = [...(fileList || [])].filter(f => f && f.type && f.type.startsWith('image/'));
+  if (!files.length) return;
+  let added = 0;
+  for (const f of files) {
+    try { state.pendingImages.push(await compressImage(f)); added++; }
+    catch { showToast('IMAGE ERROR', f.name || 'could not read image', 'red'); }
+  }
+  if (added) {
+    renderAttachTray();
+    showToast('IMAGE STAGED', `${added} image${added > 1 ? 's' : ''} ready to transmit`, 'green');
+  }
+}
+
+function openLightbox(src, alt) {
+  const lb = $('img-lightbox'); if (!lb) return;
+  $('lb-img').src = src;
+  $('lb-img').alt = alt || 'attachment';
+  lb.classList.add('open');
+}
+function closeLightbox() {
+  const lb = $('img-lightbox'); if (!lb) return;
+  lb.classList.remove('open');
+  $('lb-img').src = '';
+}
+
+function renderServers() {
+  const list = $('server-list');
+  if (!state.servers.length) {
+    list.innerHTML = '<div class="empty-msg">No MCP servers configured.<br/>Edit <code style="font-size:9px;background:var(--bg-2);padding:1px 4px;">tools.json</code> in settings → § 5.</div>';
+    return;
+  }
+  list.innerHTML = state.servers.map(s => {
+    const enabled = s.enabled !== false;
+    const statusCls = s.status === 'online' ? 'online'
+      : s.status === 'starting' ? 'starting'
+      : (s.status === 'error' || s.status === 'crashed') ? 'error' : '';
+    const cls = `${statusCls} ${enabled ? 'enabled' : 'disabled'}`.trim();
+    const tip = (s.error ? 'ERROR: ' + s.error + '\n\n' : '') +
+                'CMD: ' + (s.command || '') + ' ' + (s.args || []).join(' ') +
+                (s.tools?.length ? '\n\nTOOLS:\n  ' + s.tools.join('\n  ') : '') +
+                (s.stderr_tail?.length ? '\n\nSTDERR:\n  ' + s.stderr_tail.join('\n  ') : '') +
+                `\n\nClick name to expand · toggle switch to enable/disable.`;
+    const statLabel = !enabled ? 'OFF'
+      : (s.tool_count > 0 ? s.tool_count + ' TOOLS' : (s.status || '').toUpperCase());
+    return `<div class="server-row ${cls}" data-server="${escapeHtml(s.name)}" title="${escapeHtml(tip)}">
+      <div class="switch" data-toggle="${escapeHtml(s.name)}" data-enabled="${enabled ? '1' : '0'}"></div>
+      <div class="marker"></div>
+      <div class="name">${escapeHtml(s.name)}</div>
+      <div class="count">${escapeHtml(statLabel)}</div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-toggle]').forEach(el => {
+    el.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const name = el.dataset.toggle;
+      const next = el.dataset.enabled !== '1';
+      try {
+        await apiPost('/api/servers/toggle', { name, enabled: next });
+        showToast(next ? 'MCP ENABLED' : 'MCP DISABLED', name, next ? 'green' : 'amber');
+        setTimeout(refreshServers, 600);
+        setTimeout(refreshServers, 2500);
+      } catch (err) {
+        showToast('TOGGLE FAILED', err.message, 'red');
+      }
+    });
+  });
+}
+
+function renderToolRoster() {
+  const el = $('tool-roster');
+  if (!state.tools.length) { el.textContent = '(no tools — start an MCP server)'; return; }
+  el.innerHTML = state.tools.map(t => {
+    const desc = (t.function.description || '').slice(0, 80);
+    return `<div><span style="color:var(--cyan)">${escapeHtml(t._server || '?')}</span><span style="color:var(--text-faint)">::</span><span style="color:var(--text)">${escapeHtml(t._original_name || t.function.name)}</span><span style="color:var(--text-faint)"> — ${escapeHtml(desc)}</span></div>`;
+  }).join('');
+}
+
+function updateStatus() {
+  const c = state.settings;
+  // The gauge tracks the MODEL-side context (the windowed subset we actually
+  // send), so it plateaus near the threshold as the oldest messages peel off.
+  const win = contextWindow();
+  const used = win.tokens;
+  const eff = effectiveLimit();
+  state.status.contextUsed = used;
+  const pct = Math.min(100, (used / Math.max(1, c.context)) * 100);
+  $('ctx-fill').style.width = pct + '%';
+  $('ctx-marker').style.left = (c.threshold) + '%';
+  $('ctx-text').textContent = pct.toFixed(1) + '%';
+  // Footer shows the model-side usage against the real cutoff (context ×
+  // threshold%), with the hard context cap noted alongside.
+  $('foot-ctx').textContent = `${used} / ${eff} · max ${c.context}`;
+
+  const pillCtx = $('pill-ctx');
+  pillCtx.classList.remove('warn','crit');
+  if (pct >= c.threshold) pillCtx.classList.add('warn');
+  if (pct >= 95) pillCtx.classList.add('crit');
+
+  $('model-name').textContent = c.model || '—';
+  $('foot-ep').textContent = c.endpoint || '—';
+  $('stat-msgs').textContent = state.messages.length;
+  $('stat-tokens').textContent = used;
+  $('stat-tools').textContent = state.tools.length;
+  const onl = state.servers.filter(s => s.status === 'online').length;
+  $('stat-servers').textContent = `${onl} / ${state.servers.length}`;
+  $('foot-mcp').textContent = `${onl}/${state.servers.length}`;
+  $('stat-compactions').textContent = win.dropped;
+  $('stat-threshold').textContent = `${c.threshold}% · ${eff} tok`;
+  $('stat-backend').textContent = state.status.backendOk === true ? 'OK' : (state.status.backendOk === false ? 'DOWN' : '—');
+  $('stat-network').textContent = c.networkVisible ? 'LAN' : 'LOCAL';
+
+  // footer context-roll indicator — shows how many oldest messages are
+  // currently held out of the model's window (chat still shows them all).
+  const cmp = $('foot-cmp');
+  cmp.classList.toggle('busy', win.dropped > 0);
+  $('foot-cmp-text').textContent = win.dropped > 0 ? `WINDOWED · ${win.dropped} held` : 'full context';
+
+  // footer network pill
+  const netPill = $('foot-net');
+  netPill.classList.toggle('lan', !!c.networkVisible);
+  netPill.firstElementChild.textContent = c.networkVisible ? 'LAN' : 'LOCAL';
+
+  // active chat name in footer
+  const active = state.chats.find(x => x.id === state.activeChatId);
+  $('foot-chat').textContent = active ? active.name : '—';
+
+  // LAN pill in header (only show LAN pill when active)
+  const pillSync = $('pill-sync');
+  pillSync.classList.remove('online','offline','connecting','lan');
+  if (state.status.syncOk) { pillSync.classList.add(c.networkVisible ? 'lan' : 'online'); $('sync-status').textContent = c.networkVisible ? 'LAN' : 'LIVE'; }
+  else { pillSync.classList.add('offline'); $('sync-status').textContent = 'DOWN'; }
+
+  const pc = $('pill-conn');
+  pc.classList.remove('online','offline','connecting');
+  if (state.status.connected === true) { pc.classList.add('online'); $('conn-status').textContent = 'LIVE'; }
+  else if (state.status.connected === false) { pc.classList.add('offline'); $('conn-status').textContent = 'DOWN'; }
+  else $('conn-status').textContent = 'UNTESTED';
+
+  const pm = $('pill-mcp');
+  pm.classList.remove('online','offline','connecting');
+  if (state.status.backendOk === true && state.servers.length === 0) { $('mcp-status').textContent = 'IDLE'; }
+  else if (state.status.backendOk === true && onl === state.servers.length && onl > 0) { pm.classList.add('online'); $('mcp-status').textContent = `${onl} ONLINE`; }
+  else if (state.status.backendOk === true) { pm.classList.add('connecting'); $('mcp-status').textContent = `${onl}/${state.servers.length}`; }
+  else if (state.status.backendOk === false) { pm.classList.add('offline'); $('mcp-status').textContent = 'DOWN'; }
+  else { $('mcp-status').textContent = '—'; }
+}
+
+function showToast(title, body, kind = 'amber') {
+  const t = $('toast');
+  t.querySelector('.title').textContent = title;
+  $('toast-body').textContent = body;
+  const color = kind === 'red' ? 'var(--crit)' : kind === 'green' ? 'var(--green)' : kind === 'cyan' ? 'var(--cyan)' : 'var(--amber)';
+  t.style.borderColor = color; t.style.borderLeftColor = color; t.style.color = color;
+  t.classList.add('show');
+  clearTimeout(showToast._tm);
+  showToast._tm = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+/* ───────────────── Animal-Crossing-style talk SFX ───────────────── */
+const SFX = {
+  ctx: null,
+  lastAt: 0,
+  ensure() {
+    if (!this.ctx) {
+      try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+    }
+    if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(()=>{});
+    return this.ctx;
+  },
+  blip(ch) {
+    if (!state.settings.soundEnabled) return;
+    const c = this.ensure();
+    if (!c) return;
+    const now = c.currentTime;
+    // throttle: at most ~12 blips/sec
+    if ((performance.now() - this.lastAt) < 70) return;
+    this.lastAt = performance.now();
+    // skip mostly-silent chars
+    if (!ch || /\s/.test(ch)) return;
+    // map char to a small pentatonic scale
+    const scale = [392.0, 440.0, 523.25, 587.33, 659.25, 698.46, 783.99]; // G4 A4 C5 D5 E5 F5 G5
+    const code = ch.charCodeAt(0);
+    const f = scale[code % scale.length] * (state.settings.soundPitch || 1.0);
+    const osc = c.createOscillator();
+    const gain = c.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(f, now);
+    osc.frequency.exponentialRampToValueAtTime(f * 0.92, now + 0.07);
+    const v = Math.max(0, Math.min(1, state.settings.soundVolume ?? 0.35));
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(v * 0.25, now + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    osc.connect(gain).connect(c.destination);
+    osc.start(now);
+    osc.stop(now + 0.10);
+  }
+};
+
+/* ───────────────── Speech output controller ─────────────────
+   Routes streamed reply text to one of two engines:
+     • 'sfx'   — the villager-talk blips above (per character)
+     • 'piper' — neural TTS via the backend, synthesised one block at a time.
+   For Piper, complete blocks (sentences / lines) are sent to /api/tts/speak as
+   soon as they arrive; the resulting WAVs are prefetched in parallel but played
+   strictly in order, so speech begins almost immediately and stays coherent.
+   The master ENABLE VOICE FEEDBACK toggle (settings.soundEnabled) gates all
+   playback for both engines. */
+function cleanForSpeech(s) {
+  if (!s) return '';
+  let t = s;
+  t = t.replace(/<think>[\s\S]*?<\/think>/gi, ' ');     // drop closed reasoning
+  t = t.replace(/```[\s\S]*?```/g, ' ');                // drop fenced code
+  t = t.replace(/`([^`]*)`/g, '$1');                    // inline code → text
+  t = t.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1');       // image → alt
+  t = t.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');        // link  → text
+  t = t.replace(/^[ \t]*#{1,6}[ \t]+/gm, '');           // headings
+  t = t.replace(/^[ \t]*>[ \t]?/gm, '');                // blockquote
+  t = t.replace(/^[ \t]*[-*+][ \t]+/gm, '');            // bullet markers
+  t = t.replace(/^[ \t]*\d+[.)][ \t]+/gm, '');          // numbered markers
+  t = t.replace(/(\*\*|\*|__|_|~~)/g, '');              // emphasis markers
+  t = t.replace(/\|/g, ' ');                            // table pipes
+  return t;
+}
+
+const Speech = {
+  _raw: '', _spokenLen: 0,           // per-turn segmentation state (both engines)
+  _gen: 0, _jobs: [],                // ordered prefetch/playback queue
+  _playing: false, _cur: null, _warned: false, _failed: false,
+  _pendingStop: false,               // root turn: cut prior speech on first new text, not on box appear
+  _bcastTurn: 0, _bcastReset: false, // mirror-to-other-windows turn id + cut signal
+  _bcastChain: Promise.resolve(),    // serialise broadcast POSTs so blocks arrive in order
+
+  engine() { return state.settings.ttsEngine === 'piper' ? 'piper' : 'sfx'; },
+  enabled() { return !!state.settings.soundEnabled; },
+
+  // root === true marks a fresh user turn (vs. a tool-call recursion round).
+  // We do NOT stop here: a root turn defers the cut-off until the first text
+  // actually streams (see feed), and a recursion round must keep the earlier
+  // round's audio playing so tool calls never chop the voice mid-sentence.
+  beginTurn(root) {
+    this._raw = ''; this._spokenLen = 0; this._warned = false; this._failed = false;
+    if (root) {
+      this._pendingStop = true;
+      this._bcastTurn++;          // new mirror turn
+      this._bcastReset = true;    // first broadcast block tells other windows to cut prior audio
+    }
+  },
+  endTurn() { if (this.enabled()) this._pump(true); },
+
+  feed(delta) {
+    if (!delta || !this.enabled()) return;
+    if (this.engine() === 'sfx') { this._pendingStop = false; for (const ch of delta) SFX.blip(ch); }
+    // First real text of a new root turn → only now cut the previous reply's audio.
+    else if (this._pendingStop) { this._pendingStop = false; this.stop(); }
+    this._raw += delta;
+    this._pump(false);
+  },
+
+  // Relay one finished speech block to every OTHER synced window so the reply
+  // is heard everywhere. POSTs are chained so blocks arrive in spoken order.
+  _broadcastBlock(text, engine) {
+    const reset = this._bcastReset; this._bcastReset = false;
+    const payload = {
+      text, engine,
+      voice: state.settings.piperVoice || '',
+      rate: Number(state.settings.piperRate) || 1.0,
+      turn: this._bcastTurn, reset,
+    };
+    this._bcastChain = this._bcastChain.then(
+      () => apiPost('/api/events/publish', { kind: 'speak', payload }).catch(() => {})
+    );
+  },
+
+  _safeEnd(raw) {
+    let end = raw.length;
+    const tOpen = raw.lastIndexOf('<think>');
+    if (tOpen > raw.lastIndexOf('</think>')) end = Math.min(end, tOpen);   // unclosed think
+    if (((raw.match(/```/g) || []).length) % 2 === 1) {                    // unclosed fence
+      const f = raw.lastIndexOf('```');
+      if (f >= 0) end = Math.min(end, f);
+    }
+    return end;
+  },
+
+  _boundary(text, from) {
+    const re = /[.!?…]["')\]]?(?=\s)|[:;](?=\s)|\n/g;
+    re.lastIndex = from;
+    let m;
+    while ((m = re.exec(text))) {
+      const end = m.index + m[0].length;
+      if (end - from >= 2) return end;
+    }
+    if (text.length - from > 280) {            // force-flush an over-long run
+      const sp = text.lastIndexOf(' ', from + 280);
+      if (sp > from) return sp + 1;
+    }
+    return -1;
+  },
+
+  _pump(final) {
+    const eng = this.engine();
+    // Local Piper playback needs a selected voice; the SFX engine and the
+    // cross-window broadcast do not, so only Piper short-circuits here.
+    if (eng === 'piper' && !state.settings.piperVoice) {
+      if (!this._warned && final && this._raw.trim()) {
+        this._warned = true;
+        showToast('NO VOICE', 'Select a Piper voice in settings → § 7 SPEECH.', 'amber');
+      }
+      return;
+    }
+    let raw = this._raw;
+    if (!final) raw = raw.slice(0, this._safeEnd(raw));
+    const text = cleanForSpeech(raw);
+    let idx = this._spokenLen;
+    if (idx > text.length) return;
+    while (idx < text.length) {
+      const end = final ? text.length : this._boundary(text, idx);
+      if (end < 0) break;
+      const block = text.slice(idx, end).replace(/\s+/g, ' ').trim();
+      idx = end;
+      if (block) {
+        if (eng === 'piper') this._enqueue(block);   // play locally (Piper)
+        this._broadcastBlock(block, eng);            // mirror to other windows
+      }
+    }
+    this._spokenLen = idx;
+  },
+
+  _enqueue(text) {
+    if (this._failed) return;          // a request already hard-failed this turn
+    const gen = this._gen;
+    const job = { url: null };
+    job.promise = this._fetch(text, gen).then(u => {
+      if (gen !== this._gen) { try { URL.revokeObjectURL(u); } catch {} job.url = null; }  // turn canceled mid-fetch
+      else job.url = u;
+    }).catch(() => { job.url = null; });
+    this._jobs.push(job);
+    this._drain();
+  },
+
+  async _fetch(text, gen) {
+    const s = state.settings;
+    const rate = Math.max(0.3, Math.min(3.0, Number(s.piperRate) || 1.0));
+    const r = await fetch('/api/tts/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Origin-Id': ORIGIN_ID },
+      body: JSON.stringify({ text, voice: s.piperVoice, lengthScale: 1.0 / rate }),
+    });
+    if (gen !== this._gen) throw new Error('canceled');
+    if (!r.ok) {
+      this._failed = true;             // stop firing further requests this turn
+      let msg = `HTTP ${r.status}`;
+      try { const j = await r.json(); if (j && j.error) msg = j.error; } catch {}
+      if (!this._warned) { this._warned = true; showToast('TTS ERROR', msg, 'red'); }
+      throw new Error(msg);
+    }
+    return URL.createObjectURL(await r.blob());
+  },
+
+  async _drain() {
+    if (this._playing) return;
+    this._playing = true;
+    try {
+      while (this._jobs.length) {
+        const job = this._jobs[0];
+        await job.promise;
+        if (this._jobs[0] !== job) continue;     // queue was cleared by stop()
+        this._jobs.shift();
+        if (job.url) await this._play(job.url);
+      }
+    } finally { this._playing = false; }
+  },
+
+  _play(url) {
+    return new Promise(resolve => {
+      const a = new Audio(url);
+      a.volume = piperVol();
+      this._cur = a;
+      const done = () => { try { URL.revokeObjectURL(url); } catch {} if (this._cur === a) this._cur = null; resolve(); };
+      a.onended = done; a.onerror = done;
+      a.play().catch(done);
+    });
+  },
+
+  stop() {
+    this._gen++;
+    this._pendingStop = false;
+    for (const j of this._jobs) if (j.url) { try { URL.revokeObjectURL(j.url); } catch {} }
+    this._jobs = [];
+    if (this._cur) { try { this._cur.pause(); } catch {} this._cur = null; }
+    this._playing = false;
+  },
+
+  // engine/voice switch → stop playback + free the server-side model when leaving Piper
+  onEngineChange() {
+    this.stop();
+    if (this.engine() !== 'piper') {
+      fetch('/api/tts/unload', { method: 'POST', headers: { 'X-Origin-Id': ORIGIN_ID } }).catch(() => {});
+    }
+  },
+};
+
+/* ───────────────── Remote speech (synced-window mirror) ─────────────────
+   Plays speech blocks that another window broadcast over the SSE bus, so the
+   audio response is heard through EVERY synced terminal — not only the live
+   window that ran the inference. Each block carries the originating window's
+   engine + voice so playback stays consistent across the LAN; this window's
+   own ENABLE VOICE FEEDBACK toggle and volume still gate/scale playback.
+   Ordered prefetch/playback mirrors the local Piper queue. */
+const RemoteSpeech = {
+  _gen: 0, _jobs: [], _playing: false, _cur: null,
+
+  handle(p) {
+    if (!p || !this.enabled()) return;
+    if (p.reset) this.stop();                 // a new root turn began elsewhere → cut prior audio
+    const text = (p.text || '').trim();
+    if (!text) return;
+    if (p.engine === 'sfx') { SFX.ensure(); for (const ch of text) SFX.blip(ch); SFX.blip(' '); return; }
+    if (!p.voice) return;                      // Piper block with no voice → nothing to synth
+    this._enqueue(text, p.voice, Number(p.rate) || 1.0);
+  },
+
+  enabled() { return !!state.settings.soundEnabled; },
+
+  _enqueue(text, voice, rate) {
+    const gen = this._gen;
+    const job = { url: null };
+    job.promise = this._fetch(text, voice, rate, gen).then(u => {
+      if (gen !== this._gen) { try { URL.revokeObjectURL(u); } catch {} job.url = null; }
+      else job.url = u;
+    }).catch(() => { job.url = null; });
+    this._jobs.push(job);
+    this._drain();
+  },
+
+  async _fetch(text, voice, rate, gen) {
+    rate = Math.max(0.3, Math.min(3.0, rate || 1.0));
+    const r = await fetch('/api/tts/speak', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Origin-Id': ORIGIN_ID },
+      body: JSON.stringify({ text, voice, lengthScale: 1.0 / rate }),
+    });
+    if (gen !== this._gen) throw new Error('canceled');
+    if (!r.ok) throw new Error('tts http ' + r.status);
+    return URL.createObjectURL(await r.blob());
+  },
+
+  async _drain() {
+    if (this._playing) return;
+    this._playing = true;
+    try {
+      while (this._jobs.length) {
+        const job = this._jobs[0];
+        await job.promise;
+        if (this._jobs[0] !== job) continue;   // queue was cleared by stop()
+        this._jobs.shift();
+        if (job.url) await this._play(job.url);
+      }
+    } finally { this._playing = false; }
+  },
+
+  _play(url) {
+    return new Promise(resolve => {
+      const a = new Audio(url);
+      a.volume = piperVol();
+      this._cur = a;
+      const done = () => { try { URL.revokeObjectURL(url); } catch {} if (this._cur === a) this._cur = null; resolve(); };
+      a.onended = done; a.onerror = done;
+      a.play().catch(done);
+    });
+  },
+
+  stop() {
+    this._gen++;
+    for (const j of this._jobs) if (j.url) { try { URL.revokeObjectURL(j.url); } catch {} }
+    this._jobs = [];
+    if (this._cur) { try { this._cur.pause(); } catch {} this._cur = null; }
+    this._playing = false;
+  },
+};
+
+/* ───────────────── Piper voice UI (settings → § 7 SPEECH) ───────────────── */
+let _piperVoices = [];
+
+function piperVol() {
+  const v = Number(state.settings.piperVolume);
+  return Math.max(0, Math.min(1, isNaN(v) ? 0.9 : v));
+}
+
+function applyTtsEngineUI() {
+  const eng = ($('cfg-tts-engine') || {}).value || 'sfx';
+  const sfx = $('tts-sfx-opts'), pip = $('tts-piper-opts');
+  if (sfx) sfx.style.display = (eng === 'sfx') ? '' : 'none';
+  if (pip) pip.style.display = (eng === 'piper') ? '' : 'none';
+  if (eng === 'piper') refreshPiperVoices();
+}
+
+async function refreshPiperVoices() {
+  const sel = $('cfg-piper-voice'), out = $('piper-result');
+  if (!sel) return;
+  try {
+    const j = await apiGet('/api/tts/voices');
+    _piperVoices = j.voices || [];
+    const cur = state.settings.piperVoice || '';
+    sel.innerHTML = '';
+    if (!_piperVoices.length) {
+      const o = document.createElement('option');
+      o.value = ''; o.textContent = '(no voices in voices/)';
+      sel.appendChild(o);
+    } else {
+      for (const v of _piperVoices) {
+        const o = document.createElement('option');
+        o.value = v.key;
+        o.textContent = v.key + (v.language ? ` · ${v.language}` : '') + (v.quality ? ` · ${v.quality}` : '');
+        sel.appendChild(o);
+      }
+      if (_piperVoices.some(v => v.key === cur)) sel.value = cur;
+      else { sel.value = _piperVoices[0].key; state.settings.piperVoice = _piperVoices[0].key; }
+    }
+    renderPiperVoiceList();
+    if (out) {
+      if (!j.installed) { out.className = 'test-result err'; out.textContent = '✕ piper-tts not installed.  Run:  pip install piper-tts'; }
+      else if (!_piperVoices.length) { out.className = 'test-result busy'; out.textContent = `No voices found. Add <key>.onnx + <key>.onnx.json to:  ${j.dir || 'voices/'}`; }
+      else { out.className = 'test-result ok'; out.textContent = `✓ ${_piperVoices.length} voice(s) available · engine ready`; }
+    }
+  } catch (e) {
+    if (out) { out.className = 'test-result err'; out.textContent = '✕ ' + e.message; }
+  }
+}
+
+function renderPiperVoiceList() {
+  const box = $('piper-voice-list');
+  if (!box) return;
+  if (!_piperVoices.length) { box.textContent = '(no voices — drop .onnx + .onnx.json pairs into voices/)'; return; }
+  box.innerHTML = '';
+  for (const v of _piperVoices) {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:8px; padding:4px 0; border-bottom:1px solid var(--line-soft);';
+    const name = document.createElement('span');
+    name.style.cssText = 'flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+    name.textContent = v.key + (v.language ? `  ·  ${v.language}` : '');
+    const status = document.createElement('span');
+    status.style.cssText = 'font-size:9px; letter-spacing:0.08em; flex-shrink:0;';
+    if (v.hasPreview) { status.style.color = 'var(--green)'; status.textContent = '◖ PREVIEW'; }
+    else { status.style.color = 'var(--text-faint)'; status.textContent = '— no preview'; }
+    const btn = document.createElement('button');
+    btn.className = 'btn'; btn.style.cssText = 'padding:3px 9px; font-size:9px; flex-shrink:0;';
+    btn.textContent = v.hasPreview ? '▸ PLAY' : '▸ SELECT';
+    btn.title = v.hasPreview ? 'Play this voice preview' : 'Use this voice (no preview yet — GENERATE MISSING PREVIEWS to create one)';
+    btn.addEventListener('click', () => {
+      if (v.hasPreview) playPreview(v.key);
+      else { const sel = $('cfg-piper-voice'); if (sel) sel.value = v.key; state.settings.piperVoice = v.key; saveConfig(); showToast('VOICE SET', v.key, 'green'); }
+    });
+    row.appendChild(name); row.appendChild(status); row.appendChild(btn);
+    box.appendChild(row);
+  }
+}
+
+function playPreview(key) {
+  try {
+    const a = new Audio('/api/tts/preview?voice=' + encodeURIComponent(key));
+    a.volume = piperVol();
+    a.play().catch(() => showToast('PREVIEW', 'Could not play preview.', 'amber'));
+  } catch {}
+}
+
+async function generatePiperPreviews() {
+  const out = $('piper-result');
+  if (out) { out.className = 'test-result busy'; out.textContent = '▸ generating previews for voices without one… (first synth per voice loads the model — may take a few seconds)'; }
+  try {
+    const j = await apiPost('/api/tts/previews/generate', {});
+    _piperVoices = j.voices || _piperVoices;
+    renderPiperVoiceList();
+    const gen = (j.generated || []).length, fail = (j.failed || []).length;
+    if (out) {
+      if (j.error) { out.className = 'test-result err'; out.textContent = '✕ ' + j.error; }
+      else { out.className = fail ? 'test-result busy' : 'test-result ok';
+        out.textContent = `✓ generated ${gen} preview(s)` + (fail ? ` · ${fail} failed` : '') + (gen === 0 && !fail ? ' · all voices already have a preview' : ''); }
+    }
+  } catch (e) { if (out) { out.className = 'test-result err'; out.textContent = '✕ ' + e.message; } }
+}
+
+/* ───────────────── Endpoint helpers ───────────────── */
+function authHeaders() { const h = {}; if (state.settings.apiKey) h['Authorization'] = `Bearer ${state.settings.apiKey}`; return h; }
+function epBase() { return (state.settings.endpoint || '').replace(/\/+$/,''); }
+function epRoot() { return epBase().replace(/\/v1$/,''); }
+
+async function llmFetch(url, opts = {}, opts2 = {}) {
+  // Backend proxy: retries / timeout are handled server-side.
+  if (state.settings.useProxy) {
+    return fetch('/api/llm/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        url,
+        headers: { ...(opts.headers || {}), ...authHeaders() },
+        body: opts.body ? JSON.parse(opts.body) : {},
+        stream: !!opts2.stream,
+        timeout: opts2.timeout || 600,
+        retries: opts2.retries || 3,
+      }),
+      signal: opts.signal,
+    });
+  }
+  // Direct: retry on transient failures (network / timeout / 5xx).
+  const maxRetries = opts2.retries || 3;
+  const tmoMs = (opts2.timeout || 600) * 1000;
+  let backoff = 1000;
+  let lastErr = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // chain user signal + our timeout signal
+    const tmo = new AbortController();
+    const tmId = setTimeout(() => tmo.abort(), tmoMs);
+    const signal = opts.signal
+      ? new AbortController() && (() => { const c = new AbortController(); opts.signal.addEventListener('abort', () => c.abort(), { once: true }); tmo.signal.addEventListener('abort', () => c.abort(), { once: true }); return c.signal; })()
+      : tmo.signal;
+    try {
+      const r = await fetch(url, {
+        method: opts.method || 'POST',
+        headers: { 'Content-Type': 'application/json', ...(opts.headers || {}), ...authHeaders() },
+        body: opts.body,
+        signal,
+      });
+      clearTimeout(tmId);
+      if (r.ok || (r.status >= 400 && r.status < 500)) return r;
+      // 5xx → retry
+      lastErr = new Error(`HTTP ${r.status}`);
+    } catch (e) {
+      clearTimeout(tmId);
+      if (e.name === 'AbortError' && opts.signal && opts.signal.aborted) throw e;
+      lastErr = e;
+    }
+    if (attempt < maxRetries - 1) {
+      await new Promise(res => setTimeout(res, backoff));
+      backoff = Math.min(backoff * 2, 8000);
+    }
+  }
+  throw lastErr || new Error('llmFetch failed');
+}
+
+async function testConnection() {
+  const out = $('test-result');
+  out.className = 'test-result busy';
+  out.textContent = '▸ probing endpoint…';
+  try {
+    let r;
+    try { r = await fetch(epBase() + '/models', { headers: authHeaders() }); }
+    catch (e) {
+      if (state.settings.useProxy) {
+        const r2 = await fetch('/api/llm/proxy', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ url: epBase() + '/chat/completions', headers: authHeaders(), body: { model: state.settings.model || 'x', messages: [{role:'user',content:'ping'}], max_tokens: 1, stream: false }, stream: false })
+        });
+        if (r2.ok || (r2.status >= 400 && r2.status < 500)) {
+          state.status.connected = true;
+          out.className = 'test-result ok';
+          out.textContent = `▸ link established via proxy (HTTP ${r2.status})`;
+          updateStatus(); return;
+        }
+        throw e;
+      }
+      throw e;
+    }
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    state.status.connected = true;
+    const cnt = (j.data || j.models || []).length;
+    out.className = 'test-result ok';
+    out.textContent = `▸ link established · ${cnt} model(s) reported`;
+  } catch (e) {
+    state.status.connected = false;
+    out.className = 'test-result err';
+    out.textContent = `▸ connection failed\n${e.message}\n\nCheck endpoint URL, API key, and that the server is up. Enable backend proxy to bypass CORS.`;
+  }
+  updateStatus();
+}
+
+async function listModels() {
+  const out = $('test-result');
+  out.className = 'test-result busy';
+  out.textContent = '▸ fetching models…';
+  try {
+    const r = await fetch(epBase() + '/models', { headers: authHeaders() });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const j = await r.json();
+    const models = (j.data || j.models || []).map(m => m.id || m.name).filter(Boolean);
+    state.status.connected = true;
+    if (!models.length) { out.className = 'test-result err'; out.textContent = '▸ no models reported'; updateStatus(); return; }
+    out.className = 'test-result ok';
+    out.textContent = `▸ ${models.length} model(s):\n` + models.map(m => '  • ' + m).join('\n');
+    const opts = $('model-options');
+    opts.style.display = 'block';
+    opts.innerHTML = '<div style="font-family:var(--mono); font-size:9px; color:var(--text-faint); letter-spacing:0.14em; margin-bottom:6px;">CLICK TO SELECT</div>' +
+      models.map(m => `<button class="btn" style="margin:2px 4px 2px 0;" data-model="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join('');
+    opts.querySelectorAll('button[data-model]').forEach(b => b.addEventListener('click', () => { $('cfg-model').value = b.dataset.model; }));
+    updateStatus();
+  } catch (e) {
+    out.className = 'test-result err';
+    out.textContent = '▸ ' + e.message + '\n\nIf this is a CORS issue, enable backend proxy.';
+  }
+}
+
+async function fetchTemplate() {
+  const out = $('test-result');
+  out.className = 'test-result busy';
+  out.textContent = '▸ pulling template / system prompt…';
+  let detected = '', template = '';
+  try {
+    const r = await fetch(epRoot() + '/props', { headers: authHeaders() });
+    if (r.ok) {
+      const j = await r.json();
+      if (j.chat_template) template = j.chat_template;
+      if (j.default_generation_settings?.system_message) detected = j.default_generation_settings.system_message;
+      if (!detected && j.system_prompt) detected = j.system_prompt;
+    }
+  } catch {}
+  if (!detected || !template) {
+    try {
+      const model = state.settings.model || $('cfg-model').value;
+      if (model) {
+        const r = await fetch(epRoot() + '/api/show', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', ...authHeaders() },
+          body: JSON.stringify({ name: model }),
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (j.template) template = template || j.template;
+          if (j.system) detected = detected || j.system;
+          if (j.parameters?.system) detected = detected || j.parameters.system;
+        }
+      }
+    } catch {}
+  }
+  if (!detected) {
+    try {
+      const model = state.settings.model || $('cfg-model').value;
+      if (model) {
+        const r = await fetch(epBase() + '/models/' + encodeURIComponent(model), { headers: authHeaders() });
+        if (r.ok) {
+          const j = await r.json();
+          if (j.system_prompt) detected = j.system_prompt;
+          if (!detected && j.default_system) detected = j.default_system;
+        }
+      }
+    } catch {}
+  }
+  const display = (detected || '') + (template ? `\n\n--- chat_template ---\n${template}` : '');
+  $('cfg-detected').value = display || '(no template / system prompt exposed by endpoint)';
+  state.settings.detectedPrompt = detected || '';
+  if (display) { out.className = 'test-result ok'; out.textContent = `▸ pulled · system: ${(detected||'').length} chars · template: ${(template||'').length} chars`; }
+  else { out.className = 'test-result err'; out.textContent = '▸ endpoint does not expose a chat template or default system prompt.'; }
+}
+
+/* ───────────────── Rolling context window (non-destructive) ─────────────────
+   The full conversation is ALWAYS kept in state.messages — it is never
+   truncated — so the chat interface keeps showing every message and nothing
+   is ever lost. What changes is only what we hand to the model: when the
+   transcript would exceed the configured budget (context × threshold%), we
+   compute a *window* that always keeps
+     • the system prompt (added separately in buildOutgoing), and
+     • the first two complete back-and-forth exchanges (the first two user
+       turns and the first two assistant replies — the anchoring context),
+   then admits the most-recent messages that still fit. The OLDEST messages
+   beyond those first two exchanges peel off the model's view first and
+   "flutter" away as the conversation ages.
+
+   Because the window is recomputed from the untouched transcript on every
+   turn, it is fully reversible: widening the context window (or raising the
+   threshold) simply re-admits older messages on the next call.
+
+   Tool-call / tool-result pairs stay coherent: the anchor always ends on a
+   completed assistant reply, and any tool result whose originating tool_call
+   fell outside the window is dropped so no orphaned tool_call_ids are sent.
+*/
+function _toolCallIds(m) {
+  if (!Array.isArray(m.tool_calls)) return [];
+  return m.tool_calls.map(tc => tc.id).filter(Boolean);
+}
+
+// Messages that form the LLM transcript (everything except UI-only markers).
+function _eligibleMessages() {
+  return state.messages.filter(m => !m._rolled && !m._compaction);
+}
+
+// Fixed token cost that is always present alongside the messages.
+function _overheadTokens() {
+  const c = state.settings;
+  let t = estTok(c.systemPrompt) + 8;
+  if (c.toolsEnabled && state.tools.length) t += estTok(JSON.stringify(state.tools));
+  return t;
+}
+
+// The token budget the model window is allowed to fill: context × threshold%.
+// This is the "new context limit" surfaced next to the threshold slider — the
+// point at which the oldest middle messages start peeling off.
+function effectiveLimit() {
+  const c = state.settings;
+  return Math.max(1, Math.round((Number(c.context) || 0) * ((Number(c.threshold) || 0) / 100)));
+}
+
+// Live-update the "new context limit" readout beside the threshold slider from
+// the in-progress form values, so editing context or threshold immediately
+// shows where the model's context will actually be cut (context × threshold%).
+function syncThresholdEff() {
+  const el = $('cfg-threshold-eff');
+  if (!el) return;
+  const ctx = parseInt($('cfg-ctx').value) || 0;
+  const thr = parseInt($('cfg-threshold').value) || 0;
+  el.textContent = Math.max(1, Math.round(ctx * (thr / 100)));
+}
+
+// Break the transcript into "turns" (a.k.a. message pairs). Each turn begins at
+// a user message and absorbs every following assistant reply, tool call and
+// tool result up to (but not including) the next user message — so a complete
+// tool-calling round always lives inside a single turn and can never be split
+// across the window boundary. Any leading non-user messages form turn 0.
+function _segmentTurns(msgs) {
+  const turns = [];
+  let cur = null;
+  for (const m of msgs) {
+    if (m.role === 'user') { if (cur) turns.push(cur); cur = [m]; }
+    else { if (!cur) cur = []; cur.push(m); }
+  }
+  if (cur) turns.push(cur);
+  return turns;
+}
+
+// Drop tool results whose originating tool_call is not in the window, and any
+// assistant tool_call whose result is not in the window, so the transcript we
+// send stays coherent (no orphaned tool_call_ids in either direction).
+function _dropOrphanToolResults(kept) {
+  const callIds = new Set();
+  const resultIds = new Set();
+  for (const m of kept) {
+    for (const id of _toolCallIds(m)) callIds.add(id);
+    if (m.role === 'tool' && m.tool_call_id) resultIds.add(m.tool_call_id);
+  }
+  return kept.filter(m => {
+    if (m.role === 'tool' && m.tool_call_id && !callIds.has(m.tool_call_id)) return false;
+    if (Array.isArray(m.tool_calls) && m.tool_calls.length) {
+      const ids = _toolCallIds(m);
+      if (ids.length && !ids.some(id => resultIds.has(id))) return false;
+    }
+    return true;
+  });
+}
+
+// Compute the subset of the transcript that fits the model budget. The window
+// always keeps, in full, the first two back-and-forth exchanges (the anchor)
+// and the most-recent `contextDepth` pairs; the oldest MIDDLE turns peel off
+// first, fluttering away as the conversation ages and the budget tightens.
+// state.messages is NEVER modified, so this is purely a view onto the model's
+// context — widening `context`/`threshold` re-admits older turns next call.
+function selectContextMessages() {
+  const c = state.settings;
+  const msgs = _eligibleMessages();
+  const limit = effectiveLimit();
+  const overhead = _overheadTokens();
+
+  let total = overhead;
+  for (const m of msgs) total += msgTokens(m);
+  if (total <= limit) return msgs;            // whole transcript fits
+
+  const turns = _segmentTurns(msgs);
+  const anchorCount = Math.min(2, turns.length);                 // first two pairs
+  const depth = Math.max(1, Number(c.contextDepth) || 6);        // recent pairs to keep
+  const recentStart = Math.max(anchorCount, turns.length - depth);
+
+  const turnCost = t => t.reduce((s, m) => s + msgTokens(m), 0);
+
+  // Always-kept turns: the anchor and the most-recent `depth` pairs. These are
+  // preserved even if they alone exceed the budget — coherence over budget.
+  const kept = new Set();
+  let used = overhead;
+  for (let i = 0; i < anchorCount; i++) { kept.add(i); used += turnCost(turns[i]); }
+  for (let i = recentStart; i < turns.length; i++) { kept.add(i); used += turnCost(turns[i]); }
+
+  // Admit middle turns newest-first until the budget is spent; the oldest
+  // middle turns are the ones that peel off. Stop at the first that won't fit
+  // so the retained middle stays a contiguous block adjacent to the recent
+  // window (no scattered gaps).
+  for (let i = recentStart - 1; i >= anchorCount; i--) {
+    const cost = turnCost(turns[i]);
+    if (used + cost > limit) break;
+    used += cost;
+    kept.add(i);
+  }
+
+  const out = [];
+  for (let i = 0; i < turns.length; i++) if (kept.has(i)) for (const m of turns[i]) out.push(m);
+  return _dropOrphanToolResults(out);
+}
+
+// Snapshot of the current model-side context for the status UI.
+function contextWindow() {
+  const sel = selectContextMessages();
+  let tokens = _overheadTokens();
+  for (const m of sel) tokens += msgTokens(m);
+  const eligible = _eligibleMessages().length;
+  return { messages: sel, tokens, dropped: Math.max(0, eligible - sel.length) };
+}
+
+/* ───────────────── Chat ───────────────── */
+function buildOutgoing() {
+  const c = state.settings;
+  const messages = [];
+  if (c.systemPrompt && c.systemPrompt.trim()) messages.push({ role: 'system', content: c.systemPrompt });
+  // Only the windowed subset goes to the model; the full transcript stays in
+  // state.messages so the chat interface still shows everything.
+  for (const m of selectContextMessages()) {
+    const o = { role: m.role };
+    if (Array.isArray(m.images) && m.images.length) {
+      // OpenAI-compatible multimodal content: text part (if any) + image_url parts.
+      const parts = [];
+      if (m.content && m.content.trim()) parts.push({ type: 'text', text: m.content });
+      for (const img of m.images) parts.push({ type: 'image_url', image_url: { url: img.url } });
+      o.content = parts;
+    } else if (m.content !== undefined) {
+      o.content = m.content;
+    }
+    if (m.tool_calls) o.tool_calls = m.tool_calls;
+    if (m.tool_call_id) o.tool_call_id = m.tool_call_id;
+    if (m.name) o.name = m.name;
+    messages.push(o);
+  }
+  const body = {
+    model: c.model,
+    messages,
+    temperature: Number(c.temperature),
+    max_tokens: Number(c.maxTokens),
+    stream: !!c.streaming,
+  };
+  // Standard OpenAI sampling
+  if (c.topP != null && c.topP !== '' && Number(c.topP) > 0 && Number(c.topP) < 1) body.top_p = Number(c.topP);
+  if (Number(c.frequencyPenalty)) body.frequency_penalty = Number(c.frequencyPenalty);
+  if (Number(c.presencePenalty))  body.presence_penalty  = Number(c.presencePenalty);
+  if (Number(c.seed) > 0) body.seed = Number(c.seed);
+  if ((c.stopSequences || '').trim()) body.stop = c.stopSequences.split(',').map(s => s.trim()).filter(Boolean);
+  // Extended sampling (llama.cpp / ollama / koboldcpp) — placed both top-level and extra_body
+  const ext = {};
+  if (Number(c.topK) > 0) ext.top_k = Number(c.topK);
+  if (Number(c.minP) > 0) ext.min_p = Number(c.minP);
+  if (Number(c.repeatPenalty) && Number(c.repeatPenalty) !== 1) ext.repeat_penalty = Number(c.repeatPenalty);
+  Object.assign(body, ext);
+  if (Object.keys(ext).length) body.extra_body = { ...(body.extra_body || {}), ...ext };
+
+  if (c.toolsEnabled && state.tools.length) {
+    body.tools = state.tools.map(t => ({ type: 'function', function: { name: t.function.name, description: t.function.description, parameters: t.function.parameters } }));
+    body.tool_choice = 'auto';
+  }
+  if (c.thinkingEnabled) {
+    body.reasoning = { effort: 'medium' };
+    body.extra_body = { ...(body.extra_body || {}), enable_thinking: true };
+  }
+  return body;
+}
+
+async function sendUser(text) {
+  text = String(text || '').trim();
+  const images = state.pendingImages.slice();
+  if (!text && !images.length) return;
+  if (!state.settings.endpoint || !state.settings.model) {
+    showToast('CONFIG REQUIRED', 'Set endpoint and model in settings first.', 'red'); openDrawer(); return;
+  }
+  if (!state.activeChatId) await createChat('Session 01');
+  const msg = { role: 'user', content: text, _ts: Date.now() };
+  if (images.length) msg.images = images;
+  state.messages.push(msg);
+  state.pendingImages = []; renderAttachTray();
+  queuePersist();
+  renderMessages(); updateStatus();
+  SFX.ensure(); // unlock audio on user gesture
+  await runTurn();
+}
+
+async function runTurn(depth = 0) {
+  const maxDepth = Math.max(1, Number(state.settings.maxToolRecursion) || 16);
+  if (depth > maxDepth) {
+    state.messages.push({ role: 'system', content: `⚠ tool-call recursion limit reached (${maxDepth}). Increase "Max Tool-Call Recursion" in settings if needed.`, _ts: Date.now() });
+    queuePersist();
+    renderMessages(); return;
+  }
+  // The model-side context window is computed inside buildOutgoing() — the
+  // full transcript stays in state.messages, and only what we SEND is bounded.
+  // Each recursive tool round therefore gets a fresh `max_tokens` budget, so
+  // tool calls are NOT counted against the output cap — only `maxToolRecursion`
+  // caps depth.
+  const body = buildOutgoing();
+  const ai = { role: 'assistant', content: '', reasoning: '', tool_calls: [], _ts: Date.now(), _streaming: true };
+  state.messages.push(ai); renderMessages();
+  Speech.beginTurn(depth === 0);
+  state.status.streaming = true;
+  $('btn-send').textContent = 'STOP'; $('btn-send').classList.add('stop');
+  $('streaming-indicator').textContent = '◢ RECEIVING…';
+  state.abortCtrl = new AbortController();
+
+  let aborted = false;
+  try {
+    if (body.stream) await streamChat(body, ai);
+    else {
+      const r = await llmFetch(epBase() + '/chat/completions', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(body), signal: state.abortCtrl.signal,
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
+      const j = await r.json();
+      const m = j.choices?.[0]?.message || {};
+      ai.content = m.content || '';
+      ai.reasoning = m.reasoning || m.reasoning_content || '';
+      ai.tool_calls = m.tool_calls || [];
+      if (ai.content) Speech.feed(ai.content);
+    }
+    state.status.connected = true;
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      ai.content = (ai.content || '') + `\n\n_[stream error: ${e.message}]_`;
+      state.status.connected = false;
+    } else { aborted = true; ai.content = (ai.content || '') + '\n\n_[stopped]_'; }
+  } finally {
+    ai._streaming = false; ai._streamingThink = false;
+    if (aborted) Speech.stop(); else Speech.endTurn();
+    state.status.streaming = false; state.abortCtrl = null;
+    $('btn-send').textContent = 'TRANSMIT'; $('btn-send').classList.remove('stop');
+    $('streaming-indicator').textContent = '';
+    extractThinkTags(ai);
+    queuePersist();
+    renderMessages(); updateStatus();
+  }
+
+  if (Array.isArray(ai.tool_calls) && ai.tool_calls.length) {
+    for (const tc of ai.tool_calls) {
+      const exec = await executeTool(tc);
+      state.messages.push({
+        role: 'tool',
+        tool_call_id: tc.id,
+        name: tc.function?.name,
+        content: exec.result || '',
+        _ts: Date.now(),
+        _error: !exec.ok,
+      });
+      renderMessages(); updateStatus();
+    }
+    queuePersist();
+    // After tools complete, transition back to chat — recurse for the model to consume tool output
+    await runTurn(depth + 1);
+  } else {
+    // Final text reply — make sure persisted
+    await persistActiveChat();
+  }
+}
+
+function extractThinkTags(ai) {
+  if (!ai.content) return;
+  const m = ai.content.match(/^\s*<think>([\s\S]*?)<\/think>\s*/);
+  if (m) { ai.reasoning = (ai.reasoning ? ai.reasoning + '\n' : '') + m[1].trim(); ai.content = ai.content.slice(m[0].length); }
+  ai.content = ai.content.replace(/<think>([\s\S]*?)<\/think>/g, (_, inner) => { ai.reasoning = (ai.reasoning ? ai.reasoning + '\n\n' : '') + inner.trim(); return ''; });
+}
+
+async function streamChat(body, ai) {
+  const r = await llmFetch(epBase() + '/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: state.abortCtrl.signal,
+  }, { stream: true });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  const reader = r.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  const toolBuf = {};
+  let lastRender = 0;
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t || !t.startsWith('data:')) continue;
+      const payload = t.slice(5).trim();
+      if (payload === '[DONE]') continue;
+      let chunk;
+      try { chunk = JSON.parse(payload); } catch { continue; }
+      const delta = chunk.choices?.[0]?.delta || {};
+      if (typeof delta.content === 'string') {
+        ai.content += delta.content;
+        Speech.feed(delta.content);
+      }
+      const reasoning = delta.reasoning_content ?? delta.reasoning ?? null;
+      if (reasoning) { ai.reasoning = (ai.reasoning || '') + reasoning; ai._streamingThink = true; }
+      if (Array.isArray(delta.tool_calls)) {
+        for (const tc of delta.tool_calls) {
+          const idx = tc.index ?? 0;
+          toolBuf[idx] = toolBuf[idx] || { id: '', type: 'function', function: { name: '', arguments: '' } };
+          if (tc.id) toolBuf[idx].id = tc.id;
+          if (tc.function?.name) toolBuf[idx].function.name += tc.function.name;
+          if (tc.function?.arguments) toolBuf[idx].function.arguments += tc.function.arguments;
+        }
+        ai.tool_calls = Object.values(toolBuf);
+      }
+      const now = performance.now();
+      if (now - lastRender > 60) { renderMessages(); lastRender = now; }
+    }
+  }
+  ai.tool_calls = Object.values(toolBuf);
+  renderMessages();
+}
+
+/* ───────────────── Tool execution (via backend) ───────────────── */
+async function executeTool(toolCall) {
+  const name = toolCall.function?.name;
+  let args = {};
+  try { args = JSON.parse(toolCall.function?.arguments || '{}'); } catch {}
+  try {
+    const j = await apiPost('/api/tools/call', { name, arguments: args });
+    return { ok: !!j.ok, result: j.result || JSON.stringify(j) };
+  } catch (e) {
+    return { ok: false, result: `[BRIDGE ERROR] ${e.message}` };
+  }
+}
+
+/* ───────────────── Settings drawer wiring ───────────────── */
+function openDrawer() { $('drawer').classList.add('open'); $('drawer-backdrop').classList.add('open'); applyToForm(); }
+function closeDrawer() { $('drawer').classList.remove('open'); $('drawer-backdrop').classList.remove('open'); }
+
+/* ───────────────── Interface skin / theme ───────────────── */
+const THEMES = {
+  sac:    { label: 'STAND ALONE COMPLEX', next: 'deusex' },
+  deusex: { label: 'DEUS EX · UNATCO',    next: 'sac'    },
+};
+function currentTheme() { return (state.settings.theme === 'deusex') ? 'deusex' : 'sac'; }
+// Paint the active skin onto <html> (CSS keys off [data-theme]) and refresh the toggle chip.
+function applyTheme() {
+  const t = currentTheme();
+  document.documentElement.setAttribute('data-theme', t);
+  const v = $('theme-chip-val');
+  if (v) v.textContent = THEMES[t].label;
+}
+// Flip to the other skin, persist + broadcast so every synced window swaps in lock-step.
+function toggleTheme() {
+  state.settings.theme = THEMES[currentTheme()].next;
+  applyTheme();
+  saveConfig();   // POST /api/config → persisted to settings.json + BUS.publish('settings')
+  showToast('INTERFACE SKIN', 'Theme → ' + THEMES[currentTheme()].label, 'amber');
+}
+
+async function applyToForm() {
+  const c = state.settings;
+  $('cfg-endpoint').value = c.endpoint;
+  $('cfg-apikey').value = c.apiKey;
+  $('cfg-model').value = c.model;
+  $('cfg-temp').value = c.temperature;
+  $('cfg-max-tokens').value = c.maxTokens;
+  $('cfg-top-p').value = c.topP;
+  $('cfg-top-k').value = c.topK;
+  $('cfg-min-p').value = c.minP;
+  $('cfg-repeat-pen').value = c.repeatPenalty;
+  $('cfg-freq-pen').value = c.frequencyPenalty;
+  $('cfg-pres-pen').value = c.presencePenalty;
+  $('cfg-seed').value = c.seed;
+  $('cfg-stop').value = c.stopSequences;
+  $('cfg-ctx').value = c.context;
+  $('cfg-threshold').value = c.threshold;
+  $('cfg-depth').value = c.contextDepth;
+  $('cfg-max-recursion').value = c.maxToolRecursion;
+  syncThresholdEff();
+  $('cfg-assistant-name').value = c.assistantName || '';
+  $('cfg-sysprompt').value = c.systemPrompt;
+  $('cfg-detected').value = c.detectedPrompt || '(not fetched)';
+  $('cfg-thinking').checked = c.thinkingEnabled;
+  $('cfg-think-collapsed').checked = c.thinkCollapsed;
+  $('cfg-tools-collapsed').checked = c.toolsCollapsed;
+  $('cfg-stream').checked = c.streaming;
+  $('cfg-tools-enabled').checked = c.toolsEnabled;
+  $('cfg-sound').checked = c.soundEnabled;
+  $('cfg-sound-vol').value = c.soundVolume;
+  $('cfg-sound-pitch').value = c.soundPitch;
+  $('cfg-tts-engine').value = c.ttsEngine || 'sfx';
+  $('cfg-piper-vol').value = c.piperVolume;
+  $('cfg-piper-rate').value = c.piperRate;
+  applyTtsEngineUI();
+  $('cfg-network').checked = c.networkVisible;
+  $('cfg-proxy').checked = c.useProxy;
+  applyTheme();
+  try { const cfg = await loadToolsConfig(); $('cfg-tools').value = JSON.stringify(cfg, null, 2); } catch {}
+}
+function readForm() {
+  const c = state.settings;
+  c.endpoint = $('cfg-endpoint').value.trim() || DEFAULTS.endpoint;
+  c.apiKey = $('cfg-apikey').value;
+  c.model = $('cfg-model').value.trim();
+  c.temperature = parseFloat($('cfg-temp').value) || 0;
+  c.maxTokens = parseInt($('cfg-max-tokens').value) || 2048;
+  c.topP = parseFloat($('cfg-top-p').value); if (isNaN(c.topP)) c.topP = 1.0;
+  c.topK = parseInt($('cfg-top-k').value); if (isNaN(c.topK)) c.topK = 0;
+  c.minP = parseFloat($('cfg-min-p').value); if (isNaN(c.minP)) c.minP = 0;
+  c.repeatPenalty = parseFloat($('cfg-repeat-pen').value); if (isNaN(c.repeatPenalty)) c.repeatPenalty = 1.0;
+  c.frequencyPenalty = parseFloat($('cfg-freq-pen').value); if (isNaN(c.frequencyPenalty)) c.frequencyPenalty = 0;
+  c.presencePenalty  = parseFloat($('cfg-pres-pen').value);  if (isNaN(c.presencePenalty))  c.presencePenalty  = 0;
+  c.seed = parseInt($('cfg-seed').value); if (isNaN(c.seed)) c.seed = 0;
+  c.stopSequences = $('cfg-stop').value;
+  c.context = parseInt($('cfg-ctx').value) || DEFAULTS.context;
+  c.threshold = parseInt($('cfg-threshold').value) || DEFAULTS.threshold;
+  c.contextDepth = Math.max(1, parseInt($('cfg-depth').value) || DEFAULTS.contextDepth);
+  c.maxToolRecursion = parseInt($('cfg-max-recursion').value) || 16;
+  c.systemPrompt = $('cfg-sysprompt').value;
+  c.assistantName = $('cfg-assistant-name').value.trim().slice(0, 32);
+  c.thinkingEnabled = $('cfg-thinking').checked;
+  c.thinkCollapsed = $('cfg-think-collapsed').checked;
+  c.toolsCollapsed = $('cfg-tools-collapsed').checked;
+  c.streaming = $('cfg-stream').checked;
+  c.toolsEnabled = $('cfg-tools-enabled').checked;
+  c.soundEnabled = $('cfg-sound').checked;
+  c.soundVolume = parseFloat($('cfg-sound-vol').value); if (isNaN(c.soundVolume)) c.soundVolume = 0.35;
+  c.soundPitch = parseFloat($('cfg-sound-pitch').value); if (isNaN(c.soundPitch)) c.soundPitch = 1.0;
+  c.ttsEngine = ($('cfg-tts-engine').value === 'piper') ? 'piper' : 'sfx';
+  const pv = $('cfg-piper-voice').value;
+  if (pv) c.piperVoice = pv;   // don't clobber a saved voice when the list isn't loaded (e.g. SFX mode)
+  c.piperVolume = parseFloat($('cfg-piper-vol').value); if (isNaN(c.piperVolume)) c.piperVolume = 0.9;
+  c.piperRate = parseFloat($('cfg-piper-rate').value); if (isNaN(c.piperRate)) c.piperRate = 1.0;
+  c.networkVisible = $('cfg-network').checked;
+  c.useProxy = $('cfg-proxy').checked;
+}
+
+function autoresize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(220, ta.scrollHeight) + 'px'; }
+
+function attachWiring() {
+  $('btn-settings').addEventListener('click', openDrawer);
+  $('btn-close-drawer').addEventListener('click', closeDrawer);
+  $('drawer-backdrop').addEventListener('click', closeDrawer);
+  $('btn-theme-toggle').addEventListener('click', toggleTheme);
+
+  $('btn-test').addEventListener('click', async () => { readForm(); await saveConfig(); await testConnection(true); });
+  $('btn-fetch-models').addEventListener('click', async () => { readForm(); await saveConfig(); await listModels(); });
+  $('btn-fetch-template').addEventListener('click', async () => { readForm(); await saveConfig(); await fetchTemplate(); });
+  $('btn-restore-fetched').addEventListener('click', () => { if (state.settings.detectedPrompt) $('cfg-sysprompt').value = state.settings.detectedPrompt; });
+  $('btn-default-prompt').addEventListener('click', () => { $('cfg-sysprompt').value = DEFAULTS.systemPrompt; });
+
+  // ── Speech / voice (§ 7) ──
+  $('cfg-tts-engine').addEventListener('change', () => {
+    state.settings.ttsEngine = ($('cfg-tts-engine').value === 'piper') ? 'piper' : 'sfx';
+    applyTtsEngineUI();
+    Speech.onEngineChange();
+    saveConfig();
+  });
+  $('cfg-piper-voice').addEventListener('change', () => {
+    state.settings.piperVoice = $('cfg-piper-voice').value || '';
+    Speech.onEngineChange();          // drop any audio queued from the old voice
+    saveConfig();
+  });
+  $('cfg-sound').addEventListener('change', () => { if (!$('cfg-sound').checked) Speech.stop(); });
+  $('btn-piper-rescan').addEventListener('click', refreshPiperVoices);
+  $('btn-piper-previews').addEventListener('click', generatePiperPreviews);
+
+  $('btn-load-tools-file').addEventListener('click', () => $('tools-file-input').click());
+  $('tools-file-input').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    const txt = await f.text();
+    $('cfg-tools').value = txt;
+  });
+  $('btn-save-tools').addEventListener('click', async () => {
+    const out = $('bridge-result');
+    out.className = 'test-result busy'; out.textContent = '▸ saving and restarting MCP servers…';
+    try {
+      const cfg = JSON.parse($('cfg-tools').value || '{}');
+      const r = await saveToolsConfig(cfg);
+      out.className = 'test-result ok';
+      out.textContent = `▸ saved · ${(r.servers || []).length} server(s) configured · waiting for boot…`;
+      setTimeout(refreshServers, 1500);
+      setTimeout(refreshServers, 4000);
+      showToast('TOOLS SAVED', 'tools.json written; servers restarting.', 'amber');
+    } catch (e) {
+      out.className = 'test-result err';
+      out.textContent = '▸ ' + e.message;
+    }
+  });
+  $('btn-reload-tools').addEventListener('click', async () => {
+    const cfg = await loadToolsConfig();
+    $('cfg-tools').value = JSON.stringify(cfg, null, 2);
+    await refreshServers();
+  });
+
+  $('btn-save').addEventListener('click', async () => {
+    const prevNet = state.settings.networkVisible;
+    readForm(); await saveConfig(); updateStatus(); renderEmptyCheck(); renderMessages();
+    if (prevNet !== state.settings.networkVisible) {
+      showToast('NETWORK CHANGED', 'Restart start.py for binding change to take effect.', 'amber');
+    } else {
+      showToast('SAVED', 'settings.json written.', 'green');
+    }
+  });
+  $('btn-reload').addEventListener('click', async () => { await loadConfig(); applyToForm(); updateStatus(); });
+  $('btn-reset').addEventListener('click', async () => {
+    state.settings = { ...DEFAULTS }; applyToForm(); await saveConfig(); updateStatus();
+    showToast('RESET', 'Defaults restored.', 'amber');
+  });
+  $('btn-purge-conv').addEventListener('click', async () => {
+    if (!confirm('Purge the active chat?')) return;
+    state.messages = []; await persistActiveChat(); renderMessages(); updateStatus();
+    showToast('PURGED', 'Active chat cleared.', 'red');
+  });
+
+  // Consolidated CHAT menu (left side, under the section head)
+  const chatMenuBtn = $('btn-chat-menu');
+  const chatMenuPop = $('chat-menu-pop');
+  chatMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const open = chatMenuPop.classList.toggle('open');
+    chatMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  });
+  chatMenuPop.querySelectorAll('button[data-act]').forEach(b => {
+    b.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      chatMenuPop.classList.remove('open');
+      chatMenuBtn.setAttribute('aria-expanded', 'false');
+      const act = b.dataset.act;
+      if (act === 'new') return createChat('');
+      if (!state.activeChatId) { showToast('NO ACTIVE CHAT', 'Create one first.', 'amber'); return; }
+      await chatAction(state.activeChatId, act);
+    });
+  });
+
+  $('btn-open-settings').addEventListener('click', openDrawer);
+
+  // Right-side ACTIVE SESSION ops (mirror of session menu)
+  document.querySelectorAll('[data-act-act]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!state.activeChatId) { showToast('NO ACTIVE CHAT', 'Create one first.', 'amber'); return; }
+      await chatAction(state.activeChatId, btn.dataset.actAct);
+    });
+  });
+
+  // Keep the "new context limit" readout live as the operator edits either the
+  // context size or the roll threshold.
+  ['cfg-ctx', 'cfg-threshold'].forEach(id => {
+    const el = $(id);
+    if (el) el.addEventListener('input', syncThresholdEff);
+  });
+
+  $('btn-roll-now').addEventListener('click', () => {
+    // Cropping is now automatic and non-destructive; this just reports the
+    // current model-side window without altering the stored conversation.
+    const w = contextWindow();
+    showToast(w.dropped ? 'CONTEXT WINDOWED' : 'FULL CONTEXT',
+              w.dropped
+                ? `${w.dropped} oldest message(s) held out of the model window`
+                : 'entire conversation fits the model window',
+              w.dropped ? 'cyan' : 'amber');
+    updateStatus();
+  });
+  $('btn-restart-mcp').addEventListener('click', async () => {
+    try { await apiPost('/api/servers/reload', {}); showToast('MCP', 'Servers restarting.', 'amber'); setTimeout(refreshServers, 1500); setTimeout(refreshServers, 4000); }
+    catch (e) { showToast('MCP FAIL', e.message, 'red'); }
+  });
+
+  // Scheduler wiring
+  $('btn-schedule').addEventListener('click', scheduleJob);
+  $('sched-prompt').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); scheduleJob(); }
+  });
+  $('sched-time').addEventListener('input', () => {
+    const v = $('sched-time').value;
+    if (/^\d{0,2}$/.test(v.replace(/:/g, ''))) return; // allow typing digits and colons
+  });
+  $('sched-job-list').addEventListener('click', (e) => {
+    const btn = e.target.closest('.job-cancel');
+    if (btn) cancelScheduledJob(parseInt(btn.dataset.jobId));
+  });
+
+  // Left / right sidebar toggles
+  const toggleSide = (which) => {
+    const app = document.querySelector('.app');
+    const cls = which + '-collapsed';
+    app.classList.toggle(cls);
+    const collapsed = app.classList.contains(cls);
+    if (which === 'left')  state.settings.leftCollapsed = collapsed;
+    if (which === 'right') state.settings.rightCollapsed = collapsed;
+    updateToggleIcons();
+    // persist asynchronously (don't block UI)
+    apiPost('/api/config', { [which === 'left' ? 'leftCollapsed' : 'rightCollapsed']: collapsed }).catch(()=>{});
+  };
+  $('toggle-left').addEventListener('click', () => toggleSide('left'));
+  $('toggle-right').addEventListener('click', () => toggleSide('right'));
+
+  const ta = $('input');
+  ta.addEventListener('input', () => autoresize(ta));
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const t = ta.value; ta.value = ''; autoresize(ta); sendUser(t); }
+    else if (e.key === 'Escape' && state.abortCtrl) state.abortCtrl.abort();
+  });
+  $('btn-send').addEventListener('click', () => {
+    if (state.status.streaming && state.abortCtrl) { state.abortCtrl.abort(); return; }
+    const t = ta.value; ta.value = ''; autoresize(ta); sendUser(t);
+  });
+
+  // ── Image attach: picker, paste, drag-and-drop ──
+  const imgInput = $('img-input');
+  $('btn-attach').addEventListener('click', () => imgInput.click());
+  imgInput.addEventListener('change', async () => {
+    await handleImageFiles(imgInput.files);
+    imgInput.value = '';   // allow re-selecting the same file
+  });
+  ta.addEventListener('paste', (e) => {
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    const files = [];
+    for (const it of items) { if (it.type && it.type.startsWith('image/')) { const f = it.getAsFile(); if (f) files.push(f); } }
+    if (files.length) { e.preventDefault(); handleImageFiles(files); }
+  });
+  const cw = document.querySelector('.composer-wrap');
+  if (cw) {
+    cw.addEventListener('dragover', (e) => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); cw.classList.add('drag'); } });
+    cw.addEventListener('dragleave', () => cw.classList.remove('drag'));
+    cw.addEventListener('drop', (e) => {
+      cw.classList.remove('drag');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) { e.preventDefault(); handleImageFiles(e.dataTransfer.files); }
+    });
+  }
+
+  // ── Lightbox ──
+  $('img-lightbox').addEventListener('click', (e) => { if (e.target.id !== 'lb-img') closeLightbox(); });
+  $('lb-close').addEventListener('click', closeLightbox);
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); openDrawer(); }
+    if (e.key === 'Escape' && $('img-lightbox').classList.contains('open')) closeLightbox();
+  });
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.chat-pop, [data-menu]')) {
+      document.querySelectorAll('.chat-pop.open').forEach(p => p.classList.remove('open'));
+      state.popoverChatId = null;
+    }
+    if (!e.target.closest('#chat-menu-pop, #btn-chat-menu')) {
+      const cm = $('chat-menu-pop'); if (cm) cm.classList.remove('open');
+      const cb = $('btn-chat-menu'); if (cb) cb.setAttribute('aria-expanded', 'false');
+    }
+  });
+}
+
+function updateToggleIcons() {
+  const app = document.querySelector('.app');
+  const lt = $('toggle-left'); const rt = $('toggle-right');
+  if (lt) {
+    const hidden = app.classList.contains('left-collapsed');
+    lt.textContent = '◧';
+    lt.classList.toggle('active', !hidden);
+    lt.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+  }
+  if (rt) {
+    const hidden = app.classList.contains('right-collapsed');
+    rt.textContent = '◨';
+    rt.classList.toggle('active', !hidden);
+    rt.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+  }
+}
+
+function applySideCollapsedFromSettings() {
+  const app = document.querySelector('.app');
+  app.classList.toggle('left-collapsed',  !!state.settings.leftCollapsed);
+  app.classList.toggle('right-collapsed', !!state.settings.rightCollapsed);
+  updateToggleIcons();
+}
+
+/* Clock */
+function tickClock() { $('foot-clock').textContent = new Date().toTimeString().slice(0, 8); }
+setInterval(tickClock, 1000); tickClock();
+
+/* ───────────────── Scheduler ───────────────── */
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function parseTimeInput(str) {
+  const m = String(str).match(/^(\d{1,2}):(\d{2}):(\d{2})$/);
+  if (!m) return null;
+  const h = parseInt(m[1], 10);
+  const min = parseInt(m[2], 10);
+  const sec = parseInt(m[3], 10);
+  if (h < 1 || h > 12 || min > 59 || sec > 59) return null;
+  return { hour: h, minute: min, second: sec };
+}
+
+function computeNextRun(dayOfWeek, hour, minute, second, ampm) {
+  let h24 = hour;
+  if (ampm === 'PM' && h24 !== 12) h24 += 12;
+  if (ampm === 'AM' && h24 === 12) h24 = 0;
+
+  const now = new Date();
+  const today = now.getDay();
+
+  let daysUntil = dayOfWeek - today;
+  if (daysUntil < 0) daysUntil += 7;
+
+  const target = new Date(now);
+  target.setDate(target.getDate() + daysUntil);
+  target.setHours(h24, minute, second, 0);
+
+  // If target is today but time has passed, advance 7 days
+  if (daysUntil === 0 && target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 7);
+  }
+
+  return target;
+}
+
+function formatCountdown(ms) {
+  if (ms <= 0) return 'NOW';
+  const totalSec = Math.floor(ms / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+
+  if (days > 0) return `${days}d ${hours}h ${mins}m`;
+  if (hours > 0) return `${hours}h ${mins}m ${secs}s`;
+  if (mins > 0) return `${mins}m ${secs}s`;
+  return `${secs}s`;
+}
+
+function renderSchedulerJobs() {
+  const list = $('sched-job-list');
+  const jobs = state.scheduler.jobs;
+  if (!jobs.length) {
+    list.innerHTML = '<div class="sched-empty">No scheduled jobs.</div>';
+    return;
+  }
+  const now = Date.now();
+  list.innerHTML = jobs.map(job => {
+    const truncated = escapeHtml(job.prompt.length > 50 ? job.prompt.slice(0, 50) + '…' : job.prompt);
+    const cls = job.status === 'fired' ? 'scheduler-job fired' : 'scheduler-job';
+    const ms = job.status === 'pending' ? Math.max(0, job.nextRun.getTime() - now) : 0;
+    const countdown = job.status === 'pending' ? formatCountdown(ms) : (job.status === 'fired' ? 'DONE' : '—');
+    const dayName = DAY_NAMES[job.dayOfWeek];
+    const timeStr = `${String(job.hour).padStart(2, '0')}:${String(job.minute).padStart(2, '0')}:${String(job.second).padStart(2, '0')} ${job.ampm}`;
+    const repeatBadge = job.repeat ? ' <span class="sched-repeat-badge">(WEEKLY)</span>' : '';
+    const cancelBtn = job.status === 'pending'
+      ? `<button class="job-cancel" data-job-id="${job.id}">✕</button>`
+      : '';
+    return `<div class="${cls}" id="job-row-${job.id}">
+      <span class="job-prompt" title="${escapeHtml(job.prompt)}">${truncated}${repeatBadge}</span>
+      <div>
+        <div class="job-schedule">${dayName} ${timeStr}</div>
+        <div class="job-countdown" id="job-count-${job.id}">${countdown}</div>
+      </div>
+      ${cancelBtn}
+    </div>`;
+  }).join('');
+}
+
+async function scheduleJob() {
+  const prompt = $('sched-prompt').value.trim();
+  if (!prompt) { showToast('SCHEDULER', 'Enter a prompt first.', 'amber'); return; }
+
+  const dayOfWeek = parseInt($('sched-day').value);
+  const timeStr = $('sched-time').value.trim();
+  const parsed = parseTimeInput(timeStr);
+  if (!parsed) { showToast('SCHEDULER', 'Invalid time. Use HH:MM:SS format (12-hour).', 'amber'); return; }
+
+  const ampm = $('sched-ampm').value;
+  const repeat = $('sched-repeat').checked;
+
+  const nextRun = computeNextRun(dayOfWeek, parsed.hour, parsed.minute, parsed.second, ampm);
+  const msUntil = nextRun.getTime() - Date.now();
+
+  const id = state.scheduler.nextId++;
+  const job = {
+    id,
+    prompt,
+    dayOfWeek,
+    hour: parsed.hour,
+    minute: parsed.minute,
+    second: parsed.second,
+    ampm,
+    repeat,
+    nextRun,
+    status: 'pending',
+    timerHandle: null,
+  };
+
+  job.timerHandle = setTimeout(() => fireScheduledJob(id), msUntil);
+  state.scheduler.jobs.push(job);
+
+  $('sched-prompt').value = '';
+  autoresize($('sched-prompt'));
+  renderSchedulerJobs();
+
+  const dayName = DAY_NAMES[dayOfWeek];
+  const timeLabel = `${String(parsed.hour).padStart(2, '0')}:${String(parsed.minute).padStart(2, '0')}:${String(parsed.second).padStart(2, '0')} ${ampm}`;
+  showToast('SCHEDULED', `Job #${id} for ${dayName} at ${timeLabel}`, 'cyan');
+}
+
+function cancelScheduledJob(id) {
+  const idx = state.scheduler.jobs.findIndex(j => j.id === id);
+  if (idx === -1) return;
+  const job = state.scheduler.jobs[idx];
+  if (job.status !== 'pending') return;
+  clearTimeout(job.timerHandle);
+  job.status = 'cancelled';
+  state.scheduler.jobs.splice(idx, 1);
+  renderSchedulerJobs();
+  showToast('CANCELLED', `Job #${id} cancelled.`, 'amber');
+}
+
+async function fireScheduledJob(id) {
+  const idx = state.scheduler.jobs.findIndex(j => j.id === id);
+  if (idx === -1) return;
+  const job = state.scheduler.jobs[idx];
+  if (job.status !== 'pending') return;
+
+  if (job.repeat) {
+    // Reschedule for next week
+    const nextRun = computeNextRun(job.dayOfWeek, job.hour, job.minute, job.second, job.ampm);
+    const msUntil = nextRun.getTime() - Date.now();
+    job.nextRun = nextRun;
+    job.timerHandle = setTimeout(() => fireScheduledJob(id), msUntil);
+    renderSchedulerJobs();
+    showToast('JOB FIRED', `Job #${id}: repeating — next run ${DAY_NAMES[job.dayOfWeek]} at ${String(job.hour).padStart(2, '0')}:${String(job.minute).padStart(2, '0')}:${String(job.second).padStart(2, '0')} ${job.ampm}`, 'green');
+  } else {
+    job.status = 'fired';
+    renderSchedulerJobs();
+    showToast('JOB FIRED', `Job #${id}: "${job.prompt.slice(0, 40)}…"`, 'green');
+
+    setTimeout(() => {
+      state.scheduler.jobs = state.scheduler.jobs.filter(j => j.id !== id);
+      renderSchedulerJobs();
+    }, 2000);
+  }
+
+  try {
+    await createChat('Scheduled Job');
+    await sendUser(job.prompt);
+  } catch (e) {
+    showToast('JOB FAILED', e.message, 'red');
+  }
+}
+
+function tickScheduler() {
+  const now = Date.now();
+  state.scheduler.jobs.forEach(job => {
+    if (job.status !== 'pending') return;
+    const ms = Math.max(0, job.nextRun.getTime() - now);
+    const el = $(`job-count-${job.id}`);
+    if (el) el.textContent = formatCountdown(ms);
+  });
+}
+
+/* Server status polling — light because SSE pushes most updates */
+setInterval(refreshServers, 8000);
+
+/* Scheduler countdown tick */
+setInterval(tickScheduler, 1000); tickScheduler();
+
+/* Boot */
+(async function init() {
+  await loadConfig();
+  applyTheme();
+  await loadChatsIndex();
+  if (!state.activeChatId && state.chats[0]) state.activeChatId = state.chats[0].id;
+  await loadActiveChat();
+  await refreshServers();
+  applyToForm();
+  attachWiring();
+  applySideCollapsedFromSettings();
+  renderChatList();
+  renderMessages();
+  renderSchedulerJobs();
+  updateStatus();
+  connectEvents();
+  if (state.settings.endpoint) {
+    fetch(epBase() + '/models', { headers: authHeaders() })
+      .then(r => { state.status.connected = r.ok; updateStatus(); })
+      .catch(() => { updateStatus(); });
+  }
+})();
+</script>
+
+</body>
+</html>

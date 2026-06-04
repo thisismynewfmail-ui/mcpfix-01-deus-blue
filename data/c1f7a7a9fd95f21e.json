@@ -1,0 +1,22 @@
+{
+  "id": "c1f7a7a9fd95f21e",
+  "name": "Scheduled Job",
+  "created": 1778526678226,
+  "updated": 1778526697206,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Open the browser to google.com.",
+      "_ts": 1778526678304
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n_[stopped]_",
+      "reasoning": "The user wants me to open the browser to google.com. I need to use the playwright_browser_navigate function with the URL",
+      "tool_calls": [],
+      "_ts": 1778526678304,
+      "_streaming": false,
+      "_streamingThink": false
+    }
+  ]
+}

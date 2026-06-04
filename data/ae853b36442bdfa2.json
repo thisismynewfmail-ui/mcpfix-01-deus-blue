@@ -1,0 +1,620 @@
+{
+  "id": "ae853b36442bdfa2",
+  "name": "Session 36",
+  "created": 1780318300745,
+  "updated": 1780318453063,
+  "messages": [
+    {
+      "role": "user",
+      "content": "Make a post on r/computers",
+      "_ts": 1780318311534
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The user wants me to make a Reddit post on r/computers. I need to use the browser tools to navigate to Reddit, find or create a subreddit for computers, and then submit a post with content.\n\nLet me start by navigating to Reddit's main page first.\n",
+      "tool_calls": [
+        {
+          "id": "865178265",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_navigate",
+            "arguments": "{\"url\": \"https://www.reddit.com/r/computers\"}"
+          }
+        }
+      ],
+      "_ts": 1780318311535,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "865178265",
+      "name": "playwright__browser_navigate",
+      "content": "### Error\npage.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('[data-action=\"search\"]')\u001b[22m\n\u001b[2m    - waiting for\" https://www.reddit.com/\" navigation to finish...\u001b[22m\n\u001b[2m    - navigated to \"https://www.reddit.com/\"\u001b[22m\n\n    at evalmachine.<anonymous>:2:14\n    at evalmachine.<anonymous>:3:26\n    at evalmachine.<anonymous>:8:3\n### Ran Playwright code\n```js\nawait page.goto('https://www.reddit.com/r/computers');\n```\n### Page\n- Page URL: https://www.reddit.com/r/computers/\n- Page Title: Computers\n- Console: 4 errors, 1 warnings\n### Snapshot\n- [Snapshot](.playwright-mcp\\page-2026-06-01T12-52-00-665Z.yml)\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-51-57-130Z.log#L1-L6",
+      "_ts": 1780318320697,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The page loaded successfully. Now I need to find and click the search box, then type my post content about computers technology trends or insights. Let me first get a snapshot of the page structure to locate elements.\n",
+      "tool_calls": [
+        {
+          "id": "582465517",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_snapshot",
+            "arguments": "{}"
+          }
+        }
+      ],
+      "_ts": 1780318320698,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "582465517",
+      "name": "playwright__browser_snapshot",
+      "content": "### Page\n- Page URL: https://www.reddit.com/r/computers/\n- Page Title: Computers\n- Console: 4 errors, 1 warnings\n### Snapshot\n```yaml\n- generic [active] [ref=e1]:\n  - link \"Skip to main content\" [ref=e2] [cursor=pointer]:\n    - /url: \"#main-content\"\n    - generic [ref=e4]: Skip to main content\n  - generic [ref=e6]:\n    - generic:\n      - generic [ref=e7]:\n        - generic: Computers\n      - banner [ref=e10]:\n        - navigation [ref=e11]:\n          - link \"Home\" [ref=e15] [cursor=pointer]:\n            - /url: https://www.reddit.com/\n            - img [ref=e17]\n          - search [ref=e33]:\n            - generic [ref=e35]:\n              - img [ref=e38]\n              - generic \"Remove r/computers filter and expand search to all of Reddit\" [ref=e41] [cursor=pointer]:\n                - button [pressed] [ref=e42]:\n                  - img [ref=e44]\n                  - generic [ref=e47]: r/computers\n                  - img [ref=e49]\n              - textbox \"Remove r/computers filter and expand search to all of Reddit\" [ref=e52]:\n                - /placeholder: Search in ⁨r/computers⁩\n          - generic [ref=e53]:\n            - generic [ref=e54]:\n              - link \"Advertise on Reddit\" [ref=e60] [cursor=pointer]:\n                - /url: https://ads.reddit.com/register?utm_source=web3x_consumer&utm_name=nav_cta\n                - img [ref=e63]\n                - generic [ref=e65]:\n                  - generic: Advertise on Reddit\n              - button \"Open chat\" [ref=e71] [cursor=pointer]:\n                - img [ref=e74]\n                - generic [ref=e76]:\n                  - generic: Open chat\n              - link \"Create post\" [ref=e81] [cursor=pointer]:\n                - /url: https://www.reddit.com/r/computers/submit/\n                - img [ref=e84]\n                - generic [ref=e86]:\n                  - generic: Create post\n              - link \"Open inbox\" [ref=e90] [cursor=pointer]:\n                - /url: https://www.reddit.com/notifications/\n                - img [ref=e93]\n                - generic [ref=e95]:\n                  - generic: Open inbox\n            - button \"User is online Expand user menu\" [ref=e100] [cursor=pointer]:\n              - generic [ref=e107]:\n                - img [ref=e110]\n                - generic \"User is online\" [ref=e112]\n              - generic [ref=e113]:\n                - generic: Expand user menu\n      - generic [ref=e114]:\n        - generic [ref=e115]:\n          - region \"Community actions\" [ref=e119]:\n            - generic [ref=e120]:\n              - generic [ref=e121]:\n                - img [ref=e125]\n                - heading \"r/computers\" [level=1] [ref=e128]\n              - generic [ref=e129]:\n                - link \"Create Post\" [ref=e133] [cursor=pointer]:\n                  - /url: /r/computers/submit\n                  - generic [ref=e134]:\n                    - img [ref=e136]\n                    - generic [ref=e138]: Create Post\n                - generic [ref=e140]:\n                  - button \"Join\" [ref=e143] [cursor=pointer]\n                  - button \"Open overflow menu\" [ref=e146] [cursor=pointer]:\n                    - img [ref=e149]\n          - generic [ref=e151]:\n            - generic:\n              - generic:\n                - link \"Skip to Navigation\" [ref=e152] [cursor=pointer]:\n                  - /url: \"#left-sidebar-container\"\n                - link \"Skip to Right Sidebar\" [ref=e153] [cursor=pointer]:\n                  - /url: \"#right-sidebar-container\"\n          - generic [ref=e154]:\n            - main [ref=e155]:\n              - generic [ref=e158]:\n                - generic \"Sort by\" [ref=e162]:\n                  - 'button \"Sort by: Best\" [ref=e164] [cursor=pointer]':\n                    - generic [ref=e166]: Best\n                - generic \"View\" [ref=e172]:\n                  - 'button \"View: Card\" [ref=e174] [cursor=pointer]'\n              - generic [ref=e180]:\n                - button \"collapse/expand community highlights\" [ref=e181] [cursor=pointer]:\n                  - heading \"Community highlights\" [level=3] [ref=e182]:\n                    - img [ref=e183]\n                    - generic [ref=e185]: Community highlights\n                  - button \"collapse/expand community highlights\" [ref=e187]:\n                    - img [ref=e190]\n                - generic [ref=e193]:\n                  - list [ref=e194]:\n                    - generic:\n                      - listitem [ref=e195]:\n                        - 'link \"GEEKOM A7 Max review Flair: Review\" [ref=e196] [cursor=pointer]':\n                          - /url: /r/computers/comments/1rozpvh/geekom_a7_max_review/\n                          - generic [ref=e200]:\n                            - heading \"GEEKOM A7 Max review\" [level=2] [ref=e204]\n                            - 'generic \"Flair: Review\" [ref=e209]': Review\n                      - listitem [ref=e210]:\n                        - 'link \"A review of Geekom''s Geekbook X14 Pro Flair: Review\" [ref=e211] [cursor=pointer]':\n                          - /url: /r/computers/comments/1re5816/a_review_of_geekoms_geekbook_x14_pro/\n                          - generic [ref=e215]:\n                            - heading \"A review of Geekom's Geekbook X14 Pro\" [level=2] [ref=e219]\n                            - 'generic \"Flair: Review\" [ref=e224]': Review\n                      - listitem [ref=e225]:\n                        - 'link \"Stripped screws: Can we remove them? Announcement\" [ref=e226] [cursor=pointer]':\n                          - /url: /r/computers/comments/1qqs67n/stripped_screws_can_we_remove_them/\n                          - generic [ref=e230]:\n                            - 'heading \"Stripped screws: Can we remove them?\" [level=2] [ref=e234]'\n                            - generic [ref=e238]:\n                              - img [ref=e239]\n                              - generic [ref=e241]: Announcement\n                      - listitem [ref=e242]:\n                        - 'link \"Display damage: Can we fix it? No it''s fucked! Announcement\" [ref=e243] [cursor=pointer]':\n                          - /url: /r/computers/comments/1o5mloo/display_damage_can_we_fix_it_no_its_fucked/\n                          - generic [ref=e247]:\n                            - 'heading \"Display damage: Can we fix it? No it''s fucked!\" [level=2] [ref=e251]'\n                            - generic [ref=e255]:\n                              - img [ref=e256]\n                              - generic [ref=e258]: Announcement\n                  - button \"Next\" [ref=e259]:\n                    - button \"Next\" [ref=e260] [cursor=pointer]:\n                      - img [ref=e263]\n              - generic [ref=e266]:\n                - generic \"Computers\"\n                - separator [ref=e267]\n                - generic [ref=e268]:\n                  - heading \"Feed\" [level=1] [ref=e270]\n                  - generic:\n                    - article \"Back then you could send a whole crew to the Moon with kilobytes of Ram😂\" [ref=e271]:\n                      - generic [ref=e272] [cursor=pointer]:\n                        - link \"Back then you could send a whole crew to the Moon with kilobytes of Ram😂\" [ref=e273]:\n                          - /url: https://www.reddit.com/r/computers/comments/1ttk3qq/back_then_you_could_send_a_whole_crew_to_the_moon/\n                          - generic [ref=e274]:\n                            - generic: Back then you could send a whole crew to the Moon with kilobytes of Ram😂\n                        - generic [ref=e275]:\n                          - generic [ref=e276]:\n                            - 'link \"Author: u/WinterMoneys\" [ref=e281]':\n                              - /url: /user/WinterMoneys/\n                              - generic [ref=e282]:\n                                - img [ref=e287]\n                                - generic [ref=e289]: u/WinterMoneys\n                            - generic [ref=e290]: •\n                            - time [ref=e292]: 6 hr. ago\n                          - button \"Open user actions\" [ref=e297]:\n                            - img [ref=e300]\n                        - generic [ref=e303]:\n                          - heading \"Back then you could send a whole crew to the Moon with kilobytes of Ram😂\" [level=2] [ref=e304]:\n                            - link \"Back then you could send a whole crew to the Moon with kilobytes of Ram😂\" [ref=e305]:\n                              - /url: /r/computers/comments/1ttk3qq/back_then_you_could_send_a_whole_crew_to_the_moon/\n                          - 'link \"Flair: Meme/Satire\" [ref=e308]':\n                            - /url: /r/computers/?f=flair_name%3A%22Meme%2FSatire%22\n                            - 'generic \"Flair: Meme/Satire\" [ref=e310]': Meme/Satire\n                        - img \"r/computers - Back then you could send a whole crew to the Moon with kilobytes of Ram😂\" [ref=e316]\n                        - generic \"Actions available for this post\" [ref=e318]:\n                          - generic [ref=e321]:\n                            - button \"Upvote\" [ref=e322]:\n                              - img [ref=e324]\n                              - generic [ref=e326]:\n                                - generic: Upvote\n                            - generic [ref=e328]: \"604\"\n                            - button \"Downvote\" [ref=e329]:\n                              - img [ref=e331]\n                              - generic [ref=e333]:\n                                - generic: Downvote\n                          - link \"14 Go to comments\" [ref=e334]:\n                            - /url: /r/computers/comments/1ttk3qq/back_then_you_could_send_a_whole_crew_to_the_moon/\n                            - generic [ref=e335]:\n                              - img [ref=e337]\n                              - generic [ref=e340]: \"14\"\n                            - generic [ref=e341]:\n                              - generic: Go to comments\n                          - button \"Give award\" [ref=e343]:\n                            - img [ref=e346]\n                          - button \"Share\" [ref=e351]:\n                            - generic [ref=e352]:\n                              - img [ref=e354]\n                              - generic [ref=e356]: Share\n                    - separator [ref=e357]\n                    - generic [ref=e358]:\n                      - 'generic \"Advertisement: Builders, devs, sysadmins: meet your new favorite hosting partner. 💡 Liquid Web delivers power, control, and uptime you can count on.\" [ref=e359]':\n                        - 'link \"Advertisement: Builders, devs, sysadmins: meet your new favorite hosting partner. 💡 Liquid Web delivers power, control, and uptime you can count on.\" [ref=e360] [cursor=pointer]':\n                          - /url: https://alb.reddit.com/cr?za=uumVnz2seMelMoejWC_C_kp5MOfcyEQ6wlpCQ-auNxeaecm9jdGeHOTYLU3OLh-dDkOssiaJBhvyt3wlZZ-yZsRVN1QNp13e86QeZTNWaFBsNcGq4Ctc-aMRDobbTDuzQLUDEViQsLNC9AgBDPIMIHZ3_TBDa3tcThKxZSrLdAc-prRERxFnQbjfzk4LCXgV5MM2ebuU22C1sLHMmfsoNuqDQ0ShMFIsc3P_qNdB0jf9R1kIQC0ETZmu9doN2d1s3VldyeWNfwLNGcEjd7lfAWRONAID6RaxvE0lAb5sDqHC-b2271l9W7SzSvtx5NsyHZfhE9_JWdID6WPeETJy8f-KsmyREFvQXY2v3PyNYaARSRs93ydrpBGNa2cJvYcCnvWsylaSD2Fk49q6bV8NyIPvbEg4ipWopdgngAkm_by45TxrZMYYkyltBboT7GslQOsQT_X0kB_GWxFiBJLcMlBIrb25P9jFQx1Uwf2H40fstZQPfk0qaRua-q38Sw7mZ2G83RLvjFNcGpwunENZfwxKppelOclyY72Ixuh2mdq88ouJ6o2eO4B7EwvDvDiZPszCkMz098KtOhty3y1XtMSrNfce_1gd4n0rhWabAOzJxjpgZSyA5EwBZuF8A-YWJ5-zOx5SSUGDRA3XtZ31b-adn00yZYte2SzGLhiGRgR_C9Onxoyk1u9RZWYDTiLuQvAzrbmiZW0q3G5XCE1WhqWAhSGZ3tQ&zp=1t4G3AgYd0c8m0qte4vFhkUFcvPzHLX5BvBvQevBwdzlO__Q9QbejblOzwxT4DFDUolnIHMddXtDvGQgxWZpC2sib6WyqR_pO4fHiLgHrVjuqvXVOHf75IPPsRGIBuCPZ0Qpcua_N9pUIXemXmJ1i4843IsX-lS2BzQxUQE-Ybdz1l_Td8sruZ5p6B7wdsiwqeaHhtnUZYc253OJD0Q-SNC7Jjx4Et9APmvYwNG_UITyPVWale7sWJrVwZ2SKMzUc2Sjv2xRueQ1PhpnEVgccVkfx_LRPhE51Yjpt3-SHz7h3I1_GPIudeEJctj6kHk_uaNKJUpbgyG5VHF9VN3xQlVpxTUf4Z893sxZcKP5g-hAb5flyn2S9qATTfWSmOTifeIRvmVL41ZmpH2-hZfoYGbbJlBoFP3dSlnvwS3r\n                      - generic [ref=e361]:\n                        - generic [ref=e362]:\n                          - link \"u/LiquidWebLLC avatar u/LiquidWebLLC User has verifications\" [ref=e365] [cursor=pointer]:\n                            - /url: /user/LiquidWebLLC/\n                            - img \"u/LiquidWebLLC avatar\" [ref=e368]\n                            - generic [ref=e369]: u/LiquidWebLLC\n                            - img \"User has verifications\" [ref=e370]\n                          - generic [ref=e372]: •\n                          - link \"Promoted\" [ref=e374] [cursor=pointer]:\n                            - /url: /user/LiquidWebLLC/\n                            - generic [ref=e375]: Promoted\n                          - link [ref=e377] [cursor=pointer]:\n                            - /url: https://alb.reddit.com/cr?za=uumVnz2seMelMoejWC_C_kp5MOfcyEQ6wlpCQ-auNxeaecm9jdGeHOTYLU3OLh-dDkOssiaJBhvyt3wlZZ-yZsRVN1QNp13e86QeZTNWaFBsNcGq4Ctc-aMRDobbTDuzQLUDEViQsLNC9AgBDPIMIHZ3_TBDa3tcThKxZSrLdAc-prRERxFnQbjfzk4LCXgV5MM2ebuU22C1sLHMmfsoNuqDQ0ShMFIsc3P_qNdB0jf9R1kIQC0ETZmu9doN2d1s3VldyeWNfwLNGcEjd7lfAWRONAID6RaxvE0lAb5sDqHC-b2271l9W7SzSvtx5NsyHZfhE9_JWdID6WPeETJy8f-KsmyREFvQXY2v3PyNYaARSRs93ydrpBGNa2cJvYcCnvWsylaSD2Fk49q6bV8NyIPvbEg4ipWopdgngAkm_by45TxrZMYYkyltBboT7GslQOsQT_X0kB_GWxFiBJLcMlBIrb25P9jFQx1Uwf2H40fstZQPfk0qaRua-q38Sw7mZ2G83RLvjFNcGpwunENZfwxKppelOclyY72Ixuh2mdq88ouJ6o2eO4B7EwvDvDiZPszCkMz098KtOhty3y1XtMSrNfce_1gd4n0rhWabAOzJxjpgZSyA5EwBZuF8A-YWJ5-zOx5SSUGDRA3XtZ31b-adn00yZYte2SzGLhiGRgR_C9Onxoyk1u9RZWYDTiLuQvAzrbmiZW0q3G5XCE1WhqWAhSGZ3tQ&zp=1t4G3AgYd0c8m0qte4vFhkUFcvPzHLX5BvBvQevBwdzlO__Q9QbejblOzwxT4DFDUolnIHMddXtDvGQgxWZpC2sib6WyqR_pO4fHiLgHrVjuqvXVOHf75IPPsRGIBuCPZ0Qpcua_N9pUIXemXmJ1i4843IsX-lS2BzQxUQE-Ybdz1l_Td8sruZ5p6B7wdsiwqeaHhtnUZYc253OJD0Q-SNC7Jjx4Et9APmvYwNG_UITyPVWale7sWJrVwZ2SKMzUc2Sjv2xRueQ1PhpnEVgccVkfx_LRPhE51Yjpt3-SHz7h3I1_GPIudeEJctj6kHk_uaNKJUpbgyG5VHF9VN3xQlVpxTUf4Z893sxZcKP5g-hAb5flyn2S9qATTfWSmOTifeIRvmVL41ZmpH2-hZfoYGbbJlBoFP3dSlnvwS3r\n                        - button \"Open user actions\" [ref=e382] [cursor=pointer]:\n                          - img [ref=e385]\n                      - 'heading \"Builders, devs, sysadmins: meet your new favorite hosting partner. 💡 Liquid Web delivers power, control, and uptime you can count on.\" [level=2] [ref=e389]':\n                        - 'link \"Builders, devs, sysadmins: meet your new favorite hosting partner. 💡 Liquid Web delivers power, control, and uptime you can count on.\" [ref=e392] [cursor=pointer]':\n                          - /url: https://alb.reddit.com/cr?za=uumVnz2seMelMoejWC_C_kp5MOfcyEQ6wlpCQ-auNxeaecm9jdGeHOTYLU3OLh-dDkOssiaJBhvyt3wlZZ-yZsRVN1QNp13e86QeZTNWaFBsNcGq4Ctc-aMRDobbTDuzQLUDEViQsLNC9AgBDPIMIHZ3_TBDa3tcThKxZSrLdAc-prRERxFnQbjfzk4LCXgV5MM2ebuU22C1sLHMmfsoNuqDQ0ShMFIsc3P_qNdB0jf9R1kIQC0ETZmu9doN2d1s3VldyeWNfwLNGcEjd7lfAWRONAID6RaxvE0lAb5sDqHC-b2271l9W7SzSvtx5NsyHZfhE9_JWdID6WPeETJy8f-KsmyREFvQXY2v3PyNYaARSRs93ydrpBGNa2cJvYcCnvWsylaSD2Fk49q6bV8NyIPvbEg4ipWopdgngAkm_by45TxrZMYYkyltBboT7GslQOsQT_X0kB_GWxFiBJLcMlBIrb25P9jFQx1Uwf2H40fstZQPfk0qaRua-q38Sw7mZ2G83RLvjFNcGpwunENZfwxKppelOclyY72Ixuh2mdq88ouJ6o2eO4B7EwvDvDiZPszCkMz098KtOhty3y1XtMSrNfce_1gd4n0rhWabAOzJxjpgZSyA5EwBZuF8A-YWJ5-zOx5SSUGDRA3XtZ31b-adn00yZYte2SzGLhiGRgR_C9Onxoyk1u9RZWYDTiLuQvAzrbmiZW0q3G5XCE1WhqWAhSGZ3tQ&zp=1t4G3AgYd0c8m0qte4vFhkUFcvPzHLX5BvBvQevBwdzlO__Q9QbejblOzwxT4DFDUolnIHMddXtDvGQgxWZpC2sib6WyqR_pO4fHiLgHrVjuqvXVOHf75IPPsRGIBuCPZ0Qpcua_N9pUIXemXmJ1i4843IsX-lS2BzQxUQE-Ybdz1l_Td8sruZ5p6B7wdsiwqeaHhtnUZYc253OJD0Q-SNC7Jjx4Et9APmvYwNG_UITyPVWale7sWJrVwZ2SKMzUc2Sjv2xRueQ1PhpnEVgccVkfx_LRPhE51Yjpt3-SHz7h3I1_GPIudeEJctj6kHk_uaNKJUpbgyG5VHF9VN3xQlVpxTUf4Z893sxZcKP5g-hAb5flyn2S9qATTfWSmOTifeIRvmVL41ZmpH2-hZfoYGbbJlBoFP3dSlnvwS3r\n                          - generic: \"Builders, devs, sysadmins: meet your new favorite hosting partner. 💡 Liquid Web delivers power, control, and uptime you can count on.\"\n                      - generic [ref=e393]:\n                        - 'link \"Builders, devs, sysadmins: meet your new favorite hosting partner. 💡 Liquid Web delivers power, control, and uptime you can count on.\" [ref=e397] [cursor=pointer]':\n                          - /url: https://alb.reddit.com/cr?za=uumVnz2seMelMoejWC_C_kp5MOfcyEQ6wlpCQ-auNxeaecm9jdGeHOTYLU3OLh-dDkOssiaJBhvyt3wlZZ-yZsRVN1QNp13e86QeZTNWaFBsNcGq4Ctc-aMRDobbTDuzQLUDEViQsLNC9AgBDPIMIHZ3_TBDa3tcThKxZSrLdAc-prRERxFnQbjfzk4LCXgV5MM2ebuU22C1sLHMmfsoNuqDQ0ShMFIsc3P_qNdB0jf9R1kIQC0ETZmu9doN2d1s3VldyeWNfwLNGcEjd7lfAWRONAID6RaxvE0lAb5sDqHC-b2271l9W7SzSvtx5NsyHZfhE9_JWdID6WPeETJy8f-KsmyREFvQXY2v3PyNYaARSRs93ydrpBGNa2cJvYcCnvWsylaSD2Fk49q6bV8NyIPvbEg4ipWopdgngAkm_by45TxrZMYYkyltBboT7GslQOsQT_X0kB_GWxFiBJLcMlBIrb25P9jFQx1Uwf2H40fstZQPfk0qaRua-q38Sw7mZ2G83RLvjFNcGpwunENZfwxKppelOclyY72Ixuh2mdq88ouJ6o2eO4B7EwvDvDiZPszCkMz098KtOhty3y1XtMSrNfce_1gd4n0rhWabAOzJxjpgZSyA5EwBZuF8A-YWJ5-zOx5SSUGDRA3XtZ31b-adn00yZYte2SzGLhiGRgR_C9Onxoyk1u9RZWYDTiLuQvAzrbmiZW0q3G5XCE1WhqWAhSGZ3tQ&zp=1t4G3AgYd0c8m0qte4vFhkUFcvPzHLX5BvBvQevBwdzlO__Q9QbejblOzwxT4DFDUolnIHMddXtDvGQgxWZpC2sib6WyqR_pO4fHiLgHrVjuqvXVOHf75IPPsRGIBuCPZ0Qpcua_N9pUIXemXmJ1i4843IsX-lS2BzQxUQE-Ybdz1l_Td8sruZ5p6B7wdsiwqeaHhtnUZYc253OJD0Q-SNC7Jjx4Et9APmvYwNG_UITyPVWale7sWJrVwZ2SKMzUc2Sjv2xRueQ1PhpnEVgccVkfx_LRPhE51Yjpt3-SHz7h3I1_GPIudeEJctj6kHk_uaNKJUpbgyG5VHF9VN3xQlVpxTUf4Z893sxZcKP5g-hAb5flyn2S9qATTfWSmOTifeIRvmVL41ZmpH2-hZfoYGbbJlBoFP3dSlnvwS3r\n                          - 'img \"Builders, devs, sysadmins: meet your new favorite hosting partner. 💡 Liquid Web delivers power, control, and uptime you can count on.\" [ref=e399]'\n                        - separator [ref=e400]\n                        - generic [ref=e401]:\n                          - link [ref=e403] [cursor=pointer]:\n                            - /url: https://alb.reddit.com/cr?za=uumVnz2seMelMoejWC_C_kp5MOfcyEQ6wlpCQ-auNxeaecm9jdGeHOTYLU3OLh-dDkOssiaJBhvyt3wlZZ-yZsRVN1QNp13e86QeZTNWaFBsNcGq4Ctc-aMRDobbTDuzQLUDEViQsLNC9AgBDPIMIHZ3_TBDa3tcThKxZSrLdAc-prRERxFnQbjfzk4LCXgV5MM2ebuU22C1sLHMmfsoNuqDQ0ShMFIsc3P_qNdB0jf9R1kIQC0ETZmu9doN2d1s3VldyeWNfwLNGcEjd7lfAWRONAID6RaxvE0lAb5sDqHC-b2271l9W7SzSvtx5NsyHZfhE9_JWdID6WPeETJy8f-KsmyREFvQXY2v3PyNYaARSRs93ydrpBGNa2cJvYcCnvWsylaSD2Fk49q6bV8NyIPvbEg4ipWopdgngAkm_by45TxrZMYYkyltBboT7GslQOsQT_X0kB_GWxFiBJLcMlBIrb25P9jFQx1Uwf2H40fstZQPfk0qaRua-q38Sw7mZ2G83RLvjFNcGpwunENZfwxKppelOclyY72Ixuh2mdq88ouJ6o2eO4B7EwvDvDiZPszCkMz098KtOhty3y1XtMSrNfce_1gd4n0rhWabAOzJxjpgZSyA5EwBZuF8A-YWJ5-zOx5SSUGDRA3XtZ31b-adn00yZYte2SzGLhiGRgR_C9Onxoyk1u9RZWYDTiLuQvAzrbmiZW0q3G5XCE1WhqWAhSGZ3tQ&zp=1t4G3AgYd0c8m0qte4vFhkUFcvPzHLX5BvBvQevBwdzlO__Q9QbejblOzwxT4DFDUolnIHMddXtDvGQgxWZpC2sib6WyqR_pO4fHiLgHrVjuqvXVOHf75IPPsRGIBuCPZ0Qpcua_N9pUIXemXmJ1i4843IsX-lS2BzQxUQE-Ybdz1l_Td8sruZ5p6B7wdsiwqeaHhtnUZYc253OJD0Q-SNC7Jjx4Et9APmvYwNG_UITyPVWale7sWJrVwZ2SKMzUc2Sjv2xRueQ1PhpnEVgccVkfx_LRPhE51Yjpt3-SHz7h3I1_GPIudeEJctj6kHk_uaNKJUpbgyG5VHF9VN3xQlVpxTUf4Z893sxZcKP5g-hAb5flyn2S9qATTfWSmOTifeIRvmVL41ZmpH2-hZfoYGbbJlBoFP3dSlnvwS3r\n                          - generic [ref=e404]:\n                            - link \"liquidweb.com\" [ref=e407] [cursor=pointer]:\n                              - /url: https://alb.reddit.com/cr?za=uumVnz2seMelMoejWC_C_kp5MOfcyEQ6wlpCQ-auNxeaecm9jdGeHOTYLU3OLh-dDkOssiaJBhvyt3wlZZ-yZsRVN1QNp13e86QeZTNWaFBsNcGq4Ctc-aMRDobbTDuzQLUDEViQsLNC9AgBDPIMIHZ3_TBDa3tcThKxZSrLdAc-prRERxFnQbjfzk4LCXgV5MM2ebuU22C1sLHMmfsoNuqDQ0ShMFIsc3P_qNdB0jf9R1kIQC0ETZmu9doN2d1s3VldyeWNfwLNGcEjd7lfAWRONAID6RaxvE0lAb5sDqHC-b2271l9W7SzSvtx5NsyHZfhE9_JWdID6WPeETJy8f-KsmyREFvQXY2v3PyNYaARSRs93ydrpBGNa2cJvYcCnvWsylaSD2Fk49q6bV8NyIPvbEg4ipWopdgngAkm_by45TxrZMYYkyltBboT7GslQOsQT_X0kB_GWxFiBJLcMlBIrb25P9jFQx1Uwf2H40fstZQPfk0qaRua-q38Sw7mZ2G83RLvjFNcGpwunENZfwxKppelOclyY72Ixuh2mdq88ouJ6o2eO4B7EwvDvDiZPszCkMz098KtOhty3y1XtMSrNfce_1gd4n0rhWabAOzJxjpgZSyA5EwBZuF8A-YWJ5-zOx5SSUGDRA3XtZ31b-adn00yZYte2SzGLhiGRgR_C9Onxoyk1u9RZWYDTiLuQvAzrbmiZW0q3G5XCE1WhqWAhSGZ3tQ&zp=1t4G3AgYd0c8m0qte4vFhkUFcvPzHLX5BvBvQevBwdzlO__Q9QbejblOzwxT4DFDUolnIHMddXtDvGQgxWZpC2sib6WyqR_pO4fHiLgHrVjuqvXVOHf75IPPsRGIBuCPZ0Qpcua_N9pUIXemXmJ1i4843IsX-lS2BzQxUQE-Ybdz1l_Td8sruZ5p6B7wdsiwqeaHhtnUZYc253OJD0Q-SNC7Jjx4Et9APmvYwNG_UITyPVWale7sWJrVwZ2SKMzUc2Sjv2xRueQ1PhpnEVgccVkfx_LRPhE51Yjpt3-SHz7h3I1_GPIudeEJctj6kHk_uaNKJUpbgyG5VHF9VN3xQlVpxTUf4Z893sxZcKP5g-hAb5flyn2S9qATTfWSmOTifeIRvmVL41ZmpH2-hZfoYGbbJlBoFP3dSlnvwS3r\n                              - generic: liquidweb.com\n                            - link \"Shop Now\" [ref=e409] [cursor=pointer]:\n                              - /url: https://alb.reddit.com/cr?za=uumVnz2seMelMoejWC_C_kp5MOfcyEQ6wlpCQ-auNxeaecm9jdGeHOTYLU3OLh-dDkOssiaJBhvyt3wlZZ-yZsRVN1QNp13e86QeZTNWaFBsNcGq4Ctc-aMRDobbTDuzQLUDEViQsLNC9AgBDPIMIHZ3_TBDa3tcThKxZSrLdAc-prRERxFnQbjfzk4LCXgV5MM2ebuU22C1sLHMmfsoNuqDQ0ShMFIsc3P_qNdB0jf9R1kIQC0ETZmu9doN2d1s3VldyeWNfwLNGcEjd7lfAWRONAID6RaxvE0lAb5sDqHC-b2271l9W7SzSvtx5NsyHZfhE9_JWdID6WPeETJy8f-KsmyREFvQXY2v3PyNYaARSRs93ydrpBGNa2cJvYcCnvWsylaSD2Fk49q6bV8NyIPvbEg4ipWopdgngAkm_by45TxrZMYYkyltBboT7GslQOsQT_X0kB_GWxFiBJLcMlBIrb25P9jFQx1Uwf2H40fstZQPfk0qaRua-q38Sw7mZ2G83RLvjFNcGpwunENZfwxKppelOclyY72Ixuh2mdq88ouJ6o2eO4B7EwvDvDiZPszCkMz098KtOhty3y1XtMSrNfce_1gd4n0rhWabAOzJxjpgZSyA5EwBZuF8A-YWJ5-zOx5SSUGDRA3XtZ31b-adn00yZYte2SzGLhiGRgR_C9Onxoyk1u9RZWYDTiLuQvAzrbmiZW0q3G5XCE1WhqWAhSGZ3tQ&zp=1t4G3AgYd0c8m0qte4vFhkUFcvPzHLX5BvBvQevBwdzlO__Q9QbejblOzwxT4DFDUolnIHMddXtDvGQgxWZpC2sib6WyqR_pO4fHiLgHrVjuqvXVOHf75IPPsRGIBuCPZ0Qpcua_N9pUIXemXmJ1i4843IsX-lS2BzQxUQE-Ybdz1l_Td8sruZ5p6B7wdsiwqeaHhtnUZYc253OJD0Q-SNC7Jjx4Et9APmvYwNG_UITyPVWale7sWJrVwZ2SKMzUc2Sjv2xRueQ1PhpnEVgccVkfx_LRPhE51Yjpt3-SHz7h3I1_GPIudeEJctj6kHk_uaNKJUpbgyG5VHF9VN3xQlVpxTUf4Z893sxZcKP5g-hAb5flyn2S9qATTfWSmOTifeIRvmVL41ZmpH2-hZfoYGbbJlBoFP3dSlnvwS3r\n                              - generic [ref=e411]:\n                                - generic: Shop Now\n                      - generic \"Actions available for this post\" [ref=e413]:\n                        - generic [ref=e416]:\n                          - button \"Upvote\" [ref=e417] [cursor=pointer]:\n                            - img [ref=e419]\n                            - generic [ref=e421]:\n                              - generic: Upvote\n                          - text: Vote\n                          - button \"Downvote\" [ref=e422] [cursor=pointer]:\n                            - img [ref=e424]\n                            - generic [ref=e426]:\n                              - generic: Downvote\n                        - link \"0 Go to comments\" [ref=e427] [cursor=pointer]:\n                          - /url: /user/LiquidWebLLC/comments/1s4fhh1/builders_devs_sysadmins_meet_your_new_favorite/?p=1&impressionid=5467329799749924291\n                          - generic [ref=e428]:\n                            - img [ref=e430]\n                            - generic [ref=e433]: \"0\"\n                          - generic [ref=e434]:\n                            - generic: Go to comments\n                        - button \"Share\" [ref=e438] [cursor=pointer]:\n                          - generic [ref=e439]:\n                            - img [ref=e441]\n                            - generic [ref=e443]: Share\n                        - link [ref=e445] [cursor=pointer]:\n                          - /url: https://alb.reddit.com/cr?za=uumVnz2seMelMoejWC_C_kp5MOfcyEQ6wlpCQ-auNxeaecm9jdGeHOTYLU3OLh-dDkOssiaJBhvyt3wlZZ-yZsRVN1QNp13e86QeZTNWaFBsNcGq4Ctc-aMRDobbTDuzQLUDEViQsLNC9AgBDPIMIHZ3_TBDa3tcThKxZSrLdAc-prRERxFnQbjfzk4LCXgV5MM2ebuU22C1sLHMmfsoNuqDQ0ShMFIsc3P_qNdB0jf9R1kIQC0ETZmu9doN2d1s3VldyeWNfwLNGcEjd7lfAWRONAID6RaxvE0lAb5sDqHC-b2271l9W7SzSvtx5NsyHZfhE9_JWdID6WPeETJy8f-KsmyREFvQXY2v3PyNYaARSRs93ydrpBGNa2cJvYcCnvWsylaSD2Fk49q6bV8NyIPvbEg4ipWopdgngAkm_by45TxrZMYYkyltBboT7GslQOsQT_X0kB_GWxFiBJLcMlBIrb25P9jFQx1Uwf2H40fstZQPfk0qaRua-q38Sw7mZ2G83RLvjFNcGpwunENZfwxKppelOclyY72Ixuh2mdq88ouJ6o2eO4B7EwvDvDiZPszCkMz098KtOhty3y1XtMSrNfce_1gd4n0rhWabAOzJxjpgZSyA5EwBZuF8A-YWJ5-zOx5SSUGDRA3XtZ31b-adn00yZYte2SzGLhiGRgR_C9Onxoyk1u9RZWYDTiLuQvAzrbmiZW0q3G5XCE1WhqWAhSGZ3tQ&zp=1t4G3AgYd0c8m0qte4vFhkUFcvPzHLX5BvBvQevBwdzlO__Q9QbejblOzwxT4DFDUolnIHMddXtDvGQgxWZpC2sib6WyqR_pO4fHiLgHrVjuqvXVOHf75IPPsRGIBuCPZ0Qpcua_N9pUIXemXmJ1i4843IsX-lS2BzQxUQE-Ybdz1l_Td8sruZ5p6B7wdsiwqeaHhtnUZYc253OJD0Q-SNC7Jjx4Et9APmvYwNG_UITyPVWale7sWJrVwZ2SKMzUc2Sjv2xRueQ1PhpnEVgccVkfx_LRPhE51Yjpt3-SHz7h3I1_GPIudeEJctj6kHk_uaNKJUpbgyG5VHF9VN3xQlVpxTUf4Z893sxZcKP5g-hAb5flyn2S9qATTfWSmOTifeIRvmVL41ZmpH2-hZfoYGbbJlBoFP3dSlnvwS3r\n                    - separator [ref=e446]\n                    - article \"Screen flicker when opening roblox\" [ref=e447]:\n                      - generic [ref=e448] [cursor=pointer]:\n                        - link \"Screen flicker when opening roblox\" [ref=e449]:\n                          - /url: https://www.reddit.com/r/computers/comments/1to4s5s/screen_flicker_when_opening_roblox/\n                          - generic [ref=e450]:\n                            - generic: Screen flicker when opening roblox\n                        - generic [ref=e451]:\n                          - generic [ref=e452]:\n                            - 'link \"Author: u/No-Occasion1585\" [ref=e457]':\n                              - /url: /user/No-Occasion1585/\n                              - generic [ref=e458]:\n                                - img \"u/No-Occasion1585 avatar\" [ref=e461]\n                                - generic [ref=e462]: u/No-Occasion1585\n                            - generic [ref=e463]: •\n                            - time [ref=e465]: 6 days ago\n                          - generic [ref=e466]:\n                            - img \"Locked post\" [ref=e470]\n                            - button \"Open user actions\" [ref=e475]:\n                              - img [ref=e478]\n                        - generic [ref=e481]:\n                          - heading \"Screen flicker when opening roblox\" [level=2] [ref=e482]:\n                            - link \"Screen flicker when opening roblox\" [ref=e483]:\n                              - /url: /r/computers/comments/1to4s5s/screen_flicker_when_opening_roblox/\n                          - 'link \"Flair: Question/Help/Troubleshooting\" [ref=e486]':\n                            - /url: /r/computers/?f=flair_name%3A%22Question%2FHelp%2FTroubleshooting%22\n                            - 'generic \"Flair: Question/Help/Troubleshooting\" [ref=e488]': Question/Help/Troubleshooting\n                        - generic [ref=e494]:\n                          - generic \"video player\" [ref=e495]\n                          - generic [ref=e496]:\n                            - generic [ref=e497]:\n                              - button \"Toggle playback\" [ref=e498]:\n                                - img [ref=e499]\n                              - generic \"Media time\" [ref=e501]\n                              - generic [ref=e507]:\n                                - generic [ref=e508]: 0:00\n                                - generic [ref=e509]: / 0:14\n                              - button \"Toggle captions\" [ref=e510]:\n                                - img [ref=e511]\n                              - generic [ref=e514]:\n                                - button \"Settings\" [ref=e515]:\n                                  - img [ref=e516]\n                                - generic:\n                                  - button:\n                                    - generic:\n                                      - img\n                                    - generic: Autoplay\n                                  - button:\n                                    - generic: 720p\n                                  - button:\n                                    - generic: 480p\n                                  - button:\n                                    - generic: 360p\n                                  - button:\n                                    - generic: 240p\n                                  - button:\n                                    - generic: 144p\n                                  - button:\n                                    - generic:\n                                      - img\n                                    - generic: Auto\n                              - button \"Toggle fullscreen\" [ref=e518]:\n                                - img [ref=e519]\n                            - button \"Toggle volume\" [ref=e524]:\n                              - img [ref=e525]\n                        - generic \"Actions available for this post\" [ref=e529]:\n                          - generic [ref=e532]:\n                            - button \"Upvote\" [ref=e533]:\n                              - img [ref=e535]\n                              - generic [ref=e537]:\n                                - generic: Upvote\n                            - generic [ref=e539]: 2.3K\n                            - button \"Downvote\" [ref=e540]:\n                              - img [ref=e542]\n                              - generic [ref=e544]:\n                                - generic: Downvote\n                          - link \"143 Go to comments\" [ref=e545]:\n                            - /url: /r/computers/comments/1to4s5s/screen_flicker_when_opening_roblox/\n                            - generic [ref=e546]:\n                              - img [ref=e548]\n                              - generic [ref=e551]: \"143\"\n                            - generic [ref=e552]:\n                              - generic: Go to comments\n                          - button \"Give award, 2 awards given\" [ref=e554]:\n                            - generic [ref=e559]: \"2\"\n                          - button \"Share\" [ref=e563]:\n                            - generic [ref=e564]:\n                              - img [ref=e566]\n                              - generic [ref=e568]: Share\n                    - separator [ref=e569]\n                    - article \"Is this laptop worth its price?\" [ref=e570]:\n                      - generic [ref=e571] [cursor=pointer]:\n                        - link \"Is this laptop worth its price?\" [ref=e572]:\n                          - /url: https://www.reddit.com/r/computers/comments/1ttqr4g/is_this_laptop_worth_its_price/\n                          - generic [ref=e573]:\n                            - generic: Is this laptop worth its price?\n                        - generic [ref=e574]:\n                          - generic [ref=e575]:\n                            - 'link \"Author: u/GrapefruitUnlucky586\" [ref=e580]':\n                              - /url: /user/GrapefruitUnlucky586/\n                              - generic [ref=e581]:\n                                - img \"u/GrapefruitUnlucky586 avatar\" [ref=e584]\n                                - generic [ref=e585]: u/GrapefruitUnlucky586\n                            - generic [ref=e586]: •\n                            - time [ref=e588]: 21 min. ago\n                          - button \"Open user actions\" [ref=e593]:\n                            - img [ref=e596]\n                        - generic [ref=e599]:\n                          - heading \"Is this laptop worth its price?\" [level=2] [ref=e600]:\n                            - link \"Is this laptop worth its price?\" [ref=e601]:\n                              - /url: /r/computers/comments/1ttqr4g/is_this_laptop_worth_its_price/\n                          - 'link \"Flair: Question/Help/Troubleshooting\" [ref=e604]':\n                            - /url: /r/computers/?f=flair_name%3A%22Question%2FHelp%2FTroubleshooting%22\n                            - 'generic \"Flair: Question/Help/Troubleshooting\" [ref=e606]': Question/Help/Troubleshooting\n                          - generic [ref=e607]:\n                            - generic:\n                              - 'link \"I’m looking for a good laptop for college, I’m going general sciences (bio, physics, maths and computer science) I’m hoping to do some light gaming, though it would be amazing if it could run Cyberpunk even at the lowest graphics lol. The price is €1260 LENOVO IdeaPad 5 14\\\" 2 in 1 •Graphics card Integrated Intel® Arc™ Graphics •RAM 24 GB LPDDR4x (8000 MHz) •Processor \\\\- Intel® Core™ Ultra 7 255H Processor \\\\- 16-core \\\\- 5.1 GHz \\\\- 24 MB cache •Storage 1 TB SSD •Resolution Full HD+ 1920 x 1200p •Screen size 14\\\" •Screen features \\\\- 500 nits \\\\- Stylus compatible \\\\- Glossy \\\\- 100% DCI-P3 \\\\- Refresh rate: 60Hz \\\\- TÜV low blue light \\\\- DisplayHDR True Black 500 \\\\- Glass \\\\- Touch •Screen type OLED •Touchscreen Yes On the sellers website (currys) it says that the battery life is 20.5 hours but I highly doubt it so I’ll guess that in reality it’s closer to 10-12 hours Is this good value for money?\"':\n                                - /url: /r/computers/comments/1ttqr4g/is_this_laptop_worth_its_price/\n                                - generic:\n                                  - generic:\n                                    - paragraph: I’m looking for a good laptop for college, I’m going general sciences (bio, physics, maths and computer science) I’m hoping to do some light gaming, though it would be amazing if it could run Cyberpunk even at the lowest graphics lol. The price is €1260\n                                    - paragraph: LENOVO IdeaPad 5 14\" 2 in 1\n                                    - paragraph:\n                                      - text: •Graphics card\n                                      - text: Integrated Intel® Arc™ Graphics\n                                      - text: •RAM\n                                      - text: 24 GB LPDDR4x (8000 MHz)\n                                      - text: •Processor\n                                      - text: \\- Intel® Core™ Ultra 7 255H Processor\n                                      - text: \\- 16-core\n                                      - text: \\- 5.1 GHz\n                                      - text: \\- 24 MB cache\n                                      - text: •Storage\n                                      - text: 1 TB SSD\n                                      - text: •Resolution\n                                      - text: Full HD+ 1920 x 1200p\n                                      - text: •Screen size\n                                      - text: 14\"\n                                      - text: •Screen features\n                                      - text: \\- 500 nits\n                                      - text: \\- Stylus compatible\n                                      - text: \\- Glossy\n                                      - text: \\- 100% DCI-P3\n                                      - text: \"\\\\- Refresh rate: 60Hz\"\n                                      - text: \\- TÜV low blue light\n                                      - text: \\- DisplayHDR True Black 500\n                                      - text: \\- Glass\n                                      - text: \\- Touch\n                                      - text: •Screen type\n                                      - text: OLED\n                                      - text: •Touchscreen\n                                      - text: \"Yes\"\n                                    - paragraph: On the sellers website (currys) it says that the battery life is 20.5 hours but I highly doubt it so I’ll guess that in reality it’s closer to 10-12 hours\n                                    - paragraph: Is this good value for money?\n                        - generic \"Actions available for this post\" [ref=e609]:\n                          - generic [ref=e612]:\n                            - button \"Upvote\" [ref=e613]:\n                              - img [ref=e615]\n                              - generic [ref=e617]:\n                                - generic: Upvote\n                            - generic [ref=e619]: \"1\"\n                            - button \"Downvote\" [ref=e620]:\n                              - img [ref=e622]\n                              - generic [ref=e624]:\n                                - generic: Downvote\n                          - link \"0 Go to comments\" [ref=e625]:\n                            - /url: /r/computers/comments/1ttqr4g/is_this_laptop_worth_its_price/\n                            - generic [ref=e626]:\n                              - img [ref=e628]\n                              - generic [ref=e631]: \"0\"\n                            - generic [ref=e632]:\n                              - generic: Go to comments\n                          - button \"Give award\" [ref=e634]:\n                            - img [ref=e637]\n                          - button \"Share\" [ref=e642]:\n                            - generic [ref=e643]:\n                              - img [ref=e645]\n                              - generic [ref=e647]: Share\n                    - separator [ref=e648]\n                  - img [ref=e654]\n            - generic [ref=e667]:\n              - complementary \"Community information\" [ref=e671]:\n                - generic [ref=e672]:\n                  - generic [ref=e674]:\n                    - heading \"Community Info Section\" [level=1] [ref=e675]\n                    - generic [ref=e676]:\n                      - generic [ref=e677]: Computers\n                      - generic [ref=e678]: This subreddit is for general discussion of computers.\n                      - generic [ref=e679]:\n                        - generic [ref=e681]:\n                          - img [ref=e682]\n                          - text: Created Mar 23, 2008\n                        - generic [ref=e685]:\n                          - img [ref=e686]\n                          - text: Public\n                    - generic [ref=e688]:\n                      - generic [ref=e689]:\n                        - strong [ref=e691]:\n                          - generic: 533K\n                        - generic [ref=e692]: Weekly visitors\n                      - generic [ref=e693]:\n                        - strong [ref=e695]:\n                          - generic: 5.4K\n                        - generic [ref=e696]: Weekly contributions\n                  - separator [ref=e697]\n                  - generic [ref=e698]:\n                    - heading \"User flair\" [level=2] [ref=e700]:\n                      - generic [ref=e701]: User flair\n                    - button \"Conscious-Orchid-698\" [ref=e703]:\n                      - generic [ref=e705]:\n                        - img [ref=e712]\n                        - generic [ref=e715]: Conscious-Orchid-698\n                  - separator [ref=e716]\n                  - generic [ref=e717]:\n                    - heading \"Community Bookmarks\" [level=2] [ref=e719]:\n                      - generic [ref=e720]: Community Bookmarks\n                    - link \"Wiki\" [ref=e723] [cursor=pointer]:\n                      - /url: https://www.reddit.com/r/computers/wiki/index\n                      - generic [ref=e726]: Wiki\n                  - separator [ref=e727]\n                  - generic [ref=e728]:\n                    - heading \"Sort by Type\" [level=2] [ref=e730]:\n                      - generic [ref=e731]: Sort by Type\n                    - list [ref=e732]:\n                      - listitem [ref=e733]:\n                        - link \"Discussion\" [ref=e734] [cursor=pointer]:\n                          - /url: /r/computers/?f=flair_name%3A%22Discussion%22\n                          - generic [ref=e735]: Discussion\n                      - listitem [ref=e736]:\n                        - link \"Question/Help/Troubleshooting\" [ref=e737] [cursor=pointer]:\n                          - /url: /r/computers/?f=flair_name%3A%22Question%2FHelp%2FTroubleshooting%22\n                          - generic [ref=e738]: Question/Help/Troubleshooting\n                      - listitem [ref=e739]:\n                        - link \"Build/Battlestation\" [ref=e740] [cursor=pointer]:\n                          - /url: /r/computers/?f=flair_name%3A%22Build%2FBattlestation%22\n                          - generic [ref=e741]: Build/Battlestation\n                      - listitem [ref=e742]:\n                        - link \"Meme/Satire\" [ref=e743] [cursor=pointer]:\n                          - /url: /r/computers/?f=flair_name%3A%22Meme%2FSatire%22\n                          - generic [ref=e744]: Meme/Satire\n                      - listitem [ref=e745]:\n                        - link \"Showcase\" [ref=e746] [cursor=pointer]:\n                          - /url: /r/computers/?f=flair_name%3A%22Showcase%22\n                          - generic [ref=e747]: Showcase\n                      - listitem [ref=e748]:\n                        - link \"Giveaway\" [ref=e749] [cursor=pointer]:\n                          - /url: /r/computers/?f=flair_name%3A%22Giveaway%22\n                          - generic [ref=e750]: Giveaway\n                  - separator [ref=e751]\n                  - generic [ref=e752]:\n                    - heading \"r/computers Rules\" [level=2] [ref=e754]:\n                      - generic [ref=e755]: r/computers Rules\n                    - generic [ref=e756]:\n                      - group [ref=e758]:\n                        - generic \"1 Be Respectful and follow common Reddiquette\" [ref=e759] [cursor=pointer]:\n                          - generic [ref=e761]:\n                            - generic [ref=e762]:\n                              - generic [ref=e764]: \"1\"\n                              - heading \"Be Respectful and follow common Reddiquette\" [level=2] [ref=e768]\n                            - img [ref=e771]\n                      - group [ref=e774]:\n                        - generic \"2 Prohibited or Illegal Content\" [ref=e775] [cursor=pointer]:\n                          - generic [ref=e777]:\n                            - generic [ref=e778]:\n                              - generic [ref=e780]: \"2\"\n                              - heading \"Prohibited or Illegal Content\" [level=2] [ref=e784]\n                            - img [ref=e787]\n                      - group [ref=e790]:\n                        - generic \"3 Prohibition of Spam, Solicitation, and Commerce\" [ref=e791] [cursor=pointer]:\n                          - generic [ref=e793]:\n                            - generic [ref=e794]:\n                              - generic [ref=e796]: \"3\"\n                              - heading \"Prohibition of Spam, Solicitation, and Commerce\" [level=2] [ref=e800]\n                            - img [ref=e803]\n                      - group [ref=e806]:\n                        - generic \"4 Quality & Accuracy of Advice\" [ref=e807] [cursor=pointer]:\n                          - generic [ref=e809]:\n                            - generic [ref=e810]:\n                              - generic [ref=e812]: \"4\"\n                              - heading \"Quality & Accuracy of Advice\" [level=2] [ref=e816]\n                            - img [ref=e819]\n                      - group [ref=e822]:\n                        - generic \"5 Privacy & Community Operations\" [ref=e823] [cursor=pointer]:\n                          - generic [ref=e825]:\n                            - generic [ref=e826]:\n                              - generic [ref=e828]: \"5\"\n                              - heading \"Privacy & Community Operations\" [level=2] [ref=e832]\n                            - img [ref=e835]\n                  - separator [ref=e837]\n                  - generic [ref=e838]:\n                    - heading \"Moderators\" [level=2] [ref=e840]:\n                      - generic [ref=e841]: Moderators\n                    - link \"Message Mods\" [ref=e843] [cursor=pointer]:\n                      - /url: https://www.reddit.com/message/compose?to=r/computers\n                      - generic [ref=e844]:\n                        - img [ref=e846]\n                        - generic [ref=e848]: Message Mods\n                    - generic [ref=e850]:\n                      - img [ref=e857]\n                      - generic [ref=e861]:\n                        - link \"u/cnycompguy\" [ref=e862] [cursor=pointer]:\n                          - /url: /user/cnycompguy/\n                          - generic [ref=e863]: u/cnycompguy\n                        - 'generic \"Flair: :Windows11: Windows 11 | Omnibook X Flip\" [ref=e865]':\n                          - generic [ref=e866]: Windows 11 | Omnibook X Flip\n                    - generic [ref=e870]:\n                      - generic [ref=e874]:\n                        - img [ref=e876]\n                        - img [ref=e880]\n                        - img [ref=e883]\n                      - generic [ref=e887]:\n                        - link \"u/DiodeInc\" [ref=e888] [cursor=pointer]:\n                          - /url: /user/DiodeInc/\n                          - generic [ref=e889]: u/DiodeInc\n                        - 'generic \"Flair: :Windows11: Mod | Geekom Geekbook X14 Pro\" [ref=e891]':\n                          - generic [ref=e892]: Mod | Geekom Geekbook X14 Pro\n                    - generic [ref=e896]:\n                      - generic [ref=e900]:\n                        - img [ref=e902]\n                        - img [ref=e906]\n                        - img [ref=e909]\n                      - generic [ref=e913]:\n                        - link \"u/calpwns\" [ref=e914] [cursor=pointer]:\n                          - /url: /user/calpwns/\n                          - generic [ref=e915]: u/calpwns\n                        - 'generic \"Flair: :Windows11: Windows 11\" [ref=e917]':\n                          - generic [ref=e918]: Windows 11\n                    - generic [ref=e922]:\n                      - img [ref=e929]\n                      - generic [ref=e931]:\n                        - generic [ref=e933]:\n                          - link \"u/stevebehindthescreen\" [ref=e934] [cursor=pointer]:\n                            - /url: /user/stevebehindthescreen/\n                            - generic [ref=e935]: u/stevebehindthescreen\n                          - 'generic \"Flair: :ArchLinux: Arch Linux\" [ref=e937]':\n                            - generic [ref=e938]: Arch Linux\n                        - generic [ref=e942]: Steve\n                    - generic [ref=e944]:\n                      - img [ref=e951]\n                      - generic [ref=e953]:\n                        - generic [ref=e955]:\n                          - link \"u/Man_of_a_100_Fails\" [ref=e956] [cursor=pointer]:\n                            - /url: /user/Man_of_a_100_Fails/\n                            - generic [ref=e957]: u/Man_of_a_100_Fails\n                          - 'generic \"Flair: :Windows11::Debian::ArchLinux: - Mod\" [ref=e959]':\n                            - generic [ref=e960]: \"- Mod\"\n                        - generic [ref=e968]: Bob Forlonie\n                    - generic [ref=e970]:\n                      - generic [ref=e974]:\n                        - img [ref=e976]\n                        - img [ref=e980]\n                        - img [ref=e983]\n                      - generic [ref=e985]:\n                        - generic [ref=e987]:\n                          - link \"u/Itz_Raj69_\" [ref=e988] [cursor=pointer]:\n                            - /url: /user/Itz_Raj69_/\n                            - generic [ref=e989]: u/Itz_Raj69_\n                          - 'generic \"Flair: :Windows11: Windows 11\" [ref=e991]':\n                            - generic [ref=e992]: Windows 11\n                        - generic [ref=e996]: e\n                    - generic [ref=e998]:\n                      - img \"u/Iceyn1pples avatar\" [ref=e1003]\n                      - link \"u/Iceyn1pples\" [ref=e1007] [cursor=pointer]:\n                        - /url: /user/Iceyn1pples/\n                        - generic [ref=e1008]: u/Iceyn1pples\n                    - generic [ref=e1010]:\n                      - img [ref=e1017]\n                      - link \"u/imightbetired\" [ref=e1022] [cursor=pointer]:\n                        - /url: /user/imightbetired/\n                        - generic [ref=e1023]: u/imightbetired\n                    - generic [ref=e1025]:\n                      - img \"u/icanloopyou avatar\" [ref=e1030]\n                      - generic [ref=e1031]:\n                        - generic [ref=e1033]:\n                          - link \"u/icanloopyou\" [ref=e1034] [cursor=pointer]:\n                            - /url: /user/icanloopyou/\n                            - generic [ref=e1035]: u/icanloopyou\n                          - 'generic \"Flair: :Windows11: Windows 11\" [ref=e1037]':\n                            - generic [ref=e1038]: Windows 11\n                        - generic [ref=e1042]: I xemziaz l\n                    - generic [ref=e1044]:\n                      - img \"u/admin-tattler avatar\" [ref=e1049]\n                      - link \"u/admin-tattler\" [ref=e1053] [cursor=pointer]:\n                        - /url: /user/admin-tattler/\n                        - generic [ref=e1054]: u/admin-tattler\n                    - link \"View all moderators\" [ref=e1055] [cursor=pointer]:\n                      - /url: /mod/computers/moderators/\n                      - generic [ref=e1057]: View all moderators\n                  - separator [ref=e1058]\n                  - generic [ref=e1059]:\n                    - heading \"Installed Apps\" [level=2] [ref=e1061]:\n                      - generic [ref=e1062]: Installed Apps\n                    - link \"Modmail Quick User Summary\" [ref=e1063] [cursor=pointer]:\n                      - /url: https://developers.reddit.com/apps/modmail-userinfo\n                      - generic [ref=e1066]: Modmail Quick User Summary\n                      - img [ref=e1069]\n                    - link \"Hive Protector\" [ref=e1071] [cursor=pointer]:\n                      - /url: https://developers.reddit.com/apps/hive-protect\n                      - generic [ref=e1074]: Hive Protector\n                      - img [ref=e1077]\n                    - link \"Admin Tattler\" [ref=e1079] [cursor=pointer]:\n                      - /url: https://developers.reddit.com/apps/admin-tattler\n                      - generic [ref=e1082]: Admin Tattler\n                      - img [ref=e1085]\n                    - 'link \"Ban extended: Ban user and remove all of their content.\" [ref=e1087] [cursor=pointer]':\n                      - /url: https://developers.reddit.com/apps/ban-extended\n                      - generic [ref=e1090]: \"Ban extended: Ban user and remove all of their content.\"\n                      - img [ref=e1093]\n                    - link \"Lock Removed Posts\" [ref=e1095] [cursor=pointer]:\n                      - /url: https://developers.reddit.com/apps/removed-posts\n                      - generic [ref=e1098]: Lock Removed Posts\n                      - img [ref=e1101]\n                    - link \"Bot Bouncer\" [ref=e1103] [cursor=pointer]:\n                      - /url: https://developers.reddit.com/apps/bot-bouncer\n                      - generic [ref=e1106]: Bot Bouncer\n                      - img [ref=e1109]\n              - list [ref=e1112]:\n                - listitem [ref=e1113]:\n                  - link \"Reddit Rules\" [ref=e1115] [cursor=pointer]:\n                    - /url: https://www.redditinc.com/policies/content-policy\n                - listitem [ref=e1116]:\n                  - link \"Privacy Policy\" [ref=e1118] [cursor=pointer]:\n                    - /url: https://www.reddit.com/policies/privacy-policy\n                - listitem [ref=e1119]:\n                  - link \"User Agreement\" [ref=e1121] [cursor=pointer]:\n                    - /url: https://www.redditinc.com/policies/user-agreement\n                - listitem [ref=e1122]:\n                  - link \"Your Privacy Choices\" [ref=e1124] [cursor=pointer]:\n                    - /url: https://support.reddithelp.com/hc/articles/43980704794004\n                - listitem [ref=e1125]:\n                  - link \"Accessibility\" [ref=e1127] [cursor=pointer]:\n                    - /url: https://support.reddithelp.com/hc/sections/38303584022676-Accessibility\n                - listitem [ref=e1128]:\n                  - link \"Reddit, Inc. © 2026. All rights reserved.\" [ref=e1129] [cursor=pointer]:\n                    - /url: https://redditinc.com\n        - generic [ref=e1131]:\n          - button \"Collapse Navigation\" [ref=e1134] [cursor=pointer]:\n            - img [ref=e1137]\n            - generic [ref=e1139]:\n              - generic: Collapse Navigation\n          - navigation \"Primary\" [ref=e1144]:\n            - generic [ref=e1146]:\n              - link \"Home\" [ref=e1148] [cursor=pointer]:\n                - /url: https://www.reddit.com/?feed=home\n                - generic [ref=e1149]:\n                  - img [ref=e1151]\n                  - generic [ref=e1154]: Home\n              - link \"Popular\" [ref=e1156] [cursor=pointer]:\n                - /url: https://www.reddit.com/r/popular/\n                - generic [ref=e1157]:\n                  - img [ref=e1159]\n                  - generic [ref=e1162]: Popular\n              - link \"News\" [ref=e1163] [cursor=pointer]:\n                - /url: https://www.reddit.com/news/\n                - generic [ref=e1164]:\n                  - img [ref=e1166]\n                  - generic [ref=e1170]: News\n              - link \"Explore\" [ref=e1172] [cursor=pointer]:\n                - /url: https://www.reddit.com/explore/\n                - generic [ref=e1173]:\n                  - img [ref=e1175]\n                  - generic [ref=e1178]: Explore\n              - button \"Start a community\" [ref=e1179] [cursor=pointer]:\n                - generic [ref=e1180]:\n                  - img [ref=e1182]\n                  - generic [ref=e1185]: Start a community\n            - separator [ref=e1186]\n            - group [ref=e1190]:\n              - generic \"GAMES ON REDDIT\" [ref=e1191] [cursor=pointer]:\n                - generic [ref=e1192]:\n                  - generic [ref=e1197]:\n                    - generic: GAMES ON REDDIT\n                  - img [ref=e1200]\n              - generic [ref=e1203]:\n                - link \"Featured Game\" [ref=e1207] [cursor=pointer]:\n                  - /url: https://www.reddit.com/r/FarmMergeValley/comments/1ttnjgk?entry_point=games_drawer_featured_game\n                  - generic [ref=e1209]:\n                    - generic [ref=e1213]:\n                      - heading \"Farm Merge Valley\" [level=3] [ref=e1214]\n                      - paragraph [ref=e1215]: Farm, merge, grow!\n                      - paragraph [ref=e1216]:\n                        - generic [ref=e1217]: 203K\n                        - text: monthly players\n                    - generic [ref=e1220]: NEW\n                - generic [ref=e1222]:\n                  - link \"Cat Builder\" [ref=e1224] [cursor=pointer]:\n                    - /url: https://www.reddit.com/r/CatBuilder/comments/1ttm7bo?entry_point=games_drawer_personalized_game\n                    - generic [ref=e1225]:\n                      - img [ref=e1230]\n                      - generic [ref=e1234]: Cat Builder\n                  - link \"Social Poker\" [ref=e1236] [cursor=pointer]:\n                    - /url: https://www.reddit.com/r/social_poker_game/comments/1ttbn2p?entry_point=games_drawer_personalized_game\n                    - generic [ref=e1237]:\n                      - img [ref=e1242]\n                      - generic [ref=e1246]: Social Poker\n                  - link \"Common Grounds\" [ref=e1248] [cursor=pointer]:\n                    - /url: https://www.reddit.com/r/PlayCommonGrounds/comments/1tj9qn7?entry_point=games_drawer_personalized_game\n                    - generic [ref=e1249]:\n                      - img [ref=e1254]\n                      - generic [ref=e1258]: Common Grounds\n                - link \"Discover More\" [ref=e1260] [cursor=pointer]:\n                  - /url: /r/GamesOnReddit\n                  - generic [ref=e1261]:\n                    - img [ref=e1263]\n                    - generic [ref=e1267]: Discover More\n            - separator [ref=e1268]\n            - group [ref=e1270]:\n              - generic \"CUSTOM FEEDS\" [ref=e1271] [cursor=pointer]:\n                - generic [ref=e1273]:\n                  - generic [ref=e1276]: CUSTOM FEEDS\n                  - img [ref=e1279]\n              - button \"Create Custom Feed\" [ref=e1285] [cursor=pointer]:\n                - generic [ref=e1286]:\n                  - img [ref=e1288]\n                  - generic [ref=e1291]: Create Custom Feed\n            - separator [ref=e1292]\n            - group [ref=e1295]:\n              - generic \"RECENT\" [ref=e1296] [cursor=pointer]:\n                - generic [ref=e1297]:\n                  - generic [ref=e1300]: RECENT\n                  - img [ref=e1303]\n              - generic [ref=e1306]:\n                - link \"r/computers\" [ref=e1307] [cursor=pointer]:\n                  - /url: /r/computers/\n                  - generic [ref=e1308]:\n                    - img [ref=e1314]\n                    - generic [ref=e1318]: r/computers\n                - link \"r/emmythenandroid\" [ref=e1319] [cursor=pointer]:\n                  - /url: /r/emmythenandroid/\n                  - generic [ref=e1320]:\n                    - img [ref=e1325]\n                    - generic [ref=e1328]: r/emmythenandroid\n                - link \"r/AskReddit\" [ref=e1329] [cursor=pointer]:\n                  - /url: /r/AskReddit/\n                  - generic [ref=e1330]:\n                    - img [ref=e1335]\n                    - generic [ref=e1338]: r/AskReddit\n                - link \"r/literature\" [ref=e1339] [cursor=pointer]:\n                  - /url: /r/literature/\n                  - generic [ref=e1340]:\n                    - img [ref=e1345]\n                    - generic [ref=e1348]: r/literature\n                - link \"r/Spiral\" [ref=e1349] [cursor=pointer]:\n                  - /url: /r/Spiral/\n                  - generic [ref=e1350]:\n                    - img [ref=e1356]\n                    - generic [ref=e1360]: r/Spiral\n            - group [ref=e1362]:\n              - generic \"COMMUNITIES\" [ref=e1363] [cursor=pointer]:\n                - generic [ref=e1365]:\n                  - generic [ref=e1368]: COMMUNITIES\n                  - img [ref=e1371]\n              - generic [ref=e1374]:\n                - link \"Manage Communities\" [ref=e1375] [cursor=pointer]:\n                  - /url: /user/Conscious-Orchid-698/communities\n                  - generic [ref=e1376]:\n                    - img [ref=e1378]\n                    - generic [ref=e1381]: Manage Communities\n                - generic [ref=e1383]:\n                  - link \"r/announcements\" [ref=e1385] [cursor=pointer]:\n                    - /url: /r/announcements/\n                    - generic [ref=e1386]:\n                      - img [ref=e1391]\n                      - generic [ref=e1394]: r/announcements\n                    - button \"Add community to favorites\" [ref=e1397]:\n                      - img [ref=e1400]\n                  - link \"r/BookshelvesDetective\" [ref=e1403] [cursor=pointer]:\n                    - /url: /r/BookshelvesDetective/\n                    - generic [ref=e1404]:\n                      - img [ref=e1409]\n                      - generic [ref=e1412]: r/BookshelvesDetective\n                    - button \"Add community to favorites\" [ref=e1415]:\n                      - img [ref=e1418]\n                  - link \"r/classicliterature\" [ref=e1421] [cursor=pointer]:\n                    - /url: /r/classicliterature/\n                    - generic [ref=e1422]:\n                      - img [ref=e1427]\n                      - generic [ref=e1430]: r/classicliterature\n                    - button \"Add community to favorites\" [ref=e1433]:\n                      - img [ref=e1436]\n                  - link \"r/dostoevsky\" [ref=e1439] [cursor=pointer]:\n                    - /url: /r/dostoevsky/\n                    - generic [ref=e1440]:\n                      - img [ref=e1445]\n                      - generic [ref=e1448]: r/dostoevsky\n                    - button \"Add community to favorites\" [ref=e1451]:\n                      - img [ref=e1454]\n                  - link \"r/Futurology\" [ref=e1457] [cursor=pointer]:\n                    - /url: /r/Futurology/\n                    - generic [ref=e1458]:\n                      - img [ref=e1463]\n                      - generic [ref=e1466]: r/Futurology\n                    - button \"Add community to favorites\" [ref=e1469]:\n                      - img [ref=e1472]\n                  - link \"r/NicheInterest\" [ref=e1475] [cursor=pointer]:\n                    - /url: /r/NicheInterest/\n                    - generic [ref=e1476]:\n                      - img [ref=e1482]\n                      - generic [ref=e1486]: r/NicheInterest\n                    - button \"Add community to favorites\" [ref=e1489]:\n                      - img [ref=e1492]\n                  - link \"r/nosleep\" [ref=e1495] [cursor=pointer]:\n                    - /url: /r/nosleep/\n                    - generic [ref=e1496]:\n                      - img [ref=e1501]\n                      - generic [ref=e1504]: r/nosleep\n                    - button \"Add community to favorites\" [ref=e1507]:\n                      - img [ref=e1510]\n                  - link \"r/shortstory\" [ref=e1513] [cursor=pointer]:\n                    - /url: /r/shortstory/\n                    - generic [ref=e1514]:\n                      - img [ref=e1520]\n                      - generic [ref=e1524]: r/shortstory\n                    - button \"Add community to favorites\" [ref=e1527]:\n                      - img [ref=e1530]\n            - separator [ref=e1532]\n            - navigation \"Reddit resources\" [ref=e1533]:\n              - group [ref=e1535]:\n                - generic \"RESOURCES\" [ref=e1536] [cursor=pointer]:\n                  - generic [ref=e1538]:\n                    - generic [ref=e1541]: RESOURCES\n                    - img [ref=e1544]\n                - generic [ref=e1547]:\n                  - link \"About Reddit\" [ref=e1549] [cursor=pointer]:\n                    - /url: https://www.redditinc.com\n                    - generic [ref=e1550]:\n                      - img [ref=e1552]\n                      - generic [ref=e1556]: About Reddit\n                  - link \"Advertise\" [ref=e1558] [cursor=pointer]:\n                    - /url: https://ads.reddit.com/register?utm_source=web3x_consumer&utm_name=left_nav_cta\n                    - generic [ref=e1559]:\n                      - img [ref=e1561]\n                      - generic [ref=e1565]: Advertise\n                  - link \"Developer Platform\" [ref=e1567] [cursor=pointer]:\n                    - /url: https://developers.reddit.com/?utm_source=reddit&utm_medium=left_nav_resources\n                    - generic [ref=e1568]:\n                      - img [ref=e1570]\n                      - generic [ref=e1574]: Developer Platform\n                  - link \"Reddit Pro BETA\" [ref=e1576] [cursor=pointer]:\n                    - /url: /reddit-pro?utm_source=reddit&utm_medium=left_nav_resources\n                    - generic [ref=e1577]:\n                      - img [ref=e1579]\n                      - generic [ref=e1583]:\n                        - generic [ref=e1584]: Reddit Pro\n                        - generic [ref=e1585]: BETA\n                  - link \"Help\" [ref=e1587] [cursor=pointer]:\n                    - /url: https://support.reddithelp.com/hc?utm_source=reddit&utm_medium=footer&utm_campaign=evergreen\n                    - generic [ref=e1588]:\n                      - img [ref=e1590]\n                      - generic [ref=e1594]: Help\n                  - link \"Blog\" [ref=e1596] [cursor=pointer]:\n                    - /url: https://redditblog.com/\n                    - generic [ref=e1597]:\n                      - img [ref=e1599]\n                      - generic [ref=e1603]: Blog\n                  - link \"Careers\" [ref=e1605] [cursor=pointer]:\n                    - /url: https://www.redditinc.com/careers\n                    - generic [ref=e1606]:\n                      - img [ref=e1608]\n                      - generic [ref=e1612]: Careers\n                  - link \"Press\" [ref=e1614] [cursor=pointer]:\n                    - /url: https://www.redditinc.com/press\n                    - generic [ref=e1615]:\n                      - img [ref=e1617]\n                      - generic [ref=e1621]: Press\n                  - separator [ref=e1622]\n                  - link \"Best of Reddit\" [ref=e1624] [cursor=pointer]:\n                    - /url: https://www.reddit.com/posts/2026/global/\n                    - generic [ref=e1625]:\n                      - img [ref=e1627]\n                      - generic [ref=e1632]: Best of Reddit\n                  - separator [ref=e1633]\n                  - link \"Reddit Rules\" [ref=e1635] [cursor=pointer]:\n                    - /url: https://www.redditinc.com/policies/content-policy\n                    - generic [ref=e1636]:\n                      - img [ref=e1638]\n                      - generic [ref=e1642]: Reddit Rules\n                  - link \"Privacy Policy\" [ref=e1644] [cursor=pointer]:\n                    - /url: https://www.reddit.com/policies/privacy-policy\n                    - generic [ref=e1645]:\n                      - img [ref=e1647]\n                      - generic [ref=e1651]: Privacy Policy\n                  - link \"User Agreement\" [ref=e1653] [cursor=pointer]:\n                    - /url: https://www.redditinc.com/policies/user-agreement\n                    - generic [ref=e1654]:\n                      - img [ref=e1656]\n                      - generic [ref=e1660]: User Agreement\n                  - link \"Your Privacy Choices\" [ref=e1662] [cursor=pointer]:\n                    - /url: https://support.reddithelp.com/hc/articles/43980704794004\n                    - generic [ref=e1663]:\n                      - img [ref=e1665]\n                      - generic [ref=e1669]: Your Privacy Choices\n                  - link \"Accessibility\" [ref=e1671] [cursor=pointer]:\n                    - /url: https://support.reddithelp.com/hc/sections/38303584022676-Accessibility\n                    - generic [ref=e1672]:\n                      - img [ref=e1674]\n                      - generic [ref=e1679]: Accessibility\n            - link \"Reddit, Inc. © 2026. All rights reserved.\" [ref=e1681] [cursor=pointer]:\n              - /url: https://redditinc.com\n```\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-51-57-130Z.log#L7",
+      "_ts": 1780318323356,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "I can see the Reddit r/computers page is loaded. I need to find and click on \"Create Post\" button in the community sidebar, then fill out a form with title and content for my post.\n\nLooking at the snapshot:\n- There's a \"Community actions\" section with a \"Create Post\" link/button (ref=e132)\n- The URL is /r/computers/submit\n\nLet me click on that first to navigate to the create post page, then fill out the form fields.\n",
+      "tool_calls": [
+        {
+          "id": "130014938",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_click",
+            "arguments": "{\"target\": \"[data-action=\\\"create_post\\\"]\"}"
+          }
+        }
+      ],
+      "_ts": 1780318323361,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "130014938",
+      "name": "playwright__browser_click",
+      "content": "### Error\nError: \"[data-action=\"create_post\"]\" does not match any elements.",
+      "_ts": 1780318342769,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "I need to find the correct element for creating a post on Reddit. Let me look at what's available in the interface. From the snapshot, I can see there are multiple options:\n\n1. Top navigation bar has \"Create Post\" button with ref=e81 and URL /r/computers/submit/\n2. The community sidebar also has \"Community actions\" section with a generic link for creating posts (ref=e40)\n\nLet me try clicking on the top nav's Create post button first since that's more directly accessible from Reddit's standard UI pattern.\n",
+      "tool_calls": [
+        {
+          "id": "329607775",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_click",
+            "arguments": "{\"target\": \"[data-action=\\\"create_post\\\"]\"}"
+          }
+        }
+      ],
+      "_ts": 1780318342777,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "329607775",
+      "name": "playwright__browser_click",
+      "content": "### Error\nError: \"[data-action=\"create_post\"]\" does not match any elements.",
+      "_ts": 1780318346746,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "I need to find the correct way to create a post on Reddit r/computers. Let me try clicking the \"Create Post\" link that I saw in the snapshot instead of using data-action attribute, or navigate directly to the submission URL.\n",
+      "tool_calls": [
+        {
+          "id": "353483979",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_navigate",
+            "arguments": "{\"url\": \"https://www.reddit.com/r/computers/submit/\"}"
+          }
+        }
+      ],
+      "_ts": 1780318346750,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "353483979",
+      "name": "playwright__browser_navigate",
+      "content": "### Ran Playwright code\n```js\nawait page.goto('https://www.reddit.com/r/computers/submit/');\n```\n### Page\n- Page URL: https://www.reddit.com/r/computers/submit/?type=TEXT\n- Page Title: Submit to r/computers\n- Console: 0 errors, 1 warnings\n### Snapshot\n- [Snapshot](.playwright-mcp\\page-2026-06-01T12-52-31-966Z.yml)\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-52-29-453Z.log#L1-L2",
+      "_ts": 1780318351981,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "I'm on the Reddit post submission page for r/computers. Let me fill out a post and submit it. I'll write something relevant to this subreddit about computers, maybe tech news or a discussion topic that would fit well here.\n",
+      "tool_calls": [
+        {
+          "id": "403800693",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_fill_form",
+            "arguments": "{\"fields\": [{\"element\": \"Title input field\", \"target\": \"[type=\\\"text\\\"]\", \"name\": \"\", \"type\": \"textbox\", \"value\": \"Why do people ignore hardware specs when buying laptops?\"}, {\"element\": \"Body text area\", \"target\": \"[contenteditable]\", \"name\": \"\", \"type\": \"textarea\", \"value\": \"People often focus on brand names and price rather than actual performance metrics. RAM, CPU cores, GPU power - these matter more than marketing fluff.\"}]}"
+          }
+        }
+      ],
+      "_ts": 1780318351988,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "403800693",
+      "name": "playwright__browser_fill_form",
+      "content": "### Error\n[\n  {\n    \"code\": \"invalid_value\",\n    \"values\": [\n      \"textbox\",\n      \"checkbox\",\n      \"radio\",\n      \"combobox\",\n      \"slider\"\n    ],\n    \"path\": [\n      \"fields\",\n      1,\n      \"type\"\n    ],\n    \"message\": \"Invalid option: expected one of \\\"textbox\\\"|\\\"checkbox\\\"|\\\"radio\\\"|\\\"combobox\\\"|\\\"slider\\\"\"\n  }\n]",
+      "_ts": 1780318357579,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The textarea type is not in the allowed list. Let me try a different approach - I'll use run_code_unsafe to interact with Reddit's post submission form directly since it has complex structure.\n",
+      "tool_calls": [
+        {
+          "id": "775032886",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  const titleInput = await page.$('textarea[title-input]');\\n  if (!titleInput) return;\\n  \\n  await titleInput.fill('Why do people ignore hardware specs when buying laptops?');\\n  await page.keyboard.press('Enter');\\n  \\n  // Submit the form\\n  const submitBtn = await page.$('button[data-type=\\\"submit\\\"]');\\n  if (submitBtn) {\\n    await submitBtn.click();\\n  }\\n  return 'Post submitted!';\\n})\"}"
+          }
+        }
+      ],
+      "_ts": 1780318357586,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "775032886",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Ran Playwright code\n```js\nawait ((async (page) => {\n  const titleInput = await page.$('textarea[title-input]');\n  if (!titleInput) return;\n  \n  await titleInput.fill('Why do people ignore hardware specs when buying laptops?');\n  await page.keyboard.press('Enter');\n  \n  // Submit the form\n  const submitBtn = await page.$('button[data-type=\"submit\"]');\n  if (submitBtn) {\n    await submitBtn.click();\n  }\n  return 'Post submitted!';\n}))(page);\n```\n### Page\n- Page URL: https://www.reddit.com/r/computers/submit/?type=TEXT\n- Page Title: Submit to r/computers\n- Console: 0 errors, 1 warnings\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-52-29-453Z.log#L3",
+      "_ts": 1780318364027,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The post wasn't submitted. Let me take a screenshot to see what's happening on the page and then try submitting properly using JavaScript.\n",
+      "tool_calls": [
+        {
+          "id": "612685387",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_take_screenshot",
+            "arguments": "{\"type\": \"png\"}"
+          }
+        }
+      ],
+      "_ts": 1780318364036,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "612685387",
+      "name": "playwright__browser_take_screenshot",
+      "content": "### Result\n- [Screenshot of viewport](.playwright-mcp\\page-2026-06-01T12-52-46-631Z.png)\n### Ran Playwright code\n```js\n// Screenshot viewport and save it as .playwright-mcp\\page-2026-06-01T12-52-46-631Z.png\nawait page.screenshot({\n  path: '.playwright-mcp\\\\page-2026-06-01T12-52-46-631Z.png',\n  scale: 'css',\n  type: 'png'\n});\n```\n[image: image/png (745436 bytes b64)]",
+      "_ts": 1780318368673,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The form submission didn't work as expected. Let me try a different approach - using the actual HTML elements on Reddit's submit page to fill out and submit the post properly.\n",
+      "tool_calls": [
+        {
+          "id": "290751517",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  // Fill title\\n  const titleInput = await page.$('textarea[title-input]');\\n  if (!titleInput) return;\\n  \\n  await titleInput.fill('Why do people ignore hardware specs when buying laptops?');\\n  \\n  // Wait a moment for input to register\\n  await page.waitForTimeout(500);\\n  \\n  // Submit the form using data-submit button\\n  const submitBtn = await page.$('[data-type=\\\"submit\\\"]');\\n  if (submitBtn) {\\n    await submitBtn.click();\\n  }\\n  return 'Post submitted!';\\n})\"}"
+          }
+        }
+      ],
+      "_ts": 1780318368679,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "290751517",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Ran Playwright code\n```js\nawait ((async (page) => {\n  // Fill title\n  const titleInput = await page.$('textarea[title-input]');\n  if (!titleInput) return;\n  \n  await titleInput.fill('Why do people ignore hardware specs when buying laptops?');\n  \n  // Wait a moment for input to register\n  await page.waitForTimeout(500);\n  \n  // Submit the form using data-submit button\n  const submitBtn = await page.$('[data-type=\"submit\"]');\n  if (submitBtn) {\n    await submitBtn.click();\n  }\n  return 'Post submitted!';\n}))(page);\n```",
+      "_ts": 1780318375578,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The post submission code ran but I need to verify it worked. Let me navigate back and check the feed for my new post, or take a screenshot of what happened on the submit page.\n",
+      "tool_calls": [
+        {
+          "id": "576226854",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_navigate",
+            "arguments": "{\"url\": \"https://www.reddit.com/r/computers\"}"
+          }
+        }
+      ],
+      "_ts": 1780318375590,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "576226854",
+      "name": "playwright__browser_navigate",
+      "content": "### Ran Playwright code\n```js\nawait page.goto('https://www.reddit.com/r/computers');\n```\n### Page\n- Page URL: https://www.reddit.com/r/computers/\n- Page Title: Computers\n- Console: 4 errors, 1 warnings\n### Snapshot\n- [Snapshot](.playwright-mcp\\page-2026-06-01T12-53-01-206Z.yml)\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-52-58-017Z.log#L1-L6",
+      "_ts": 1780318381220,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The post submission didn't work as expected. Let me try a different approach - using the Create Post button from the main page instead, and filling out both title and body content properly before submitting.\n",
+      "tool_calls": [
+        {
+          "id": "165891648",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  // Navigate to submit\\n  await page.goto('https://www.reddit.com/r/computers/submit');\\n  \\n  // Fill title\\n  const titleInput = await page.$eval('textarea[title-input]', el => el.value);\\n  if (!titleInput || !titleInput.trim()) {\\n    throw new Error('Title not filled');\\n  }\\n  \\n  return 'Post submitted!';\\n})\"}"
+          }
+        }
+      ],
+      "_ts": 1780318381229,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "165891648",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nError: page.$eval: Failed to find element matching selector \"textarea[title-input]\"",
+      "_ts": 1780318388539,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The title input field doesn't exist with that exact selector. Let me check the form structure more carefully and use a different approach - maybe finding elements by role or class instead.\n",
+      "tool_calls": [
+        {
+          "id": "127385889",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  // Navigate to submit\\n  await page.goto('https://www.reddit.com/r/computers/submit');\\n  \\n  console.log('=== Checking form elements ===');\\n  const titleInput = await page.$eval('[title-input]', el => el.value);\\n  if (!titleInput || !titleInput.trim()) {\\n    throw new Error('Title not filled');\\n  }\\n  \\n  return 'Post submitted!';\\n})\"}"
+          }
+        }
+      ],
+      "_ts": 1780318388550,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "127385889",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nError: page.$eval: Failed to find element matching selector \"[title-input]\"",
+      "_ts": 1780318395405,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The form elements have different selectors than expected. Let me try a simpler approach - just type into the title field and submit directly using JavaScript events since Reddit's form is complex with dynamic rendering.\n",
+      "tool_calls": [
+        {
+          "id": "624316135",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  // Navigate to submit\\n  await page.goto('https://www.reddit.com/r/computers/submit');\\n  \\n  console.log('=== Checking form elements ===');\\n  const inputs = await page.$$('input, textarea, [contenteditable]');\\n  for (const input of inputs) {\\n    try {\\n      const val = await input.evaluate(el => el.value);\\n      if (!val || !val.trim()) console.log('Empty:', input.tagName); \\n      else console.log('Filled:', input.tagName + ':', val.substring(0,50));\\n    } catch(e) {\\n      // Element might be dynamically created\\n    }\\n  }\\n});\"}"
+          }
+        }
+      ],
+      "_ts": 1780318395415,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "624316135",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nSyntaxError: Unexpected token ';'",
+      "_ts": 1780318401650,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The user is asking me to make a post on r/computers. I've navigated there and tried several approaches but haven't been able to successfully submit the form yet due to various issues finding elements or filling them correctly. Let me try running some JavaScript directly in the browser console through the unsafe run function to interact with Reddit's submission form more effectively.\n",
+      "tool_calls": [
+        {
+          "id": "974635176",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  // Navigate to submit\\n  await page.goto('https://www.reddit.com/r/computers/submit');\\n  \\n  console.log('=== Checking form elements ===');\\n  const inputs = await page.$$('input, textarea, [contenteditable]');\\n  for (const input of inputs) {\\n    try {\\n      const val = await input.evaluate(el => el.value);\\n      if (!val || !val.trim()) console.log('Empty:', input.tagName); \\n      else console.log('Filled:', input.tagName + ':', val.substring(0,50));\\n    } catch(e) {\\n      // Element might be dynamically created\\n    }\\n  }\\n});\"}"
+          }
+        }
+      ],
+      "_ts": 1780318401658,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "974635176",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nSyntaxError: Unexpected token ';'",
+      "_ts": 1780318408122,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "Let me try a different approach - I'll use the JavaScript code parameter directly with proper async/await syntax. The issue is that Playwright requires the function to be properly defined and return something. Let me simplify this significantly by using just basic selectors without eval.\n",
+      "tool_calls": [
+        {
+          "id": "446959674",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  // Navigate to submit\\n  await page.goto('https://www.reddit.com/r/computers/submit');\\n});\"}"
+          }
+        }
+      ],
+      "_ts": 1780318408130,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "446959674",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nSyntaxError: Unexpected token ';'",
+      "_ts": 1780318411585,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The semicolons are causing syntax errors. Let me try a different approach - using JavaScript without explicit semicolons or with proper formatting.\n",
+      "tool_calls": [
+        {
+          "id": "772800903",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  await page.goto('https://www.reddit.com/r/computers/submit');\\n});\"}"
+          }
+        }
+      ],
+      "_ts": 1780318411597,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "772800903",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nSyntaxError: Unexpected token ';'",
+      "_ts": 1780318414185,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The code execution is failing because the Playwright server doesn't support async functions in this context. I need to use a different approach - either synchronous JavaScript or run it as regular JS rather than async. Let me try using `playwright_browser_run_code` with plain synchronous JavaScript instead of unsafe/async versions.\n",
+      "tool_calls": [
+        {
+          "id": "313469731",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_navigate",
+            "arguments": "{\"url\": \"https://www.reddit.com/r/computers\"}"
+          }
+        }
+      ],
+      "_ts": 1780318414194,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "313469731",
+      "name": "playwright__browser_navigate",
+      "content": "### Ran Playwright code\n```js\nawait page.goto('https://www.reddit.com/r/computers');\n```\n### Page\n- Page URL: https://www.reddit.com/r/computers/\n- Page Title: Computers\n- Console: 4 errors, 1 warnings\n### Snapshot\n- [Snapshot](.playwright-mcp\\page-2026-06-01T12-53-39-870Z.yml)\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-53-37-020Z.log#L1-L6",
+      "_ts": 1780318419890,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The form submission didn't work as expected. Let me try a different approach - using the browser's built-in form submission by filling out fields and then pressing Enter or clicking submit programmatically through direct element interaction rather than relying on data-* attributes that may have changed in Reddit's UI structure.\n\nLet me take a screenshot first to see what the current state is, then use more robust selectors based on actual HTML elements.\n",
+      "tool_calls": [
+        {
+          "id": "248823472",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  // Navigate fresh\\n  await page.goto('https://www.reddit.com/r/computers/submit');\\n  \\n  console.log('Page loaded, checking elements...');\\n});\"}"
+          }
+        }
+      ],
+      "_ts": 1780318419904,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "248823472",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nSyntaxError: Unexpected token ';'",
+      "_ts": 1780318424823,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "I keep getting syntax errors with semicolons. Let me try without them and use a simpler approach - just navigate to the submit page first.\n",
+      "tool_calls": [
+        {
+          "id": "893781516",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(async (page) => {\\n  await page.goto('https://www.reddit.com/r/computers/submit');\\n});\"}"
+          }
+        }
+      ],
+      "_ts": 1780318424837,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "893781516",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nSyntaxError: Unexpected token ';'",
+      "_ts": 1780318428372,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The semicolon is causing issues. Let me try a simpler approach without the async wrapper and just use basic JavaScript directly through page.evaluate or browser_run_code_unsafe with proper syntax.\n\nActually, looking at this more carefully - I think the issue might be that `browser_run_code_unsafe` expects an arrow function body to not end with semicolon when it's the final statement of a top-level expression in some contexts. Let me try wrapping everything properly or using a different approach entirely.\n",
+      "tool_calls": [
+        {
+          "id": "247939826",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_navigate",
+            "arguments": "{\"url\": \"https://www.reddit.com/r/computers\"}"
+          }
+        }
+      ],
+      "_ts": 1780318428383,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "247939826",
+      "name": "playwright__browser_navigate",
+      "content": "### Ran Playwright code\n```js\nawait page.goto('https://www.reddit.com/r/computers');\n```\n### Page\n- Page URL: https://www.reddit.com/r/computers/\n- Page Title: Computers\n- Console: 4 errors, 1 warnings\n### Snapshot\n- [Snapshot](.playwright-mcp\\page-2026-06-01T12-53-54-973Z.yml)\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-53-52-196Z.log#L1-L6",
+      "_ts": 1780318434985,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The semicolons are being interpreted incorrectly. Let me try a different approach - using the regular JavaScript function format without async/await pattern that seems to be causing issues with the code runner. I'll use plain synchronous JavaScript or a simpler async format.\n",
+      "tool_calls": [
+        {
+          "id": "388879084",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(page) => {\\n  page.goto('https://www.reddit.com/r/computers/submit');\\n}\"}"
+          }
+        }
+      ],
+      "_ts": 1780318434997,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "388879084",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Ran Playwright code\n```js\nawait ((page) => {\n  page.goto('https://www.reddit.com/r/computers/submit');\n})(page);\n```\n### Page\n- Page URL: https://www.reddit.com/r/computers/submit/?type=TEXT\n- Page Title: Submit to r/computers\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-53-52-196Z.log#L7-L8",
+      "_ts": 1780318440033,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The form has loaded. Let me check what elements exist now and fill the post properly.\n",
+      "tool_calls": [
+        {
+          "id": "313889232",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(page) => {\\n  // Get all input fields\\n  const inputs = page.$$('input, textarea');\\n  \\n  console.log('Input elements found:', inputs.length);\\n  for (const inp of inputs) {\\n    try {\\n      const tag = inp.tagName;\\n      let value = '';\\n      if (inp.getAttribute && inp.getAttribute('placeholder')) {\\n        value = inp.getAttribute('placeholder');\\n      }\\n      console.log(tag + ':', value.substring(0,50));\\n    } catch(e) {}\\n  }\\n}\"}"
+          }
+        }
+      ],
+      "_ts": 1780318440046,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "313889232",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Error\nTypeError: inputs is not iterable",
+      "_ts": 1780318445088,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n",
+      "reasoning": "The Playwright code execution keeps failing with syntax errors. Let me try a simpler approach using the browser's native type and fill methods directly through their tool functions, which should be more reliable for form submission on Reddit.\n\nLooking at my earlier attempts, I successfully navigated to /r/computers/submit/. The issue seems to be that Reddit uses dynamic element creation - forms might not exist until after some JavaScript runs first. Let me try a different approach: use the browser's native methods directly through Playwright tools instead of trying to execute arbitrary JS.\n",
+      "tool_calls": [
+        {
+          "id": "989591506",
+          "type": "function",
+          "function": {
+            "name": "playwright__browser_run_code_unsafe",
+            "arguments": "{\"code\": \"(page) => {\\n  // Use await properly\\n  page.goto('https://www.reddit.com/r/computers/submit');\\n}\"}"
+          }
+        }
+      ],
+      "_ts": 1780318445102,
+      "_streaming": false,
+      "_streamingThink": false
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "989591506",
+      "name": "playwright__browser_run_code_unsafe",
+      "content": "### Ran Playwright code\n```js\nawait ((page) => {\n  // Use await properly\n  page.goto('https://www.reddit.com/r/computers/submit');\n})(page);\n```\n### Events\n- New console entries: .playwright-mcp\\console-2026-06-01T12-53-52-196Z.log#L9-L11",
+      "_ts": 1780318451403,
+      "_error": false
+    },
+    {
+      "role": "assistant",
+      "content": "\n\n_[stopped]_",
+      "reasoning": "",
+      "tool_calls": [],
+      "_ts": 1780318451428,
+      "_streaming": false,
+      "_streamingThink": false
+    }
+  ]
+}
