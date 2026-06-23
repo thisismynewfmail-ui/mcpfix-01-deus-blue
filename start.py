@@ -55,6 +55,8 @@ DEFAULT_SETTINGS = {
     "context": 64200,
     "threshold": 70,
     "contextDepth": 6,           # how many of the most-recent message pairs are always kept in the model window
+    "croppingMethod": "block",   # "block" (depth-based rolling window, cut %) | "standard" (Standard Culling: continuous peel-off)
+    "falloffLocation": 90,       # Standard Culling only: % of context at which the oldest messages begin to peel off
     "systemPrompt": (
         "You are a precise, helpful AI agent operating inside the CHATSGI "
         "terminal. Use the MCP tools provided when they help; report your "
