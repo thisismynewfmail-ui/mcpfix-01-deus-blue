@@ -136,6 +136,13 @@ it on/off with the **browser** switch in **§ 2 MCP / NODES**.
   assistant message with `add_generation_prompt:false` / `continue_final_message`.
 - **Collapsed tool calls** — every tool call and tool result is collapsed by
   default; click the header to expand. Toggle the default in settings.
+- **Keep input focused after send** — *Settings → § 7 BEHAVIOR → KEEP INPUT
+  FOCUSED AFTER SEND*. When on, the composer re-takes focus the instant a message
+  is sent (Enter *or* the SEND button), so you can type the next line without
+  clicking back into the box. The re-focus fires inside the original keypress /
+  tap, so on touch devices the on-screen keyboard stays up between messages
+  instead of dismissing. Off by default; synced and persisted like every other
+  setting.
 - **Connection retry** — the LLM proxy retries transient network failures
   (and 5xx responses) with exponential backoff, both server-side and
   (for direct-mode) client-side.
