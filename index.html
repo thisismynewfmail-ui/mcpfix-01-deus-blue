@@ -111,7 +111,9 @@ body::after {
     "head head head"
     "side main rside"
     "foot foot foot";
-  height: 100vh; width: 100vw;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;   /* track the dynamic viewport so the mobile URL bar can't clip the composer/footer */
   transition: grid-template-columns 0.25s ease;
 }
 .app.left-collapsed  { --left-w: 0px; }
@@ -700,7 +702,7 @@ main {
   color: var(--cyan-soft);
 }
 .empty-chat .check .key { color: var(--text-faint); }
-.empty-chat .check .val { color: var(--text); }
+.empty-chat .check .val { color: var(--text); overflow-wrap: anywhere; }
 .empty-chat .check .ok  { color: var(--green); }
 .empty-chat .check .bad { color: var(--crit); }
 
@@ -1610,6 +1612,38 @@ footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
   footer::-webkit-scrollbar { display: none; }
   footer .group { flex: 0 0 auto; }
   footer .spacer { display: none; }
+
+  /* ── Empty-state hero scales to the viewport instead of overflowing ──
+     The 64px wordmark + wide tracking ran far past a phone's width and was
+     clipped to "CHATSG"; clamp() ties it to the viewport, and the readout
+     plate drops its desktop min-width so it can never force a sideways crop. */
+  .empty-chat { gap: 14px; }
+  .empty-chat .emblem {
+    font-size: clamp(34px, 12vw, 60px);
+    letter-spacing: 0.18em;
+    max-width: 100%;
+  }
+  .empty-chat .schematic { width: clamp(150px, 46vw, 200px); height: auto; }
+  .empty-chat .tagline { font-size: 9px; letter-spacing: 0.22em; padding: 0 6px; }
+  .empty-chat .check {
+    min-width: 0;
+    width: 100%;
+    max-width: 440px;
+    padding: 14px 16px;
+  }
+
+  /* ── Composer: stack the TX controls under a full-width textarea ──
+     The desktop 3-column grid (prompt · input · actions) reserved a fixed
+     110px button column, squeezing the textarea into a sliver that clipped
+     its own placeholder. On mobile the input takes the full width and the
+     attach + TRANSMIT controls sit in a row beneath it. */
+  .composer { display: flex; flex-direction: column; align-items: stretch; gap: 8px; }
+  .composer > .prompt { display: none; }
+  .composer textarea { min-height: 46px; }
+  .composer-actions { flex-direction: row; gap: 8px; }
+  .composer-actions .attach-btn { flex: 0 0 auto; min-width: 0; width: 54px; padding: 10px; }
+  .composer-actions .send-btn { flex: 1 1 auto; min-width: 0; }
+  .composer-hint { flex-wrap: wrap; gap: 2px 10px; }
 }
 
 /* Very small phones — reclaim the meta gutter by stacking it above the bubble. */
@@ -1619,6 +1653,9 @@ footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
   .msg-meta { text-align: left; padding-top: 0; display: flex; gap: 8px; align-items: baseline; }
   .msg-meta .ts, .msg-meta .idx { display: inline-block; margin-top: 0; }
   .chat-scroll { padding: 16px 11px; }
+  /* Tighten the diagnostic readout so its longest line fits without a sideways crop. */
+  .empty-chat .check { font-size: 9.5px; letter-spacing: 0.06em; }
+  .empty-chat .emblem { letter-spacing: 0.12em; }
 }
 
 /* ───────────── Interface-skin toggle (top of settings) ───────────── */
@@ -2259,7 +2296,7 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
         <div class="prompt">▸</div>
         <div>
           <div class="attach-tray" id="attach-tray"></div>
-          <textarea id="input" placeholder="Shift+Enter for newline. Enter to send." rows="1"></textarea>
+          <textarea id="input" placeholder="Type a message…" rows="1"></textarea>
           <div class="composer-hint">
             <span><span class="key">[ENTER]</span> send · <span class="key">[SHIFT+ENTER]</span> newline · <span class="key">[ESC]</span> stop · <span class="key">[⬡]</span> attach image</span>
             <span id="streaming-indicator"></span>
