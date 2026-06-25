@@ -418,9 +418,11 @@ class Browser:
 
     def _launch_kwargs(self, headless: bool, exe: str | None) -> dict:
         args = list(STEALTH_ARGS)
-        # Chromium refuses to run as root without --no-sandbox (containers,
-        # CI, some Linux setups). Normal user runs keep the sandbox enabled.
-        if (hasattr(os, "geteuid") and os.geteuid() == 0) or headless:
+        # --no-sandbox is intentionally NOT used by default: Chromium warns that
+        # "stability and security will suffer", and on a normal user account the
+        # sandbox works fine. Opt in only via BROWSER_NO_SANDBOX=1 for the rare
+        # case of running as root in a container where Chromium won't otherwise start.
+        if os.environ.get("BROWSER_NO_SANDBOX", "") in ("1", "true", "yes"):
             args.append("--no-sandbox")
         if not headless:
             args.append(f"--window-size={self.width},{self.height}")

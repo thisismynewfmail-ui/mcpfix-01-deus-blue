@@ -3070,14 +3070,18 @@ function buildMessageEl(m, idx) {
   const body = document.createElement('div');
   body.className = 'msg-body';
 
-  if (m.reasoning && m.reasoning.trim()) body.appendChild(buildThinkBlock(m.reasoning, !!m._streamingThink));
+  // Split out reasoning for DISPLAY — handles an in-flight <think> that hasn't
+  // closed yet, so the think block is enclosed/collapsed from the first streamed
+  // token (not only once </think> arrives).
+  const disp = splitThinkForDisplay(m);
+  if (disp.reasoning && disp.reasoning.trim()) body.appendChild(buildThinkBlock(disp.reasoning, !!m._streamingThink || disp.thinkOpen));
 
-  if (m.content && m.content.trim()) {
+  if (disp.content && disp.content.trim()) {
     const c = document.createElement('div');
-    c.innerHTML = renderMarkdown(m.content);
+    c.innerHTML = renderMarkdown(disp.content);
     if (m._streaming) c.classList.add('stream-cursor');
     body.appendChild(c);
-  } else if (m._streaming && !m.reasoning) {
+  } else if (m._streaming && !(disp.reasoning && disp.reasoning.trim())) {
     const c = document.createElement('div');
     c.className = 'stream-cursor';
     c.innerHTML = '<span style="color:var(--text-faint); font-family:var(--mono); font-size:11px; letter-spacing:0.1em;">…RECEIVING…</span>';
@@ -3091,9 +3095,12 @@ function buildMessageEl(m, idx) {
       let raw = tc.function?.arguments ?? '';
       let pretty = raw;
       try { pretty = JSON.stringify(JSON.parse(raw), null, 2); } catch {}
+      pretty = clampForChat(pretty);   // compress huge payloads in the chat DOM
       const preview = oneLinePreview(raw, 120);
       const el = document.createElement('div');
-      el.className = 'tool-call' + (state.settings.toolsCollapsed ? '' : ' open');
+      // Collapsed by DEFAULT — only expand when the setting is explicitly false
+      // (so a missing/undefined setting still collapses).
+      el.className = 'tool-call' + (state.settings.toolsCollapsed === false ? ' open' : '');
       el.innerHTML = `
         <div class="tool-call-head" title="Toggle detail">
           <span class="lhs"><span class="arrow">▸</span><span style="color:var(--text-faint)">CALL</span><span class="name">${escapeHtml(tc.function?.name || '?')}</span></span>
@@ -3112,7 +3119,8 @@ function buildMessageEl(m, idx) {
   if (m.role === 'tool') {
     const preview = oneLinePreview(m.content || '', 140);
     const head = document.createElement('div');
-    head.className = 'tool-call result' + (m._error ? ' err' : '') + (state.settings.toolsCollapsed ? '' : ' open');
+    // Collapsed by DEFAULT — only expand when explicitly disabled.
+    head.className = 'tool-call result' + (m._error ? ' err' : '') + (state.settings.toolsCollapsed === false ? ' open' : '');
     head.innerHTML = `
       <div class="tool-call-head" title="Toggle output">
         <span class="lhs"><span class="arrow">▸</span><span style="color:var(--text-faint)">${m._error ? 'ERR ' : 'OUT '}</span><span class="name">${escapeHtml(m.name || '?')}</span></span>
@@ -3121,7 +3129,7 @@ function buildMessageEl(m, idx) {
         <span class="id-tag">${escapeHtml((m.tool_call_id || '').slice(-6))}</span>
       </div>
       <div class="tool-call-detail">
-        <div class="tool-call-result${m._error ? ' err' : ''}">${escapeHtml(m.content || '')}</div>
+        <div class="tool-call-result${m._error ? ' err' : ''}">${escapeHtml(clampForChat(m.content || ''))}</div>
       </div>`;
     head.querySelector('.tool-call-head').addEventListener('click', () => head.classList.toggle('open'));
     body.appendChild(head);
@@ -3131,8 +3139,42 @@ function buildMessageEl(m, idx) {
   return wrap;
 }
 
+// Non-destructively split a message into reasoning + visible content for DISPLAY.
+// Folds complete <think>…</think> blocks into reasoning, and — crucially — when a
+// <think> is still open mid-stream, treats everything after it as reasoning-so-far
+// so the think trace is enclosed in its collapsible block from the first token.
+function splitThinkForDisplay(m) {
+  let reasoning = m.reasoning || '';
+  let content = m.content || '';
+  let thinkOpen = false;
+  if (content.indexOf('<think>') !== -1) {
+    content = content.replace(/<think>([\s\S]*?)<\/think>/g, (_, inner) => {
+      reasoning += (reasoning ? '\n\n' : '') + inner.trim();
+      return '';
+    });
+    const open = content.indexOf('<think>');
+    if (open !== -1) {                       // unclosed <think> — still streaming
+      reasoning += (reasoning ? '\n\n' : '') + content.slice(open + '<think>'.length);
+      content = content.slice(0, open);
+      thinkOpen = true;
+    }
+  }
+  return { reasoning: reasoning.trim(), content: content.trim(), thinkOpen };
+}
+
+// Compress oversized tool payloads/results for the CHAT view only. The full text
+// stays in state.messages and is what's sent to the model — this just keeps the
+// DOM light (browser snapshots can be huge).
+const CHAT_TOOL_MAX = 1800;
+function clampForChat(s) {
+  s = String(s ?? '');
+  if (s.length <= CHAT_TOOL_MAX) return s;
+  return s.slice(0, CHAT_TOOL_MAX) + `\n… (+${s.length - CHAT_TOOL_MAX} more chars — full text sent to the model)`;
+}
+
 function buildThinkBlock(text, streaming) {
-  const open = !state.settings.thinkCollapsed;
+  // Collapsed by DEFAULT — only expand when the setting is explicitly false.
+  const open = state.settings.thinkCollapsed === false;
   const el = document.createElement('div');
   el.className = 'think-block' + (open ? ' open' : '') + (streaming ? ' streaming' : '');
   el.innerHTML = `
