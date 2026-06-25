@@ -1,0 +1,9 @@
+# Local browser subsystem (Playwright engine + persistent profile + shots).
+# Created by browser_setup.py / browser_mcp_server.py; never committed.
+.browser/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

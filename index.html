@@ -2252,6 +2252,19 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
     <div class="sect">
       <div class="sect-head"><span class="num">§ 2</span><span>MODEL &amp; SAMPLING</span></div>
       <div class="field">
+        <label>Sampling Preset</label>
+        <select id="cfg-sampling-preset"><option value="">(unsaved · live settings)</option></select>
+        <div class="help">Named bundles of the sampling params <em>and</em> the system prompt below. Loading one applies all of them.</div>
+      </div>
+      <div class="row-actions" style="margin-bottom:6px;">
+        <button class="btn" id="btn-preset-load">▸ LOAD</button>
+        <button class="btn primary" id="btn-preset-save">▸ SAVE</button>
+        <button class="btn" id="btn-preset-rename">▸ RENAME</button>
+        <button class="btn" id="btn-preset-copy">▸ COPY</button>
+        <button class="btn danger" id="btn-preset-delete">▸ DELETE</button>
+      </div>
+      <div class="test-result" id="preset-result"></div>
+      <div class="field">
         <label>Model Name</label>
         <input type="text" id="cfg-model" placeholder="e.g. gpt-4o-mini, llama-3.1-8b" />
         <div class="help">Free-text. Use LIST MODELS to populate from the endpoint.</div>
@@ -2345,6 +2358,21 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
     <div class="sect">
       <div class="sect-head"><span class="num">§ 4</span><span>SYSTEM PROMPT / TEMPLATE</span></div>
       <div class="field">
+        <label>Chat Template</label>
+        <select id="cfg-chat-template">
+          <option value="api">API PROVIDED · server applies the model's template (/chat/completions)</option>
+          <option value="qwen">QWEN3 · ChatML &lt;|im_start|&gt; · &lt;think&gt; · &lt;tool_call&gt; (rendered here → /completions)</option>
+          <option value="gemma">GEMMA · &lt;start_of_turn&gt;/&lt;end_of_turn&gt; · system folded (rendered here → /completions)</option>
+        </select>
+        <div class="help">
+          <strong>API PROVIDED</strong> sends the structured message array and lets the endpoint apply the model's own
+          chat template (default, works everywhere). <strong>QWEN3</strong> and <strong>GEMMA</strong> render the exact
+          prompt string here — including special/channel tokens, thinking and tool-call structure — and post it to
+          <code>/completions</code> so it reaches the model byte-for-byte. Use these when the server has no template for
+          your model or applies the wrong one.
+        </div>
+      </div>
+      <div class="field">
         <label>Assistant Display Name</label>
         <input type="text" id="cfg-assistant-name" placeholder="e.g. HERMES (default: ASSI)" maxlength="32" />
         <div class="help">Display only — relabels assistant turns in this terminal. <strong>Never</strong> sent to the model; leave blank for the default <code>[ASSI]</code> tag.</div>
@@ -2384,7 +2412,50 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
     </div>
 
     <div class="sect">
-      <div class="sect-head"><span class="num">§ 6</span><span>BEHAVIOR</span></div>
+      <div class="sect-head"><span class="num">§ 6</span><span>BROWSER</span></div>
+      <div class="field">
+        <div id="browser-engine-status" style="font-family:var(--mono); font-size:10px; letter-spacing:0.06em; border:1px dashed var(--line-strong); padding:8px 10px; line-height:1.7;">▸ checking local browser engine…</div>
+      </div>
+      <div class="row-actions">
+        <button class="btn primary" id="btn-browser-install">▸ INSTALL / REPAIR ENGINE</button>
+        <button class="btn" id="btn-browser-refresh">▸ REFRESH STATUS</button>
+      </div>
+      <div class="test-result" id="browser-install-log" style="white-space:pre-wrap; max-height:150px; overflow-y:auto;"></div>
+      <div class="field-row" style="margin-top:12px;">
+        <div class="field"><label>Viewport Width (px)</label><input type="number" id="cfg-browser-w" min="320" max="3840" step="10" /></div>
+        <div class="field"><label>Viewport Height (px)</label><input type="number" id="cfg-browser-h" min="240" max="2160" step="10" /></div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Idle Auto-Close (seconds, 0 = stay open)</label>
+          <input type="number" id="cfg-browser-duration" min="0" max="86400" step="10" />
+          <div class="help">Closes the browser window after this many seconds of no tool activity. 0 keeps it open until the server is toggled off.</div>
+        </div>
+        <div class="field">
+          <label>Auto-Snapshot After Actions</label>
+          <select id="cfg-browser-snapshot">
+            <option value="compact">COMPACT · interactive + landmarks (saves context)</option>
+            <option value="full">FULL · entire accessibility tree</option>
+            <option value="off">OFF · status only (no snapshot)</option>
+          </select>
+          <div class="help">The model can also call <code>browser_snapshot</code> / <code>browser_snapshot_compact</code> on demand.</div>
+        </div>
+      </div>
+      <label class="toggle" style="margin-bottom:6px; display:flex;">
+        <input type="checkbox" id="cfg-browser-headless" />
+        <span class="slot"></span>
+        <span>RUN HEADLESS (hide the window)</span>
+      </label>
+      <div class="help" style="font-family:var(--mono); font-size:9.5px; color:var(--text-faint); line-height:1.6;">
+        Local, self-hosted Playwright — no Docker, no npx. The browser opens with a real viewport at the size above and a
+        persistent profile (logins / cookies survive). Power it on/off with the <strong>browser</strong> switch in
+        <strong>§ 2 MCP / NODES</strong> (right panel). Leave headless OFF to watch it work; it falls back to headless
+        automatically on a display-less host. Anti-bot-detection hardening is always on.
+      </div>
+    </div>
+
+    <div class="sect">
+      <div class="sect-head"><span class="num">§ 7</span><span>BEHAVIOR</span></div>
       <label class="toggle" style="margin-bottom:10px; display:flex;">
         <input type="checkbox" id="cfg-thinking" />
         <span class="slot"></span>
@@ -2413,7 +2484,7 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
     </div>
 
     <div class="sect">
-      <div class="sect-head"><span class="num">§ 7</span><span>SPEECH / VOICE OUTPUT</span></div>
+      <div class="sect-head"><span class="num">§ 8</span><span>SPEECH / VOICE OUTPUT</span></div>
 
       <label class="toggle" style="margin-bottom:6px; display:flex;">
         <input type="checkbox" id="cfg-sound" />
@@ -2465,7 +2536,7 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
     </div>
 
     <div class="sect">
-      <div class="sect-head"><span class="num">§ 8</span><span>NETWORK</span></div>
+      <div class="sect-head"><span class="num">§ 9</span><span>NETWORK</span></div>
       <label class="toggle" style="margin-bottom:10px; display:flex;">
         <input type="checkbox" id="cfg-network" />
         <span class="slot"></span>
@@ -2478,7 +2549,7 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
     </div>
 
     <div class="sect" style="border-bottom:none;">
-      <div class="sect-head"><span class="num">§ 9</span><span>STORAGE</span></div>
+      <div class="sect-head"><span class="num">§ 10</span><span>STORAGE</span></div>
       <div class="row-actions">
         <button class="btn primary" id="btn-save">▸ SAVE</button>
         <button class="btn" id="btn-reload">▸ RELOAD FROM DISK</button>
@@ -2546,7 +2617,21 @@ const DEFAULTS = {
   leftCollapsed: false,
   rightCollapsed: false,
   theme: 'sac',             // interface skin: 'sac' (Stand Alone Complex) | 'deusex' (UNATCO / Deus Ex)
+  // ── Local browser tool (Playwright) ──
+  browserWidth: 1280,
+  browserHeight: 800,
+  browserDuration: 0,       // idle seconds before auto-closing; 0 = stay open
+  browserHeadless: false,   // false = visible window with viewport
+  browserSnapshot: 'compact',
+  // ── Sampling presets + chat template ──
+  samplingPresets: [],      // [{name, temperature, maxTokens, topP, topK, minP, repeatPenalty, frequencyPenalty, presencePenalty, seed, stopSequences, systemPrompt}]
+  chatTemplate: 'api',      // 'api' | 'gemma' | 'qwen'
 };
+
+// Keys a sampling preset captures (proper system-message handling: the system
+// prompt travels with the preset and is applied on load).
+const SAMPLING_KEYS = ['temperature','maxTokens','topP','topK','minP','repeatPenalty',
+  'frequencyPenalty','presencePenalty','seed','stopSequences','systemPrompt'];
 
 const state = {
   settings: { ...DEFAULTS },
@@ -2721,6 +2806,11 @@ function handleEvent(evt) {
     state.servers = evt.payload.servers || [];
     state.tools = evt.payload.tools || [];
     renderServers(); renderToolRoster(); updateStatus();
+  } else if (evt.kind === 'browser') {
+    // Live install progress / status from the backend browser orchestrator.
+    if (evt.payload.status) { state._browserStatus = evt.payload.status; renderBrowserStatus(evt.payload.status); }
+    else if (evt.payload.install && state._browserStatus) { state._browserStatus.install = evt.payload.install; renderBrowserStatus(state._browserStatus); }
+    else if (evt.payload.install) { renderBrowserStatus({ install: evt.payload.install, ready: false, playwright: false, chromium: false }); }
   } else if (evt.kind === 'chats') {
     state.chats = evt.payload.chats || [];
     if (evt.payload.active && evt.payload.active !== state.activeChatId) {
@@ -4132,6 +4222,170 @@ function contextWindow() {
   return { messages: sel, tokens, dropped: Math.max(0, eligible - sel.length) };
 }
 
+/* ───────────────── Chat templates (client-side rendering) ─────────────────
+   When the Chat Template setting is 'gemma' or 'qwen' we render the exact prompt
+   string here — special/channel tokens, thinking and tool-call structure — and
+   POST it to /completions so it reaches the model byte-for-byte, instead of
+   letting the endpoint apply (or mis-apply) its own template. 'api' keeps the
+   structured /chat/completions path. */
+const PromptTemplates = {
+  isRaw(t) { return t === 'gemma' || t === 'qwen'; },
+  stopFor(t) { return t === 'gemma' ? ['<end_of_turn>'] : ['<|im_end|>']; },
+
+  _userContent(m) { return (m.content || ''); },   // raw mode is text-only (no image parts)
+  _argStr(tc) { const a = tc.function?.arguments; return (typeof a === 'string') ? (a || '{}') : JSON.stringify(a || {}); },
+  _stripThink(s) { return String(s || '').replace(/<think>[\s\S]*?<\/think>\s*/g, '').trim(); },
+
+  // ---- Qwen3 (ChatML) ----
+  _qwenTools(tools) {
+    if (!tools || !tools.length) return '';
+    const sigs = tools.map(t => JSON.stringify({ type: 'function', function: { name: t.function.name, description: t.function.description, parameters: t.function.parameters } })).join('\n');
+    return `\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\n` +
+           `You are provided with function signatures within <tools></tools> XML tags:\n<tools>\n${sigs}\n</tools>\n\n` +
+           `For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:\n` +
+           `<tool_call>\n{"name": <function-name>, "arguments": <args-json-object>}\n</tool_call>`;
+  },
+  qwen(sys, msgs, tools, opts) {
+    const toolsBlock = opts.toolsEnabled ? this._qwenTools(tools) : '';
+    let s = '';
+    const sysC = (sys || '').trim();
+    if (sysC || toolsBlock) s += `<|im_start|>system\n${sysC}${toolsBlock}<|im_end|>\n`;
+    let i = 0;
+    while (i < msgs.length) {
+      const m = msgs[i];
+      if (m.role === 'tool') {                                   // group consecutive tool results
+        let block = '<|im_start|>user';
+        while (i < msgs.length && msgs[i].role === 'tool') { block += `\n<tool_response>\n${msgs[i].content || ''}\n</tool_response>`; i++; }
+        s += block + '<|im_end|>\n';
+        continue;
+      }
+      if (m.role === 'assistant') {
+        let c = this._stripThink(m.content);
+        let block = `<|im_start|>assistant\n${c}`;
+        if (Array.isArray(m.tool_calls)) for (const tc of m.tool_calls) block += `\n<tool_call>\n{"name": "${tc.function?.name}", "arguments": ${this._argStr(tc)}}\n</tool_call>`;
+        s += block + '<|im_end|>\n';
+      } else { // user or stray system note
+        s += `<|im_start|>user\n${this._userContent(m)}<|im_end|>\n`;
+      }
+      i++;
+    }
+    s += '<|im_start|>assistant\n';
+    if (!opts.thinking) s += '<think>\n\n</think>\n\n';          // Qwen empty-think when reasoning disabled
+    return { prompt: s, stop: ['<|im_end|>'] };
+  },
+
+  // ---- Gemma (start_of_turn / end_of_turn; no system role) ----
+  _gemmaTools(tools) {
+    if (!tools || !tools.length) return '';
+    const list = tools.map(t => `- ${t.function.name}: ${t.function.description || ''}\n  parameters: ${JSON.stringify(t.function.parameters || {})}`).join('\n');
+    return `\n\n# Tools\nYou can call the following functions. To call one, output a fenced block exactly like:\n` +
+           '```tool_call\n{"name": "<function-name>", "arguments": {<args>}}\n```\n' +
+           `Available functions:\n${list}`;
+  },
+  gemma(sys, msgs, tools, opts) {
+    let s = '<bos>';
+    const sysC = (sys || '').trim();
+    const toolInstr = opts.toolsEnabled ? this._gemmaTools(tools) : '';
+    const firstUserPrefix = (sysC || toolInstr) ? (sysC + toolInstr).trim() + '\n\n' : '';
+    let firstUserDone = false;
+    for (const m of msgs) {
+      let role, content;
+      if (m.role === 'assistant') {
+        role = 'model'; content = this._stripThink(m.content);
+        if (Array.isArray(m.tool_calls)) for (const tc of m.tool_calls) content += `\n\`\`\`tool_call\n{"name": "${tc.function?.name}", "arguments": ${this._argStr(tc)}}\n\`\`\``;
+      } else if (m.role === 'tool') {
+        role = 'user'; content = '```tool_response\n' + (m.content || '') + '\n```';
+      } else {
+        role = 'user'; content = this._userContent(m);
+      }
+      let prefix = '';
+      if (role === 'user' && !firstUserDone) { prefix = firstUserPrefix; firstUserDone = true; }
+      s += `<start_of_turn>${role}\n${prefix}${content}<end_of_turn>\n`;
+    }
+    if (!firstUserDone && firstUserPrefix) s += `<start_of_turn>user\n${firstUserPrefix.trim()}<end_of_turn>\n`;
+    s += '<start_of_turn>model\n';
+    return { prompt: s, stop: ['<end_of_turn>'] };
+  },
+
+  render(t, sys, msgs, tools, opts) { return (t === 'gemma') ? this.gemma(sys, msgs, tools, opts) : this.qwen(sys, msgs, tools, opts); },
+
+  _mkCall(jsonish) {
+    try {
+      const obj = JSON.parse(String(jsonish).trim());
+      if (obj && obj.name) return { id: 'call_' + Math.random().toString(36).slice(2, 10), type: 'function', function: { name: obj.name, arguments: JSON.stringify(obj.arguments || {}) } };
+    } catch (e) {}
+    return null;
+  },
+  parseToolCalls(t, text) {
+    const calls = []; if (!text) return calls;
+    const re = (t === 'qwen') ? /<tool_call>\s*([\s\S]*?)\s*<\/tool_call>/g : /```(?:tool_call|json)?\s*([\s\S]*?)```/g;
+    let m; while ((m = re.exec(text))) { const c = this._mkCall(m[1]); if (c) calls.push(c); }
+    return calls;
+  },
+  stripToolCalls(t, text) {
+    if (!text) return text;
+    if (t === 'qwen') return text.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, '').trim();
+    return text.replace(/```(?:tool_call|json)?\s*[\s\S]*?```/g, b => /"name"\s*:/.test(b) ? '' : b).trim();
+  },
+};
+
+// Apply the sampling params (shared by chat + completion bodies).
+function applySamplingParams(body) {
+  const c = state.settings;
+  body.temperature = Number(c.temperature);
+  if (c.topP != null && c.topP !== '' && Number(c.topP) > 0 && Number(c.topP) < 1) body.top_p = Number(c.topP);
+  if (Number(c.frequencyPenalty)) body.frequency_penalty = Number(c.frequencyPenalty);
+  if (Number(c.presencePenalty)) body.presence_penalty = Number(c.presencePenalty);
+  if (Number(c.seed) > 0) body.seed = Number(c.seed);
+  const ext = {};
+  if (Number(c.topK) > 0) ext.top_k = Number(c.topK);
+  if (Number(c.minP) > 0) ext.min_p = Number(c.minP);
+  if (Number(c.repeatPenalty) && Number(c.repeatPenalty) !== 1) ext.repeat_penalty = Number(c.repeatPenalty);
+  Object.assign(body, ext);
+  if (Object.keys(ext).length) body.extra_body = { ...(body.extra_body || {}), ...ext };
+}
+
+// Build a /completions request with a client-rendered prompt (Gemma / Qwen).
+function buildCompletionBody(tmpl) {
+  const c = state.settings;
+  const windowed = selectContextMessages();
+  const tools = (c.toolsEnabled && state.tools.length)
+    ? state.tools.map(t => ({ function: { name: t.function.name, description: t.function.description, parameters: t.function.parameters } }))
+    : [];
+  const { prompt, stop } = PromptTemplates.render(tmpl, c.systemPrompt || '', windowed, tools,
+    { toolsEnabled: !!(c.toolsEnabled && tools.length), thinking: !!c.thinkingEnabled });
+  const body = { model: c.model, prompt, stream: !!c.streaming, max_tokens: Number(c.maxTokens) };
+  applySamplingParams(body);
+  const userStops = (c.stopSequences || '').split(',').map(s => s.trim()).filter(Boolean);
+  body.stop = [...stop, ...userStops];
+  return body;
+}
+
+// Stream /completions (choices[].text) into the assistant message.
+async function streamCompletion(body, ai) {
+  const r = await llmFetch(epBase() + '/completions', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body), signal: state.abortCtrl.signal,
+  }, { stream: true });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  const reader = r.body.getReader(); const dec = new TextDecoder(); let buf = ''; let lastRender = 0;
+  while (true) {
+    const { value, done } = await reader.read(); if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n'); buf = lines.pop();
+    for (const line of lines) {
+      const t = line.trim(); if (!t || !t.startsWith('data:')) continue;
+      const payload = t.slice(5).trim(); if (payload === '[DONE]') continue;
+      let chunk; try { chunk = JSON.parse(payload); } catch { continue; }
+      const ch = chunk.choices?.[0] || {};
+      const piece = (typeof ch.text === 'string') ? ch.text : (ch.delta?.content || '');
+      if (piece) { ai.content += piece; Speech.feed(piece); }
+      const now = performance.now(); if (now - lastRender > 60) { renderMessages(); lastRender = now; }
+    }
+  }
+  renderMessages();
+}
+
 /* ───────────────── Chat ───────────────── */
 function buildOutgoing() {
   const c = state.settings;
@@ -4217,7 +4471,11 @@ async function runTurn(depth = 0) {
   // Each recursive tool round therefore gets a fresh `max_tokens` budget, so
   // tool calls are NOT counted against the output cap — only `maxToolRecursion`
   // caps depth.
-  const body = buildOutgoing();
+  // Chat template: 'api' uses the structured /chat/completions path; 'gemma' /
+  // 'qwen' render the prompt here and post raw to /completions.
+  const tmpl = state.settings.chatTemplate || 'api';
+  const useCompletion = PromptTemplates.isRaw(tmpl);
+  const body = useCompletion ? buildCompletionBody(tmpl) : buildOutgoing();
   const ai = { role: 'assistant', content: '', reasoning: '', tool_calls: [], _ts: Date.now(), _streaming: true };
   state.messages.push(ai); renderMessages();
   Speech.beginTurn(depth === 0);
@@ -4228,7 +4486,19 @@ async function runTurn(depth = 0) {
 
   let aborted = false;
   try {
-    if (body.stream) await streamChat(body, ai);
+    if (useCompletion) {
+      if (body.stream) await streamCompletion(body, ai);
+      else {
+        const r = await llmFetch(epBase() + '/completions', {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(body), signal: state.abortCtrl.signal,
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
+        const j = await r.json();
+        ai.content = j.choices?.[0]?.text || '';
+        if (ai.content) Speech.feed(ai.content);
+      }
+    } else if (body.stream) await streamChat(body, ai);
     else {
       const r = await llmFetch(epBase() + '/chat/completions', {
         method: 'POST', headers: {'Content-Type':'application/json'},
@@ -4255,6 +4525,12 @@ async function runTurn(depth = 0) {
     $('btn-send').textContent = 'TRANSMIT'; $('btn-send').classList.remove('stop');
     $('streaming-indicator').textContent = '';
     extractThinkTags(ai);
+    // Raw-template tool calls are emitted as text — parse them out into structured
+    // tool_calls and strip them from the visible content.
+    if (useCompletion && !aborted) {
+      const calls = PromptTemplates.parseToolCalls(tmpl, ai.content || '');
+      if (calls.length) { ai.tool_calls = calls; ai.content = PromptTemplates.stripToolCalls(tmpl, ai.content || ''); }
+    }
     queuePersist();
     renderMessages(); updateStatus();
   }
@@ -4418,7 +4694,16 @@ async function applyToForm() {
   applyTtsEngineUI();
   $('cfg-network').checked = c.networkVisible;
   $('cfg-proxy').checked = c.useProxy;
+  $('cfg-chat-template').value = c.chatTemplate || 'api';
+  // Browser (§ 6)
+  $('cfg-browser-w').value = c.browserWidth;
+  $('cfg-browser-h').value = c.browserHeight;
+  $('cfg-browser-duration').value = c.browserDuration;
+  $('cfg-browser-snapshot').value = c.browserSnapshot || 'compact';
+  $('cfg-browser-headless').checked = !!c.browserHeadless;
+  renderSamplingPresets();
   applyTheme();
+  refreshBrowserStatus();
   try { const cfg = await loadToolsConfig(); $('cfg-tools').value = JSON.stringify(cfg, null, 2); } catch {}
 }
 function readForm() {
@@ -4460,6 +4745,128 @@ function readForm() {
   c.piperRate = parseFloat($('cfg-piper-rate').value); if (isNaN(c.piperRate)) c.piperRate = 1.0;
   c.networkVisible = $('cfg-network').checked;
   c.useProxy = $('cfg-proxy').checked;
+  c.chatTemplate = (['gemma','qwen'].includes($('cfg-chat-template').value)) ? $('cfg-chat-template').value : 'api';
+  // Browser (§ 6)
+  c.browserWidth = Math.max(320, parseInt($('cfg-browser-w').value) || DEFAULTS.browserWidth);
+  c.browserHeight = Math.max(240, parseInt($('cfg-browser-h').value) || DEFAULTS.browserHeight);
+  c.browserDuration = Math.max(0, parseInt($('cfg-browser-duration').value) || 0);
+  c.browserSnapshot = (['compact','full','off'].includes($('cfg-browser-snapshot').value)) ? $('cfg-browser-snapshot').value : 'compact';
+  c.browserHeadless = $('cfg-browser-headless').checked;
+}
+
+/* ───────────────── Sampling presets ───────────────── */
+function _presets() { return Array.isArray(state.settings.samplingPresets) ? state.settings.samplingPresets : (state.settings.samplingPresets = []); }
+function renderSamplingPresets(selectName) {
+  const sel = $('cfg-sampling-preset'); if (!sel) return;
+  const cur = selectName != null ? selectName : sel.value;
+  sel.innerHTML = '<option value="">(unsaved · live settings)</option>';
+  for (const p of _presets()) {
+    const o = document.createElement('option');
+    o.value = p.name; o.textContent = p.name;
+    sel.appendChild(o);
+  }
+  if (cur && _presets().some(p => p.name === cur)) sel.value = cur;
+}
+function _captureSampling() {
+  readForm();
+  const out = {};
+  for (const k of SAMPLING_KEYS) out[k] = state.settings[k];
+  return out;
+}
+function _presetResult(msg, cls) {
+  const el = $('preset-result'); if (!el) return;
+  el.className = 'test-result ' + (cls || ''); el.textContent = msg;
+}
+async function savePreset() {
+  const sel = $('cfg-sampling-preset');
+  let name = sel.value;
+  if (!name) { name = (prompt('Name this sampling preset:') || '').trim(); if (!name) return; }
+  const vals = _captureSampling();
+  const list = _presets();
+  const ix = list.findIndex(p => p.name === name);
+  const entry = { name, ...vals };
+  if (ix >= 0) list[ix] = entry; else list.push(entry);
+  await saveConfig();
+  renderSamplingPresets(name);
+  _presetResult(`▸ saved preset "${name}" (${SAMPLING_KEYS.length} fields incl. system prompt).`, 'ok');
+  showToast('PRESET SAVED', name, 'green');
+}
+function loadPreset() {
+  const name = $('cfg-sampling-preset').value;
+  const p = _presets().find(x => x.name === name);
+  if (!p) { _presetResult('▸ select a saved preset first.', 'err'); return; }
+  for (const k of SAMPLING_KEYS) if (k in p) state.settings[k] = p[k];
+  applyToForm();
+  $('cfg-sampling-preset').value = name;
+  saveConfig();
+  _presetResult(`▸ loaded "${name}" — sampling + system prompt applied.`, 'ok');
+  showToast('PRESET LOADED', name, 'amber');
+}
+async function renamePreset() {
+  const name = $('cfg-sampling-preset').value;
+  const p = _presets().find(x => x.name === name);
+  if (!p) { _presetResult('▸ select a saved preset to rename.', 'err'); return; }
+  const nn = (prompt('Rename preset:', name) || '').trim();
+  if (!nn || nn === name) return;
+  if (_presets().some(x => x.name === nn)) { _presetResult(`▸ "${nn}" already exists.`, 'err'); return; }
+  p.name = nn;
+  await saveConfig();
+  renderSamplingPresets(nn);
+  _presetResult(`▸ renamed to "${nn}".`, 'ok');
+}
+async function copyPreset() {
+  const name = $('cfg-sampling-preset').value;
+  const src = _presets().find(x => x.name === name);
+  // Copy the selected preset, or snapshot the current live settings if none chosen.
+  const base = src ? { ...src } : { name: 'Preset', ..._captureSampling() };
+  let nn = (base.name || 'Preset') + ' (copy)';
+  let i = 2; while (_presets().some(x => x.name === nn)) nn = `${base.name} (copy ${i++})`;
+  _presets().push({ ...base, name: nn });
+  await saveConfig();
+  renderSamplingPresets(nn);
+  _presetResult(`▸ copied to "${nn}".`, 'ok');
+}
+async function deletePreset() {
+  const name = $('cfg-sampling-preset').value;
+  const ix = _presets().findIndex(x => x.name === name);
+  if (ix < 0) { _presetResult('▸ select a saved preset to delete.', 'err'); return; }
+  if (!confirm(`Delete preset "${name}"?`)) return;
+  _presets().splice(ix, 1);
+  await saveConfig();
+  renderSamplingPresets('');
+  $('cfg-sampling-preset').value = '';
+  _presetResult(`▸ deleted "${name}".`, 'amber');
+}
+
+/* ───────────────── Browser engine status (§ 6) ───────────────── */
+function renderBrowserStatus(st) {
+  const el = $('browser-engine-status'); if (!el || !st) return;
+  const inst = st.install || {};
+  const ready = !!st.ready;
+  const colour = ready ? 'var(--green, #6f6)' : (inst.running ? 'var(--amber)' : 'var(--red, #f66)');
+  const label = inst.running ? 'INSTALLING…' : (ready ? 'READY' : 'NOT INSTALLED');
+  const exe = st.executable ? st.executable.split(/[\\/]/).slice(-2).join('/') : '—';
+  el.innerHTML =
+    `<div><span style="color:${colour}">● ${label}</span></div>` +
+    `<div style="color:var(--text-faint)">playwright: ${st.playwright ? '✓' : '✗'} · chromium: ${st.chromium ? '✓' : '✗'}</div>` +
+    `<div style="color:var(--text-faint)">engine: ${escapeHtml(exe)}</div>` +
+    `<div style="color:var(--text-faint)">server: ${escapeHtml(st.serverName || 'browser')} · ${st.serverEnabled ? 'ENABLED' : 'DISABLED'} (toggle in § 2 MCP / NODES)</div>`;
+  const log = $('browser-install-log');
+  if (log && inst.log && inst.log.length) { log.className = 'test-result ' + (inst.running ? 'busy' : (inst.ok ? 'ok' : '')); log.textContent = inst.log.join('\n'); log.scrollTop = log.scrollHeight; }
+}
+async function refreshBrowserStatus() {
+  try { const st = await apiGet('/api/browser/status'); state._browserStatus = st; renderBrowserStatus(st); }
+  catch (e) {}
+}
+async function installBrowserEngine() {
+  const log = $('browser-install-log');
+  if (log) { log.className = 'test-result busy'; log.textContent = '▸ starting local browser engine install…'; }
+  try {
+    await apiPost('/api/browser/install', {});
+    showToast('BROWSER', 'Installing Chromium engine…', 'amber');
+  } catch (e) {
+    if (log) { log.className = 'test-result err'; log.textContent = '▸ ' + e.message; }
+  }
 }
 
 function autoresize(ta) { ta.style.height = 'auto'; ta.style.height = Math.min(220, ta.scrollHeight) + 'px'; }
@@ -4519,6 +4926,24 @@ function attachWiring() {
     $('cfg-tools').value = JSON.stringify(cfg, null, 2);
     await refreshServers();
   });
+
+  // ── Sampling presets (§ 2) ──
+  $('btn-preset-load').addEventListener('click', loadPreset);
+  $('btn-preset-save').addEventListener('click', savePreset);
+  $('btn-preset-rename').addEventListener('click', renamePreset);
+  $('btn-preset-copy').addEventListener('click', copyPreset);
+  $('btn-preset-delete').addEventListener('click', deletePreset);
+
+  // ── Chat template (§ 4) — persist immediately so it applies to the next turn ──
+  $('cfg-chat-template').addEventListener('change', () => {
+    state.settings.chatTemplate = (['gemma','qwen'].includes($('cfg-chat-template').value)) ? $('cfg-chat-template').value : 'api';
+    saveConfig();
+    showToast('CHAT TEMPLATE', state.settings.chatTemplate.toUpperCase(), 'amber');
+  });
+
+  // ── Browser engine (§ 6) ──
+  $('btn-browser-install').addEventListener('click', installBrowserEngine);
+  $('btn-browser-refresh').addEventListener('click', refreshBrowserStatus);
 
   $('btn-save').addEventListener('click', async () => {
     const prevNet = state.settings.networkVisible;

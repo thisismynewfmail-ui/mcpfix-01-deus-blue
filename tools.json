@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "playwright": {
-      "command": "npx",
+    "browser": {
+      "command": "python",
       "args": [
-        "@playwright/mcp@latest"
+        "browser_mcp_server.py"
       ]
     }
   }
