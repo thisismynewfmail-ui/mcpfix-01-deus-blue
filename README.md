@@ -80,6 +80,17 @@ it on/off with the **browser** switch in **§ 2 MCP / NODES**.
 - **Collapsible side panels** — toggle the left chat list and the right
   options/MCP/telemetry panel independently using the edge buttons on the
   main pane. Collapsed state persists across reloads.
+- **Responsive / mobile layout** — at ≤ 820px the three-column grid folds to a
+  single column: the header collapses to one slim instrument strip and the
+  CHATS / OPS rails become off-canvas drawers that slide in *below* the header
+  (so their own toggle buttons stay reachable) over a tap-to-dismiss scrim, one
+  at a time. Picking a chat closes the drawer to reveal the conversation. Drawer
+  open/close is local, per-device state — it never touches the synced
+  `leftCollapsed` / `rightCollapsed` desktop layout, so cross-instance sync is
+  unaffected. With no hover on touch, the per-message EDIT / CONTINUE controls
+  are tap-revealed: tap a bubble to show its controls, tap elsewhere to hide them
+  (one bubble at a time). Both the *Stand Alone Complex* and *Deus Ex* skins
+  carry through.
 - **Cross-instance sync** — every browser/window subscribes to a Server-Sent
   Events stream. Send a message on one monitor and it appears on every other
   connected viewer immediately. Settings, chat list, active selection, and
@@ -109,6 +120,20 @@ it on/off with the **browser** switch in **§ 2 MCP / NODES**.
 - **Per-MCP-server toggle** — flip an individual server on/off from the right
   panel. Disabled servers are not started and their tools are withheld from
   the model. Persists in `settings.json` (`mcpEnabled`).
+- **Role-distinct chat bubbles** — every turn renders as its own framed card
+  with a tinted "back" keyed to the speaker, so user / assistant / tool-call /
+  tool-result / thinking blocks read apart at a glance. Fully themed: cyan-amber
+  HUD cards under *Stand Alone Complex*, beveled gunmetal datavault panels with a
+  UNATCO-blue / conspiracy-gold rail under the *Deus Ex* skin.
+- **Per-message EDIT / CONTINUE** — hover any user or assistant bubble to reveal
+  two controls that otherwise stay hidden. **EDIT** swaps the bubble for an inline
+  textarea (Ctrl+Enter saves, Esc cancels) and rewrites just that message's text
+  in place, leaving its reasoning / tool calls / images intact. **CONTINUE** drops
+  everything after the message and resumes from it — extending an assistant reply
+  straight into the same bubble, or regenerating the answer to a user turn. For
+  the QWEN3 / GEMMA templates the final assistant turn is left genuinely *open* so
+  the model writes on from where it stopped; for API mode the request ends on the
+  assistant message with `add_generation_prompt:false` / `continue_final_message`.
 - **Collapsed tool calls** — every tool call and tool result is collapsed by
   default; click the header to expand. Toggle the default in settings.
 - **Connection retry** — the LLM proxy retries transient network failures
@@ -153,6 +178,13 @@ it on/off with the **browser** switch in **§ 2 MCP / NODES**.
 - **Sampling presets** — save the full sampling bundle *and* the system prompt
   as a named preset (Settings → **§ 2**), then Load / Save / Rename / Copy /
   Delete from the dropdown. Stored in `settings.json` (`samplingPresets`).
+- **`<time_local>` prompt token** — drop the literal token `<time_local>`
+  anywhere in the system prompt (Settings → **§ 4**) and it is substituted, on
+  every send, with the machine's current local date and time formatted as
+  `MONTH, DAY, YEAR, HH:MM AM/PM` (e.g. `June, 25, 2026, 3:07 PM`). It is
+  re-evaluated per request from the same system clock the scheduler fires on, so
+  the model always sees an accurate "now" — including inside scheduled jobs. The
+  token is replaced only in what is *sent*; the prompt you typed is preserved.
 - **Chat template selector** — Settings → **§ 4** chooses how the prompt reaches
   the model: **API PROVIDED** (default; structured `/chat/completions`, the
   endpoint applies the model's template), **QWEN3** (ChatML `<|im_start|>`,

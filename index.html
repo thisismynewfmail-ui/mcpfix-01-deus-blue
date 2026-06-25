@@ -119,6 +119,18 @@ body::after {
 .app.left-collapsed aside.left  { transform: translateX(-100%); }
 .app.right-collapsed aside.right { transform: translateX(100%); }
 
+/* Scrim behind a mobile side drawer — inert on desktop (only shown inside the
+   mobile media query when a drawer is open). */
+.mobile-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(2,8,13,0.6);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
 /* Header-mounted panel toggles — kept tiny and unobtrusive */
 .panel-toggle {
   background: transparent;
@@ -721,8 +733,10 @@ main {
 .msg-meta .idx { display: block; opacity: 0.5; font-size: 9px; }
 
 .msg-body {
+  border: 1px solid var(--line);
   border-left: 2px solid var(--line-strong);
-  padding: 4px 0 4px 16px;
+  background: rgba(8,20,26,0.34);
+  padding: 9px 14px 9px 15px;
   font-family: var(--display);
   font-size: 14px;
   line-height: 1.65;
@@ -737,10 +751,101 @@ main {
 }
 .msg-body > * { max-width: 100%; min-width: 0; }
 .msg-body img, .msg-body video, .msg-body svg, .msg-body iframe { max-width: 100%; height: auto; }
-.msg.user      .msg-body { border-left-color: var(--amber); }
-.msg.assistant .msg-body { border-left-color: var(--cyan); box-shadow: -2px 0 12px rgba(0,230,255,0.06); }
-.msg.tool      .msg-body { border-left-color: var(--magenta); }
-.msg.system    .msg-body { border-left-color: var(--text-faint); }
+
+/* Distinct, role-tinted "back" per bubble — each speaker reads as its own
+   HUD card (GitS / SAC palette). Tool-result rows stay un-filled so the
+   instrument card inside is the bubble (no double background). */
+.msg.user .msg-body {
+  border-left-color: var(--amber);
+  border-color: rgba(255,184,74,0.22);
+  background:
+    linear-gradient(180deg, rgba(255,184,74,0.075) 0%, rgba(255,184,74,0.018) 100%),
+    rgba(14,16,14,0.5);
+}
+.msg.assistant .msg-body {
+  border-left-color: var(--cyan);
+  border-color: rgba(0,230,255,0.20);
+  background:
+    linear-gradient(180deg, rgba(0,230,255,0.06) 0%, rgba(0,230,255,0.014) 100%),
+    rgba(7,18,24,0.5);
+  box-shadow: -2px 0 14px rgba(0,230,255,0.06);
+}
+.msg.tool .msg-body {
+  border-color: transparent;
+  border-left-color: transparent;
+  background: transparent;
+  padding: 0 0 0 4px;
+}
+.msg.system .msg-body {
+  border-left-color: var(--text-faint);
+  border-color: var(--line-soft);
+  background: rgba(10,18,22,0.42);
+}
+/* Small HUD corner-tick on filled bubbles, tinted to the speaker's rail. */
+.msg.user .msg-body::before,
+.msg.assistant .msg-body::before,
+.msg.system .msg-body::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 8px; height: 8px;
+  border-top: 1px solid currentColor;
+  border-left: 1px solid currentColor;
+  opacity: 0.55;
+  pointer-events: none;
+}
+.msg.user .msg-body::before      { color: var(--amber); }
+.msg.assistant .msg-body::before { color: var(--cyan); }
+.msg.system .msg-body::before    { color: var(--text-faint); }
+
+/* ── Hover-revealed per-message controls (EDIT / CONTINUE) ── */
+.msg-actions {
+  position: absolute;
+  top: 4px; right: 4px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  z-index: 4;
+}
+/* Revealed on hover (pointer devices) or when the bubble is tap-selected
+   (.show-actions, set by the per-message tap handler — primarily for touch). */
+.msg:hover .msg-actions,
+.msg.show-actions .msg-actions { opacity: 1; pointer-events: auto; }
+.msg-action-btn {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  padding: 2px 7px;
+  cursor: pointer;
+  user-select: none;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+.msg-action-btn:hover { color: var(--cyan); border-color: var(--cyan); background: var(--bg-2); }
+.msg-action-btn.edit:hover { color: var(--amber); border-color: var(--amber); }
+.msg-action-btn.danger:hover { color: var(--crit); border-color: var(--crit); }
+
+/* Inline message editor */
+.msg-edit-area {
+  width: 100%;
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1.55;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 58px;
+}
+.msg-edit-area:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 6px rgba(0,230,255,0.18); }
+.msg-edit-actions { display: flex; gap: 6px; margin-top: 7px; align-items: center; }
+.msg-edit-hint { color: var(--text-faint); font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; }
 
 /* ── In-chat image attachments (framed, foldable/hideable) ── */
 .msg-images { margin: 8px 0 4px; }
@@ -870,7 +975,8 @@ main {
 .think-block {
   margin: 6px 0 12px 0;
   border: 1px solid var(--line-strong);
-  background: rgba(0,108,128,0.06);
+  border-left: 2px solid var(--cyan-deep);
+  background: linear-gradient(180deg, rgba(2,22,30,0.62) 0%, rgba(1,14,20,0.5) 100%);
   font-family: var(--mono);
   font-size: 11.5px;
   color: var(--text-dim);
@@ -907,14 +1013,14 @@ main {
   margin: 4px 0;
   border: 1px solid var(--line-strong);
   border-left: 2px solid var(--magenta);
-  background: rgba(255,42,109,0.04);
+  background: linear-gradient(180deg, rgba(28,8,16,0.6) 0%, rgba(16,6,11,0.45) 100%);
   font-family: var(--mono);
   font-size: 10.5px;
   max-width: 100%;
   overflow: hidden;
 }
-.tool-call.result { border-left-color: var(--green); background: rgba(76,240,154,0.04); }
-.tool-call.result.err { border-left-color: var(--crit); background: rgba(255,64,96,0.06); }
+.tool-call.result { border-left-color: var(--green); background: linear-gradient(180deg, rgba(6,26,18,0.6) 0%, rgba(3,16,11,0.45) 100%); }
+.tool-call.result.err { border-left-color: var(--crit); background: linear-gradient(180deg, rgba(30,8,12,0.62) 0%, rgba(18,5,8,0.46) 100%); }
 .tool-call-head {
   padding: 4px 10px;
   color: var(--magenta);
@@ -1428,27 +1534,91 @@ footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
 @media (max-width: 1100px) {
   .app { grid-template-columns: var(--left-w, 220px) minmax(0, 1fr) var(--right-w, 240px); }
 }
+
+/* ════════════════ MOBILE (≤ 820px) — single column + overlay drawers ═════════
+   The header collapses to one slim instrument strip; the CHATS and OPS rails
+   become off-canvas drawers that slide in BELOW the header (so their own toggle
+   buttons are never covered) over a tap-to-dismiss scrim. Drawer open/close is
+   LOCAL device state (.app.m-left / .app.m-right) — the synced collapsed flags
+   that drive the desktop grid are left alone, so cross-instance sync is intact. */
 @media (max-width: 820px) {
   .app {
-    grid-template-columns: var(--left-w, 0px) minmax(0, 1fr) var(--right-w, 0px);
+    --m-head-h: 52px;
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--m-head-h) 1fr auto;
     grid-template-areas:
-      "head head head"
-      "main main main"
-      "foot foot foot";
+      "head"
+      "main"
+      "foot";
   }
+
+  /* ── Compact header: brand + the panel toggles + settings, one row ── */
+  header {
+    height: var(--m-head-h);
+    padding: 0 10px;
+    gap: 8px;
+    z-index: 80;                       /* always above the drawers + scrim */
+  }
+  .brand { gap: 9px; min-width: 0; }
+  .brand .glyph { width: 30px; height: 30px; font-size: 15px; }
+  .brand .glyph::after { inset: -3px; }
+  .brand h1 { font-size: 15px; letter-spacing: 0.16em; }
+  .brand h1 .sub { font-size: 0.6em; letter-spacing: 0.18em; }
+  .brand .row1 { display: none; }      /* drop the long subtitle line */
+  /* The verbose status pills move off the header to stop it stacking 3 rows
+     tall — the live status they mirror still lives in the footer strip. */
+  .header-status .pill { display: none; }
+  .header-status { gap: 6px; flex-wrap: nowrap; }
+  .hdr-panel-toggles { border-left: none; margin-left: 0; padding: 0; gap: 6px; }
+  .panel-toggle { width: 34px; height: 34px; font-size: 14px; }
+  #btn-settings { width: 34px; height: 34px; font-size: 15px; }
+
+  /* ── Side rails → off-canvas drawers, anchored below the header ── */
   aside.left, aside.right {
-    position: fixed; top: 0; bottom: 0; width: 280px; z-index: 60;
-    box-shadow: 0 0 30px rgba(0,0,0,0.6);
+    position: fixed;
+    top: var(--m-head-h); bottom: 0;
+    width: min(86vw, 330px);
+    z-index: 60;
+    box-shadow: 0 0 34px rgba(0,0,0,0.65);
+    transition: transform 0.25s ease;
   }
-  aside.left  { left: 0; transform: translateX(-100%); }
-  aside.right { right: 0; transform: translateX(100%); }
-  .app:not(.left-collapsed)  aside.left  { transform: translateX(0); }
-  .app:not(.right-collapsed) aside.right { transform: translateX(0); }
-  .msg { grid-template-columns: 70px 1fr; gap: 10px; }
-  .chat-scroll { padding: 22px 16px; }
-  .composer-wrap { padding: 12px 14px; }
+  aside.left  { left: 0;  border-right: 1px solid var(--line-strong); transform: translateX(-100%); }
+  aside.right { right: 0; border-left:  1px solid var(--line-strong); transform: translateX(100%); }
+  /* Visibility driven ONLY by the local mobile-drawer classes (never by the
+     synced collapsed flags), so a sync update can't pop a drawer open here. */
+  .app.m-left  aside.left  { transform: translateX(0); }
+  .app.m-right aside.right { transform: translateX(0); }
+  .app.m-left  .mobile-backdrop,
+  .app.m-right .mobile-backdrop { display: block; top: var(--m-head-h); }
+
+  /* ── Conversation + composer breathing room ── */
+  .msg { grid-template-columns: 64px minmax(0,1fr); gap: 10px; }
+  .chat-scroll { padding: 20px 14px; }
+  .composer-wrap { padding: 10px 12px; }
   .drawer { width: 100vw; }
-  .brand h1 { font-size: 18px; }
+
+  /* No hover on touch — the EDIT / CONTINUE controls are hidden until the bubble
+     is tapped (which adds .show-actions); tapping elsewhere clears it again. They
+     sit in-flow at the bubble foot rather than overlaying the text. */
+  .msg-actions { opacity: 1; pointer-events: auto; position: static; display: none;
+    justify-content: flex-end; margin-top: 6px; }
+  .msg.show-actions .msg-actions { display: flex; }
+
+  /* Footer status strip scrolls horizontally instead of overflowing/clipping. */
+  footer { gap: 14px; overflow-x: auto; overflow-y: hidden; white-space: nowrap;
+    scrollbar-width: none; }
+  footer::-webkit-scrollbar { display: none; }
+  footer .group { flex: 0 0 auto; }
+  footer .spacer { display: none; }
+}
+
+/* Very small phones — reclaim the meta gutter by stacking it above the bubble. */
+@media (max-width: 480px) {
+  .brand h1 .sub { display: none; }
+  .msg { grid-template-columns: 1fr; gap: 4px; }
+  .msg-meta { text-align: left; padding-top: 0; display: flex; gap: 8px; align-items: baseline; }
+  .msg-meta .ts, .msg-meta .idx { display: inline-block; margin-top: 0; }
+  .chat-scroll { padding: 16px 11px; }
 }
 
 /* ───────────── Interface-skin toggle (top of settings) ───────────── */
@@ -1698,7 +1868,43 @@ html[data-theme="deusex"] .empty-chat .check::before {
 }
 
 /* ─────────────────────────── Messages ─────────────────────────── */
-html[data-theme="deusex"] .msg.assistant .msg-body { box-shadow: -2px 0 12px rgba(138,166,214,0.08); }
+/* Datavault / conversation-log cards — beveled gunmetal panels, the
+   speaker carried on a colored left rail (UNATCO blue / conspiracy gold). */
+html[data-theme="deusex"] .msg-body {
+  background: var(--dx-raised);
+  border: 1px solid var(--dx-edge);
+  border-left: 3px solid var(--line-strong);
+  box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .msg-body::before { display: none; }   /* Deus Ex menus are square — drop the HUD tick */
+html[data-theme="deusex"] .msg.user .msg-body {
+  border-left-color: var(--amber);
+  background: linear-gradient(180deg,#30373f 0%,#262d35 100%);
+}
+html[data-theme="deusex"] .msg.assistant .msg-body {
+  border-left-color: var(--cyan);
+  background: linear-gradient(180deg,#2a313c 0%,#222934 100%);
+  box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .msg.tool .msg-body {
+  background: transparent; border-color: transparent; border-left-color: transparent; box-shadow: none;
+}
+html[data-theme="deusex"] .msg.system .msg-body {
+  background: var(--dx-inset);
+  border: 1px solid var(--dx-edge); border-left: 3px solid var(--line-strong);
+  box-shadow: var(--dx-bevel-in);
+}
+/* Hover controls + inline editor → beveled gunmetal buttons / recessed field */
+html[data-theme="deusex"] .msg-action-btn {
+  background: var(--dx-raised); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel); color: #aab4c4;
+}
+html[data-theme="deusex"] .msg-action-btn:hover { color: var(--amber); border-color: var(--dx-edge); background: var(--dx-raised-hi); }
+html[data-theme="deusex"] .msg-action-btn.edit:hover { color: var(--amber); }
+html[data-theme="deusex"] .msg-action-btn.danger:hover { color: var(--crit); }
+html[data-theme="deusex"] .msg-edit-area {
+  background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #d7dde6; box-shadow: var(--dx-bevel-in);
+}
+html[data-theme="deusex"] .msg-edit-area:focus { border-color: var(--amber); box-shadow: var(--dx-bevel-in), 0 0 0 1px rgba(217,164,65,0.45); }
 html[data-theme="deusex"] .msg-body code {
   background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #9fb6e0;
   box-shadow: inset 1px 1px 2px rgba(0,0,0,0.6);
@@ -1984,6 +2190,9 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
       <button class="icon-btn" id="btn-settings" title="Settings (⌘,)">⚙</button>
     </div>
   </header>
+
+  <!-- Mobile-only scrim behind an open side drawer; tap to dismiss -->
+  <div class="mobile-backdrop" id="mobile-backdrop" aria-hidden="true"></div>
 
   <aside class="left" id="aside-left">
 
@@ -2380,6 +2589,11 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
       <div class="field">
         <label>System Prompt (override)</label>
         <textarea id="cfg-sysprompt" rows="6" placeholder="You are a precise, helpful AI agent…"></textarea>
+        <div class="help">
+          Dynamic token: <code>&lt;time_local&gt;</code> is replaced — on every send — with the system's current
+          date &amp; time as <code>MONTH, DAY, YEAR, HH:MM AM/PM</code> (e.g. <code>June, 25, 2026, 3:07 PM</code>).
+          Drop it anywhere in the prompt so the model always knows "now" — including when a scheduled job fires.
+        </div>
       </div>
       <div class="row-actions">
         <button class="btn amber" id="btn-fetch-template">▸ FETCH FROM MODEL</button>
@@ -2653,6 +2867,12 @@ const state = {
   saveTimer: null,
   pendingImages: [],   // attachments staged in the composer, not yet sent
   popoverChatId: null,
+  // Mobile side-panel overlay state — LOCAL & per-device (never synced/persisted),
+  // so the global leftCollapsed/rightCollapsed (desktop layout) stays untouched.
+  mobileDrawer: null,  // null | 'left' | 'right'
+  // Index of the bubble whose EDIT/CONTINUE controls are tap-revealed (touch);
+  // null hides them all. Local view state only.
+  tapRevealIdx: null,
   scheduler: {
     nextId: 1,
     jobs: [],
@@ -2746,6 +2966,8 @@ async function loadChatsIndex() {
 }
 async function loadActiveChat() {
   if (!state.activeChatId) return;
+  state._editingIdx = null;   // drop any in-flight inline edit when the chat changes
+  state.tapRevealIdx = null;  // and any tap-revealed controls
   try {
     const j = await apiGet('/api/chats/' + state.activeChatId);
     state.messages = (j.chat?.messages) || [];
@@ -2841,6 +3063,24 @@ function handleEvent(evt) {
 
 /* ───────────────── Render ───────────────── */
 function fmtTs(ts) { if (!ts) return ''; return new Date(ts).toTimeString().slice(0, 8); }
+
+// System clock → "MONTH, DAYNUMBER, YEAR, HOUR:MINUTE AM/PM" (e.g. "June, 25,
+// 2026, 3:07 PM"). Same wall-clock source the scheduler reads from.
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function fmtLocalTimeToken(d = new Date()) {
+  let h = d.getHours();
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (h === 0) h = 12;
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${MONTH_NAMES[d.getMonth()]}, ${d.getDate()}, ${d.getFullYear()}, ${h}:${min} ${ampm}`;
+}
+// Replace custom prompt tokens with live values just before a request is sent.
+// <time_local> → current local date/time. Re-evaluated every send so the model
+// always sees "now" (important for scheduled jobs).
+function expandPromptTokens(s) {
+  if (!s) return s;
+  return String(s).replace(/<time_local>/g, () => fmtLocalTimeToken());
+}
 function oneLinePreview(s, n) {
   if (s == null) return '';
   let t = String(s).replace(/\s+/g, ' ').trim();
@@ -2993,6 +3233,7 @@ async function selectChat(id) {
     state.activeChatId = id;
     await loadActiveChat();
     renderChatList(); renderMessages(); updateStatus();
+    if (isMobile()) setMobileDrawer(null);   // reveal the conversation after picking it
   } catch (e) { showToast('SELECT FAILED', e.message, 'red'); }
 }
 
@@ -3040,6 +3281,7 @@ function renderMessages() {
 function buildMessageEl(m, idx) {
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + (m.role || 'system');
+  wrap.dataset.idx = idx;   // lets the tap-reveal handler re-find this bubble
   if (m._rolled || m._compaction) {
     // Compact "marker" row for context rolls — keeps the timeline visible
     // without dumping a summarised block into the conversation.
@@ -3069,6 +3311,13 @@ function buildMessageEl(m, idx) {
 
   const body = document.createElement('div');
   body.className = 'msg-body';
+
+  // Inline edit mode — swap the bubble body for a textarea + Save/Cancel.
+  if (state._editingIdx === idx) {
+    buildEditor(body, m, idx);
+    wrap.appendChild(body);
+    return wrap;
+  }
 
   // Split out reasoning for DISPLAY — handles an in-flight <think> that hasn't
   // closed yet, so the think block is enclosed/collapsed from the first streamed
@@ -3137,8 +3386,152 @@ function buildMessageEl(m, idx) {
     body.appendChild(head);
   }
 
+  // Per-message controls on user / assistant bubbles — revealed on hover
+  // (pointer) or tap (touch). Hidden while a turn is streaming (no
+  // editing/continuing mid-generation).
+  if ((m.role === 'user' || m.role === 'assistant') && !m._streaming) {
+    body.appendChild(buildMsgActions(m, idx));
+    if (state.tapRevealIdx === idx) wrap.classList.add('show-actions');   // restore tap-reveal across re-renders
+  }
+
   wrap.appendChild(body);
   return wrap;
+}
+
+// EDIT / CONTINUE controls that fade in on hover (see .msg-actions CSS).
+function buildMsgActions(m, idx) {
+  const bar = document.createElement('div');
+  bar.className = 'msg-actions';
+
+  const edit = document.createElement('button');
+  edit.type = 'button';
+  edit.className = 'msg-action-btn edit';
+  edit.textContent = '✎ EDIT';
+  edit.title = 'Edit this message in place';
+  edit.addEventListener('click', (e) => { e.stopPropagation(); startEditMessage(idx); });
+
+  const cont = document.createElement('button');
+  cont.type = 'button';
+  cont.className = 'msg-action-btn continue';
+  cont.textContent = '▸ CONTINUE';
+  cont.title = (m.role === 'assistant')
+    ? 'Continue generating this reply (drops anything after it)'
+    : 'Generate the reply from this message (drops anything after it)';
+  cont.addEventListener('click', (e) => { e.stopPropagation(); continueFromMessage(idx); });
+
+  bar.appendChild(edit);
+  bar.appendChild(cont);
+  return bar;
+}
+
+// Tap-reveal: show one bubble's EDIT/CONTINUE controls (idx) and hide the rest.
+// Pass null to hide all. Toggles classes directly so it's instant and doesn't
+// disturb scroll; buildMessageEl re-applies state.tapRevealIdx on any re-render.
+function setRevealedMsg(idx) {
+  const next = (typeof idx === 'number' && idx >= 0) ? idx : null;
+  if (state.tapRevealIdx === next) return;
+  state.tapRevealIdx = next;
+  document.querySelectorAll('.msg.show-actions').forEach(el => el.classList.remove('show-actions'));
+  if (next != null) {
+    const el = document.querySelector(`.msg[data-idx="${next}"]`);
+    if (el && (el.classList.contains('user') || el.classList.contains('assistant'))) el.classList.add('show-actions');
+  }
+}
+
+// Fill a bubble body with the inline editor (textarea + Save / Cancel).
+function buildEditor(body, m, idx) {
+  const ta = document.createElement('textarea');
+  ta.className = 'msg-edit-area';
+  ta.value = m.content || '';
+  ta.spellcheck = false;
+  body.appendChild(ta);
+
+  const actions = document.createElement('div');
+  actions.className = 'msg-edit-actions';
+
+  const save = document.createElement('button');
+  save.type = 'button';
+  save.className = 'msg-action-btn edit';
+  save.textContent = '✓ SAVE';
+  save.addEventListener('click', () => commitEditMessage(idx, ta.value));
+
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.className = 'msg-action-btn danger';
+  cancel.textContent = '✕ CANCEL';
+  cancel.addEventListener('click', () => cancelEditMessage());
+
+  const hint = document.createElement('span');
+  hint.className = 'msg-edit-hint';
+  hint.textContent = 'Ctrl+Enter saves · Esc cancels';
+
+  actions.appendChild(save);
+  actions.appendChild(cancel);
+  actions.appendChild(hint);
+  body.appendChild(actions);
+
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); cancelEditMessage(); }
+    else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commitEditMessage(idx, ta.value); }
+  });
+  requestAnimationFrame(() => {
+    ta.focus();
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(420, ta.scrollHeight) + 'px';
+    ta.selectionStart = ta.selectionEnd = ta.value.length;
+  });
+}
+
+function startEditMessage(idx) {
+  if (state.status.streaming) { showToast('BUSY', 'Wait for the current turn to finish.', 'amber'); return; }
+  state._editingIdx = idx;
+  state.tapRevealIdx = null;
+  renderMessages();
+}
+
+function cancelEditMessage() {
+  state._editingIdx = null;
+  renderMessages();
+}
+
+// Persist an edited message. Only the visible text (content) is changed; any
+// reasoning, tool calls, or image attachments on the message are left intact.
+function commitEditMessage(idx, text) {
+  const m = state.messages[idx];
+  if (!m) { state._editingIdx = null; renderMessages(); return; }
+  m.content = String(text);
+  state._editingIdx = null;
+  queuePersist();
+  renderMessages();
+  updateStatus();
+  showToast('EDITED', `Message #${String(idx).padStart(3, '0')} updated.`, 'cyan');
+}
+
+// CONTINUE — truncate the transcript after this message and resume from it.
+// On an assistant bubble we continue generating into that same bubble; on a
+// user bubble we (re)generate the assistant's reply.
+async function continueFromMessage(idx) {
+  if (state.status.streaming) { showToast('BUSY', 'A turn is already running.', 'amber'); return; }
+  const m = state.messages[idx];
+  if (!m) return;
+  if (!state.settings.endpoint || !state.settings.model) {
+    showToast('CONFIG REQUIRED', 'Set endpoint and model in settings first.', 'red'); openDrawer(); return;
+  }
+  state._editingIdx = null;
+  state.tapRevealIdx = null;
+  // Drop everything after the target — we resume from exactly this point.
+  if (idx < state.messages.length - 1) state.messages.splice(idx + 1);
+  queuePersist();
+  renderMessages();
+  updateStatus();
+  SFX.ensure(); // unlock audio on the user gesture
+  if (m.role === 'assistant') {
+    if (!Array.isArray(m.tool_calls)) m.tool_calls = [];
+    if (typeof m.reasoning !== 'string') m.reasoning = '';
+    await runTurn(0, { continueAi: m });
+  } else {
+    await runTurn();
+  }
 }
 
 // Non-destructively split a message into reasoning + visible content for DISPLAY.
@@ -4291,6 +4684,9 @@ const PromptTemplates = {
   },
   qwen(sys, msgs, tools, opts) {
     const toolsBlock = opts.toolsEnabled ? this._qwenTools(tools) : '';
+    // CONTINUE: when the last message is the assistant bubble we're resuming,
+    // leave its turn OPEN so the model writes straight on from its current text.
+    const contLast = !!opts.continuing && msgs.length && msgs[msgs.length - 1].role === 'assistant';
     let s = '';
     const sysC = (sys || '').trim();
     if (sysC || toolsBlock) s += `<|im_start|>system\n${sysC}${toolsBlock}<|im_end|>\n`;
@@ -4307,14 +4703,16 @@ const PromptTemplates = {
         let c = this._stripThink(m.content);
         let block = `<|im_start|>assistant\n${c}`;
         if (Array.isArray(m.tool_calls)) for (const tc of m.tool_calls) block += `\n<tool_call>\n{"name": "${tc.function?.name}", "arguments": ${this._argStr(tc)}}\n</tool_call>`;
-        s += block + '<|im_end|>\n';
+        s += (contLast && i === msgs.length - 1) ? block : block + '<|im_end|>\n';   // open if resuming
       } else { // user or stray system note
         s += `<|im_start|>user\n${this._userContent(m)}<|im_end|>\n`;
       }
       i++;
     }
-    s += '<|im_start|>assistant\n';
-    if (!opts.thinking) s += '<think>\n\n</think>\n\n';          // Qwen empty-think when reasoning disabled
+    if (!contLast) {
+      s += '<|im_start|>assistant\n';
+      if (!opts.thinking) s += '<think>\n\n</think>\n\n';        // Qwen empty-think when reasoning disabled
+    }
     return { prompt: s, stop: ['<|im_end|>'] };
   },
 
@@ -4327,12 +4725,15 @@ const PromptTemplates = {
            `Available functions:\n${list}`;
   },
   gemma(sys, msgs, tools, opts) {
+    // CONTINUE: leave the final model turn open so generation resumes inline.
+    const contLast = !!opts.continuing && msgs.length && msgs[msgs.length - 1].role === 'assistant';
     let s = '<bos>';
     const sysC = (sys || '').trim();
     const toolInstr = opts.toolsEnabled ? this._gemmaTools(tools) : '';
     const firstUserPrefix = (sysC || toolInstr) ? (sysC + toolInstr).trim() + '\n\n' : '';
     let firstUserDone = false;
-    for (const m of msgs) {
+    for (let mi = 0; mi < msgs.length; mi++) {
+      const m = msgs[mi];
       let role, content;
       if (m.role === 'assistant') {
         role = 'model'; content = this._stripThink(m.content);
@@ -4344,10 +4745,14 @@ const PromptTemplates = {
       }
       let prefix = '';
       if (role === 'user' && !firstUserDone) { prefix = firstUserPrefix; firstUserDone = true; }
-      s += `<start_of_turn>${role}\n${prefix}${content}<end_of_turn>\n`;
+      s += (contLast && mi === msgs.length - 1)
+        ? `<start_of_turn>${role}\n${prefix}${content}`               // open — resume here
+        : `<start_of_turn>${role}\n${prefix}${content}<end_of_turn>\n`;
     }
-    if (!firstUserDone && firstUserPrefix) s += `<start_of_turn>user\n${firstUserPrefix.trim()}<end_of_turn>\n`;
-    s += '<start_of_turn>model\n';
+    if (!contLast) {
+      if (!firstUserDone && firstUserPrefix) s += `<start_of_turn>user\n${firstUserPrefix.trim()}<end_of_turn>\n`;
+      s += '<start_of_turn>model\n';
+    }
     return { prompt: s, stop: ['<end_of_turn>'] };
   },
 
@@ -4390,14 +4795,14 @@ function applySamplingParams(body) {
 }
 
 // Build a /completions request with a client-rendered prompt (Gemma / Qwen).
-function buildCompletionBody(tmpl) {
+function buildCompletionBody(tmpl, opts = {}) {
   const c = state.settings;
   const windowed = selectContextMessages();
   const tools = (c.toolsEnabled && state.tools.length)
     ? state.tools.map(t => ({ function: { name: t.function.name, description: t.function.description, parameters: t.function.parameters } }))
     : [];
-  const { prompt, stop } = PromptTemplates.render(tmpl, c.systemPrompt || '', windowed, tools,
-    { toolsEnabled: !!(c.toolsEnabled && tools.length), thinking: !!c.thinkingEnabled });
+  const { prompt, stop } = PromptTemplates.render(tmpl, expandPromptTokens(c.systemPrompt || ''), windowed, tools,
+    { toolsEnabled: !!(c.toolsEnabled && tools.length), thinking: !!c.thinkingEnabled, continuing: !!opts.continuing });
   const body = { model: c.model, prompt, stream: !!c.streaming, max_tokens: Number(c.maxTokens) };
   applySamplingParams(body);
   const userStops = (c.stopSequences || '').split(',').map(s => s.trim()).filter(Boolean);
@@ -4431,10 +4836,10 @@ async function streamCompletion(body, ai) {
 }
 
 /* ───────────────── Chat ───────────────── */
-function buildOutgoing() {
+function buildOutgoing(opts = {}) {
   const c = state.settings;
   const messages = [];
-  if (c.systemPrompt && c.systemPrompt.trim()) messages.push({ role: 'system', content: c.systemPrompt });
+  if (c.systemPrompt && c.systemPrompt.trim()) messages.push({ role: 'system', content: expandPromptTokens(c.systemPrompt) });
   // Only the windowed subset goes to the model; the full transcript stays in
   // state.messages so the chat interface still shows everything.
   for (const m of selectContextMessages()) {
@@ -4448,7 +4853,9 @@ function buildOutgoing() {
     } else if (m.content !== undefined) {
       o.content = m.content;
     }
-    if (m.tool_calls) o.tool_calls = m.tool_calls;
+    // Only attach a non-empty tool_calls array — a trailing assistant message
+    // (e.g. during CONTINUE) must not carry tool_calls: [] which some servers reject.
+    if (Array.isArray(m.tool_calls) && m.tool_calls.length) o.tool_calls = m.tool_calls;
     if (m.tool_call_id) o.tool_call_id = m.tool_call_id;
     if (m.name) o.name = m.name;
     messages.push(o);
@@ -4460,6 +4867,15 @@ function buildOutgoing() {
     max_tokens: Number(c.maxTokens),
     stream: !!c.streaming,
   };
+  // CONTINUE: the context ends with the assistant message we want to extend.
+  // Ask compatible servers to keep writing into it rather than open a new turn
+  // (llama.cpp: add_generation_prompt; vLLM: continue_final_message). Unknown
+  // fields are ignored by the other OpenAI-compatible backends.
+  if (opts.continuing) {
+    body.add_generation_prompt = false;
+    body.continue_final_message = true;
+    body.extra_body = { ...(body.extra_body || {}), add_generation_prompt: false, continue_final_message: true };
+  }
   // Standard OpenAI sampling
   if (c.topP != null && c.topP !== '' && Number(c.topP) > 0 && Number(c.topP) < 1) body.top_p = Number(c.topP);
   if (Number(c.frequencyPenalty)) body.frequency_penalty = Number(c.frequencyPenalty);
@@ -4503,7 +4919,11 @@ async function sendUser(text) {
   await runTurn();
 }
 
-async function runTurn(depth = 0) {
+async function runTurn(depth = 0, opts = {}) {
+  // opts.continueAi: an existing assistant message to resume into (CONTINUE).
+  // When set, the model keeps generating from that message's current text
+  // instead of opening a fresh assistant turn.
+  const continueAi = opts.continueAi || null;
   const maxDepth = Math.max(1, Number(state.settings.maxToolRecursion) || 16);
   if (depth > maxDepth) {
     state.messages.push({ role: 'system', content: `⚠ tool-call recursion limit reached (${maxDepth}). Increase "Max Tool-Call Recursion" in settings if needed.`, _ts: Date.now() });
@@ -4519,9 +4939,17 @@ async function runTurn(depth = 0) {
   // 'qwen' render the prompt here and post raw to /completions.
   const tmpl = state.settings.chatTemplate || 'api';
   const useCompletion = PromptTemplates.isRaw(tmpl);
-  const body = useCompletion ? buildCompletionBody(tmpl) : buildOutgoing();
-  const ai = { role: 'assistant', content: '', reasoning: '', tool_calls: [], _ts: Date.now(), _streaming: true };
-  state.messages.push(ai); renderMessages();
+  const continuing = !!continueAi;
+  const body = useCompletion ? buildCompletionBody(tmpl, { continuing }) : buildOutgoing({ continuing });
+  let ai;
+  if (continueAi) {
+    ai = continueAi;            // resume into the existing bubble (already last)
+    ai._streaming = true;
+  } else {
+    ai = { role: 'assistant', content: '', reasoning: '', tool_calls: [], _ts: Date.now(), _streaming: true };
+    state.messages.push(ai);
+  }
+  renderMessages();
   Speech.beginTurn(depth === 0);
   state.status.streaming = true;
   $('btn-send').textContent = 'STOP'; $('btn-send').classList.add('stop');
@@ -4539,8 +4967,9 @@ async function runTurn(depth = 0) {
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
         const j = await r.json();
-        ai.content = j.choices?.[0]?.text || '';
-        if (ai.content) Speech.feed(ai.content);
+        const piece = j.choices?.[0]?.text || '';
+        ai.content = (continueAi ? (ai.content || '') : '') + piece;   // append when resuming
+        if (piece) Speech.feed(piece);
       }
     } else if (body.stream) await streamChat(body, ai);
     else {
@@ -4551,10 +4980,18 @@ async function runTurn(depth = 0) {
       if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 300)}`);
       const j = await r.json();
       const m = j.choices?.[0]?.message || {};
-      ai.content = m.content || '';
-      ai.reasoning = m.reasoning || m.reasoning_content || '';
-      ai.tool_calls = m.tool_calls || [];
-      if (ai.content) Speech.feed(ai.content);
+      const newContent = m.content || '';
+      const newReason = m.reasoning || m.reasoning_content || '';
+      if (continueAi) {                                                // append into the resumed bubble
+        ai.content = (ai.content || '') + newContent;
+        if (newReason) ai.reasoning = (ai.reasoning ? ai.reasoning + '\n\n' : '') + newReason;
+        if (Array.isArray(m.tool_calls) && m.tool_calls.length) ai.tool_calls = m.tool_calls;
+      } else {
+        ai.content = newContent;
+        ai.reasoning = newReason;
+        ai.tool_calls = m.tool_calls || [];
+      }
+      if (newContent) Speech.feed(newContent);
     }
     state.status.connected = true;
   } catch (e) {
@@ -5086,8 +5523,10 @@ function attachWiring() {
     if (btn) cancelScheduledJob(parseInt(btn.dataset.jobId));
   });
 
-  // Left / right sidebar toggles
+  // Left / right sidebar toggles. On mobile the rails are local overlay drawers
+  // (no persistence/sync); on desktop they toggle the synced collapsed layout.
   const toggleSide = (which) => {
+    if (isMobile()) { setMobileDrawer(state.mobileDrawer === which ? null : which); return; }
     const app = document.querySelector('.app');
     const cls = which + '-collapsed';
     app.classList.toggle(cls);
@@ -5100,6 +5539,16 @@ function attachWiring() {
   };
   $('toggle-left').addEventListener('click', () => toggleSide('left'));
   $('toggle-right').addEventListener('click', () => toggleSide('right'));
+
+  // Tap the scrim to dismiss whichever mobile drawer is open.
+  const mb = $('mobile-backdrop');
+  if (mb) mb.addEventListener('click', () => setMobileDrawer(null));
+
+  // Crossing the mobile/desktop boundary: clear any mobile overlay so the
+  // desktop grid (driven by the synced collapsed flags) renders cleanly.
+  const mq = window.matchMedia('(max-width: 820px)');
+  const onBreak = () => { setMobileDrawer(null); setRevealedMsg(null); updateToggleIcons(); };
+  if (mq.addEventListener) mq.addEventListener('change', onBreak); else mq.addListener(onBreak);
 
   const ta = $('input');
   ta.addEventListener('input', () => autoresize(ta));
@@ -5153,23 +5602,48 @@ function attachWiring() {
       const cm = $('chat-menu-pop'); if (cm) cm.classList.remove('open');
       const cb = $('btn-chat-menu'); if (cb) cb.setAttribute('aria-expanded', 'false');
     }
+    // Touch tap-reveal: a tap inside a user/assistant bubble shows that bubble's
+    // EDIT/CONTINUE controls; a tap anywhere else hides them. (The action buttons
+    // stopPropagation, so this never fires when one is pressed.) Pointer devices
+    // keep using :hover, so desktop behaviour is unchanged.
+    if (isMobile()) {
+      const bubble = e.target.closest('.msg.user, .msg.assistant');
+      setRevealedMsg(bubble ? Number(bubble.dataset.idx) : null);
+    }
   });
+}
+
+// ≤820px viewport → side rails behave as local overlay drawers.
+function isMobile() { return window.matchMedia('(max-width: 820px)').matches; }
+
+// Open ('left'/'right') or close (null) the mobile drawer. Mutually exclusive,
+// so the two rails can never stack and bury each other's controls. Purely local
+// view state — nothing here is persisted or broadcast over the sync bus.
+function setMobileDrawer(which) {
+  state.mobileDrawer = (which === 'left' || which === 'right') ? which : null;
+  const app = document.querySelector('.app');
+  app.classList.toggle('m-left',  state.mobileDrawer === 'left');
+  app.classList.toggle('m-right', state.mobileDrawer === 'right');
+  updateToggleIcons();
 }
 
 function updateToggleIcons() {
   const app = document.querySelector('.app');
+  const mobile = isMobile();
   const lt = $('toggle-left'); const rt = $('toggle-right');
   if (lt) {
-    const hidden = app.classList.contains('left-collapsed');
+    // On mobile the "active" lamp reflects the open overlay; on desktop the
+    // persisted layout (whether the rail is expanded in the grid).
+    const open = mobile ? (state.mobileDrawer === 'left') : !app.classList.contains('left-collapsed');
     lt.textContent = '◧';
-    lt.classList.toggle('active', !hidden);
-    lt.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+    lt.classList.toggle('active', open);
+    lt.setAttribute('aria-pressed', open ? 'true' : 'false');
   }
   if (rt) {
-    const hidden = app.classList.contains('right-collapsed');
+    const open = mobile ? (state.mobileDrawer === 'right') : !app.classList.contains('right-collapsed');
     rt.textContent = '◨';
-    rt.classList.toggle('active', !hidden);
-    rt.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+    rt.classList.toggle('active', open);
+    rt.setAttribute('aria-pressed', open ? 'true' : 'false');
   }
 }
 
