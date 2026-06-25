@@ -808,7 +808,10 @@ main {
   transition: opacity 0.12s ease;
   z-index: 4;
 }
-.msg:hover .msg-actions { opacity: 1; pointer-events: auto; }
+/* Revealed on hover (pointer devices) or when the bubble is tap-selected
+   (.show-actions, set by the per-message tap handler — primarily for touch). */
+.msg:hover .msg-actions,
+.msg.show-actions .msg-actions { opacity: 1; pointer-events: auto; }
 .msg-action-btn {
   font-family: var(--mono);
   font-size: 8.5px;
@@ -1594,10 +1597,12 @@ footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
   .composer-wrap { padding: 10px 12px; }
   .drawer { width: 100vw; }
 
-  /* No hover on touch — keep the per-message EDIT / CONTINUE controls visible. */
-  .msg-actions { opacity: 1; pointer-events: auto; position: static; display: flex;
+  /* No hover on touch — the EDIT / CONTINUE controls are hidden until the bubble
+     is tapped (which adds .show-actions); tapping elsewhere clears it again. They
+     sit in-flow at the bubble foot rather than overlaying the text. */
+  .msg-actions { opacity: 1; pointer-events: auto; position: static; display: none;
     justify-content: flex-end; margin-top: 6px; }
-  .msg.assistant .msg-body, .msg.user .msg-body { padding-bottom: 6px; }
+  .msg.show-actions .msg-actions { display: flex; }
 
   /* Footer status strip scrolls horizontally instead of overflowing/clipping. */
   footer { gap: 14px; overflow-x: auto; overflow-y: hidden; white-space: nowrap;
@@ -2865,6 +2870,9 @@ const state = {
   // Mobile side-panel overlay state — LOCAL & per-device (never synced/persisted),
   // so the global leftCollapsed/rightCollapsed (desktop layout) stays untouched.
   mobileDrawer: null,  // null | 'left' | 'right'
+  // Index of the bubble whose EDIT/CONTINUE controls are tap-revealed (touch);
+  // null hides them all. Local view state only.
+  tapRevealIdx: null,
   scheduler: {
     nextId: 1,
     jobs: [],
@@ -2959,6 +2967,7 @@ async function loadChatsIndex() {
 async function loadActiveChat() {
   if (!state.activeChatId) return;
   state._editingIdx = null;   // drop any in-flight inline edit when the chat changes
+  state.tapRevealIdx = null;  // and any tap-revealed controls
   try {
     const j = await apiGet('/api/chats/' + state.activeChatId);
     state.messages = (j.chat?.messages) || [];
@@ -3272,6 +3281,7 @@ function renderMessages() {
 function buildMessageEl(m, idx) {
   const wrap = document.createElement('div');
   wrap.className = 'msg ' + (m.role || 'system');
+  wrap.dataset.idx = idx;   // lets the tap-reveal handler re-find this bubble
   if (m._rolled || m._compaction) {
     // Compact "marker" row for context rolls — keeps the timeline visible
     // without dumping a summarised block into the conversation.
@@ -3376,10 +3386,12 @@ function buildMessageEl(m, idx) {
     body.appendChild(head);
   }
 
-  // Hover-revealed per-message controls on user / assistant bubbles. Hidden
-  // while a turn is streaming (no editing/continuing mid-generation).
+  // Per-message controls on user / assistant bubbles — revealed on hover
+  // (pointer) or tap (touch). Hidden while a turn is streaming (no
+  // editing/continuing mid-generation).
   if ((m.role === 'user' || m.role === 'assistant') && !m._streaming) {
     body.appendChild(buildMsgActions(m, idx));
+    if (state.tapRevealIdx === idx) wrap.classList.add('show-actions');   // restore tap-reveal across re-renders
   }
 
   wrap.appendChild(body);
@@ -3410,6 +3422,20 @@ function buildMsgActions(m, idx) {
   bar.appendChild(edit);
   bar.appendChild(cont);
   return bar;
+}
+
+// Tap-reveal: show one bubble's EDIT/CONTINUE controls (idx) and hide the rest.
+// Pass null to hide all. Toggles classes directly so it's instant and doesn't
+// disturb scroll; buildMessageEl re-applies state.tapRevealIdx on any re-render.
+function setRevealedMsg(idx) {
+  const next = (typeof idx === 'number' && idx >= 0) ? idx : null;
+  if (state.tapRevealIdx === next) return;
+  state.tapRevealIdx = next;
+  document.querySelectorAll('.msg.show-actions').forEach(el => el.classList.remove('show-actions'));
+  if (next != null) {
+    const el = document.querySelector(`.msg[data-idx="${next}"]`);
+    if (el && (el.classList.contains('user') || el.classList.contains('assistant'))) el.classList.add('show-actions');
+  }
 }
 
 // Fill a bubble body with the inline editor (textarea + Save / Cancel).
@@ -3459,6 +3485,7 @@ function buildEditor(body, m, idx) {
 function startEditMessage(idx) {
   if (state.status.streaming) { showToast('BUSY', 'Wait for the current turn to finish.', 'amber'); return; }
   state._editingIdx = idx;
+  state.tapRevealIdx = null;
   renderMessages();
 }
 
@@ -3491,6 +3518,7 @@ async function continueFromMessage(idx) {
     showToast('CONFIG REQUIRED', 'Set endpoint and model in settings first.', 'red'); openDrawer(); return;
   }
   state._editingIdx = null;
+  state.tapRevealIdx = null;
   // Drop everything after the target — we resume from exactly this point.
   if (idx < state.messages.length - 1) state.messages.splice(idx + 1);
   queuePersist();
@@ -5519,7 +5547,7 @@ function attachWiring() {
   // Crossing the mobile/desktop boundary: clear any mobile overlay so the
   // desktop grid (driven by the synced collapsed flags) renders cleanly.
   const mq = window.matchMedia('(max-width: 820px)');
-  const onBreak = () => { setMobileDrawer(null); updateToggleIcons(); };
+  const onBreak = () => { setMobileDrawer(null); setRevealedMsg(null); updateToggleIcons(); };
   if (mq.addEventListener) mq.addEventListener('change', onBreak); else mq.addListener(onBreak);
 
   const ta = $('input');
@@ -5573,6 +5601,14 @@ function attachWiring() {
     if (!e.target.closest('#chat-menu-pop, #btn-chat-menu')) {
       const cm = $('chat-menu-pop'); if (cm) cm.classList.remove('open');
       const cb = $('btn-chat-menu'); if (cb) cb.setAttribute('aria-expanded', 'false');
+    }
+    // Touch tap-reveal: a tap inside a user/assistant bubble shows that bubble's
+    // EDIT/CONTINUE controls; a tap anywhere else hides them. (The action buttons
+    // stopPropagation, so this never fires when one is pressed.) Pointer devices
+    // keep using :hover, so desktop behaviour is unchanged.
+    if (isMobile()) {
+      const bubble = e.target.closest('.msg.user, .msg.assistant');
+      setRevealedMsg(bubble ? Number(bubble.dataset.idx) : null);
     }
   });
 }

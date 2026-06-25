@@ -87,8 +87,10 @@ it on/off with the **browser** switch in **§ 2 MCP / NODES**.
   at a time. Picking a chat closes the drawer to reveal the conversation. Drawer
   open/close is local, per-device state — it never touches the synced
   `leftCollapsed` / `rightCollapsed` desktop layout, so cross-instance sync is
-  unaffected. Per-message EDIT / CONTINUE controls (no hover on touch) stay
-  visible, and both the *Stand Alone Complex* and *Deus Ex* skins carry through.
+  unaffected. With no hover on touch, the per-message EDIT / CONTINUE controls
+  are tap-revealed: tap a bubble to show its controls, tap elsewhere to hide them
+  (one bubble at a time). Both the *Stand Alone Complex* and *Deus Ex* skins
+  carry through.
 - **Cross-instance sync** — every browser/window subscribes to a Server-Sent
   Events stream. Send a message on one monitor and it appears on every other
   connected viewer immediately. Settings, chat list, active selection, and
