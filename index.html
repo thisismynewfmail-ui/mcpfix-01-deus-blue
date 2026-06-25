@@ -2114,7 +2114,7 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
         <div class="lbl">Tools</div><div class="val" id="stat-tools">0</div>
         <div class="lbl">Servers</div><div class="val" id="stat-servers">0 / 0</div>
         <div class="lbl">Held</div><div class="val" id="stat-compactions">0</div>
-        <div class="lbl">Threshold</div><div class="val" id="stat-threshold">70%</div>
+        <div class="lbl">Cut %</div><div class="val" id="stat-threshold">70%</div>
         <div class="lbl">Backend</div><div class="val" id="stat-backend">—</div>
         <div class="lbl">Network</div><div class="val" id="stat-network">LOCAL</div>
       </div>
@@ -2281,31 +2281,64 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
     </div>
 
     <div class="sect">
-      <div class="sect-head"><span class="num">§ 3</span><span>CONTEXT &amp; ROLLING WINDOW</span></div>
+      <div class="sect-head"><span class="num">§ 3</span><span>CONTEXT CROPPING</span></div>
       <div class="field-row">
         <div class="field"><label>Context Window (tokens)</label><input type="number" id="cfg-ctx" min="1024" step="1024" /></div>
         <div class="field">
-          <label>Roll Threshold (%)</label>
-          <input type="number" id="cfg-threshold" min="30" max="95" step="1" />
-          <div class="help">Cuts at <code id="cfg-threshold-eff" style="color:var(--cyan);">—</code> tok (context × threshold).</div>
+          <label>Cropping Method</label>
+          <select id="cfg-crop-method">
+            <option value="block">ROLLING BLOCK · cut % + depth</option>
+            <option value="standard">STANDARD CULLING · natural fall-off</option>
+          </select>
+          <div class="help">BLOCK keeps a fixed recent depth and drops the middle in turn-blocks. STANDARD CULLING lets the oldest messages peel off one at a time as usage reaches the fall-off line.</div>
         </div>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label>Context Depth (recent pairs)</label>
-          <input type="number" id="cfg-depth" min="1" max="64" step="1" />
-          <div class="help">Most-recent message pairs always kept in the model's window.</div>
+
+      <!-- Rolling-block controls (cut % + depth) — shown when method = block -->
+      <div id="crop-block-fields">
+        <div class="field-row">
+          <div class="field">
+            <label>Roll Threshold (%)</label>
+            <input type="number" id="cfg-threshold" min="30" max="95" step="1" />
+            <div class="help">Cuts at <code id="cfg-threshold-eff" style="color:var(--cyan);">—</code> tok (context × threshold).</div>
+          </div>
+          <div class="field">
+            <label>Context Depth (recent pairs)</label>
+            <input type="number" id="cfg-depth" min="1" max="64" step="1" />
+            <div class="help">Most-recent message pairs always kept in the model's window.</div>
+          </div>
         </div>
+      </div>
+
+      <!-- Standard-culling controls (fall-off location) — shown when method = standard -->
+      <div id="crop-standard-fields">
+        <div class="field-row">
+          <div class="field">
+            <label>Fall-off Location (%)</label>
+            <input type="number" id="cfg-falloff" min="10" max="99" step="1" />
+            <div class="help">Oldest messages peel off once model usage passes <code id="cfg-falloff-eff" style="color:var(--cyan);">—</code> tok (context × fall-off). Higher keeps more history before culling.</div>
+          </div>
+          <div class="field" style="justify-content:flex-end;">
+            <div class="help" style="color:var(--text-faint);">Continuous rolling buffer — no fixed recent block. The system prompt and the first two exchanges are always preserved; whole tool-call rounds fall off together.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field-row">
         <div class="field"><label>Max Tool-Call Recursion</label><input type="number" id="cfg-max-recursion" min="1" max="64" step="1" /></div>
       </div>
       <div class="help" style="font-family:var(--mono); font-size:9.5px; color:var(--text-faint); line-height:1.6;">
-        ◢ ROLLING CONTEXT WINDOW · The full conversation is <em>always</em> kept in this terminal —
-        nothing is ever deleted from the chat. Only the model's view rolls: once usage crosses the
-        cutoff (context × threshold%), the oldest <em>middle</em> turns "flutter off" and peel away as
-        they age. Always preserved: the system prompt, the <em>first two</em> back-and-forth exchanges
-        (anchoring the original task), and the most-recent <code>Context Depth</code> pairs. Widening
-        the context window or threshold re-admits older turns. Tool-call / tool-result rounds stay
-        whole so the trace never orphans a <code>tool_call_id</code>. Indicator: <code>CTX</code> meter.
+        ◢ CONTEXT CROPPING · The full conversation is <em>always</em> kept in this terminal — nothing is
+        ever deleted from the chat; only the model's view is trimmed. Two methods:
+        <br/>▸ <strong>ROLLING BLOCK</strong> — once usage crosses the cutoff (context × threshold%), the
+        oldest <em>middle</em> turns flutter off while the most-recent <code>Context Depth</code> pairs are
+        always held.
+        <br/>▸ <strong>STANDARD CULLING</strong> — a continuous rolling buffer: the oldest messages peel
+        off one at a time the moment usage reaches the fall-off line (context × fall-off%). No fixed recent
+        block — history slides off naturally as it ages.
+        <br/>Both always preserve the system prompt and the <em>first two</em> back-and-forth exchanges
+        (anchoring the original task), and both drop tool-call / tool-result rounds <em>whole</em> so the
+        trace never orphans a <code>tool_call_id</code>. Indicator: <code>CTX</code> meter.
       </div>
     </div>
 
@@ -2481,6 +2514,8 @@ const DEFAULTS = {
   context: 64200,
   threshold: 70,
   contextDepth: 6,          // most-recent message pairs always kept in the model's window
+  croppingMethod: 'block',  // 'block' (depth-based rolling window, cut %) | 'standard' (Standard Culling: continuous peel-off)
+  falloffLocation: 90,      // Standard Culling only: % of context at which the oldest messages begin to peel off
   systemPrompt: 'You are a precise, helpful AI agent operating inside the CHATSGI terminal. Use the MCP tools provided when they help; report your work clearly and cite tool results.',
   assistantName: '',        // display-only label for assistant turns; never sent to the model
   detectedPrompt: '',
@@ -2888,7 +2923,7 @@ function renderEmptyCheck() {
   $('empty-check').innerHTML = `
     <div><span class="key">ENDPOINT  </span><span class="val">${escapeHtml(c.endpoint || '—')}</span></div>
     <div><span class="key">MODEL     </span><span class="val">${escapeHtml(c.model || '—')}</span></div>
-    <div><span class="key">CONTEXT   </span><span class="val">${c.context} tok · cut ${c.threshold}% (${effectiveLimit()}) · depth ${c.contextDepth}</span></div>
+    <div><span class="key">CONTEXT   </span><span class="val">${c.context} tok · ${c.croppingMethod === 'standard' ? `cull ${c.falloffLocation}% (${effectiveLimit()}) · standard` : `cut ${c.threshold}% (${effectiveLimit()}) · depth ${c.contextDepth}`}</span></div>
     <div><span class="key">MCP NODES </span><span class="val">${mcp} · ${state.tools.length} tools</span></div>
     <div><span class="key">PROXY     </span><span class="val">${c.useProxy ? 'BACKEND' : 'DIRECT'}</span></div>
     <div><span class="key">NETWORK   </span><span class="val">${c.networkVisible ? 'LAN VISIBLE' : 'LOCAL ONLY'}</span></div>
@@ -3188,18 +3223,19 @@ function updateStatus() {
   const win = contextWindow();
   const used = win.tokens;
   const eff = effectiveLimit();
+  const cutPct = cropCutPct();   // active method's cut% (threshold or fall-off)
   state.status.contextUsed = used;
   const pct = Math.min(100, (used / Math.max(1, c.context)) * 100);
   $('ctx-fill').style.width = pct + '%';
-  $('ctx-marker').style.left = (c.threshold) + '%';
+  $('ctx-marker').style.left = cutPct + '%';
   $('ctx-text').textContent = pct.toFixed(1) + '%';
-  // Footer shows the model-side usage against the real cutoff (context ×
-  // threshold%), with the hard context cap noted alongside.
+  // Footer shows the model-side usage against the real cutoff (context × cut%),
+  // with the hard context cap noted alongside.
   $('foot-ctx').textContent = `${used} / ${eff} · max ${c.context}`;
 
   const pillCtx = $('pill-ctx');
   pillCtx.classList.remove('warn','crit');
-  if (pct >= c.threshold) pillCtx.classList.add('warn');
+  if (pct >= cutPct) pillCtx.classList.add('warn');
   if (pct >= 95) pillCtx.classList.add('crit');
 
   $('model-name').textContent = c.model || '—';
@@ -3211,7 +3247,7 @@ function updateStatus() {
   $('stat-servers').textContent = `${onl} / ${state.servers.length}`;
   $('foot-mcp').textContent = `${onl}/${state.servers.length}`;
   $('stat-compactions').textContent = win.dropped;
-  $('stat-threshold').textContent = `${c.threshold}% · ${eff} tok`;
+  $('stat-threshold').textContent = `${cutPct}% · ${eff} tok`;
   $('stat-backend').textContent = state.status.backendOk === true ? 'OK' : (state.status.backendOk === false ? 'DOWN' : '—');
   $('stat-network').textContent = c.networkVisible ? 'LAN' : 'LOCAL';
 
@@ -3601,6 +3637,15 @@ function applyTtsEngineUI() {
   if (eng === 'piper') refreshPiperVoices();
 }
 
+// Show the controls that belong to the selected cropping method (§ 3): the
+// rolling-block fields (cut % + depth) or the Standard-Culling fall-off field.
+function applyCropMethodUI() {
+  const method = ($('cfg-crop-method') || {}).value || 'block';
+  const blk = $('crop-block-fields'), std = $('crop-standard-fields');
+  if (blk) blk.style.display = (method === 'standard') ? 'none' : '';
+  if (std) std.style.display = (method === 'standard') ? '' : 'none';
+}
+
 async function refreshPiperVoices() {
   const sel = $('cfg-piper-voice'), out = $('piper-result');
   if (!sel) return;
@@ -3858,26 +3903,32 @@ async function fetchTemplate() {
   else { out.className = 'test-result err'; out.textContent = '▸ endpoint does not expose a chat template or default system prompt.'; }
 }
 
-/* ───────────────── Rolling context window (non-destructive) ─────────────────
+/* ───────────────── Context cropping (non-destructive) ───────────────────────
    The full conversation is ALWAYS kept in state.messages — it is never
    truncated — so the chat interface keeps showing every message and nothing
    is ever lost. What changes is only what we hand to the model: when the
-   transcript would exceed the configured budget (context × threshold%), we
-   compute a *window* that always keeps
+   transcript would exceed the configured budget (context × cut%), we compute a
+   *window* that always keeps
      • the system prompt (added separately in buildOutgoing), and
      • the first two complete back-and-forth exchanges (the first two user
        turns and the first two assistant replies — the anchoring context),
-   then admits the most-recent messages that still fit. The OLDEST messages
-   beyond those first two exchanges peel off the model's view first and
-   "flutter" away as the conversation ages.
+   then admits the most-recent messages that still fit.
+
+   Two cropping methods (settings → § 3 · Cropping Method):
+     • ROLLING BLOCK   — keeps a fixed recent block of `contextDepth` pairs and
+       drops the oldest MIDDLE turns; the model view moves in blocks.
+     • STANDARD CULLING — a continuous rolling buffer with no fixed recent
+       block: the oldest non-anchor turn peels off the moment usage reaches the
+       fall-off location, so history slides off one turn at a time.
 
    Because the window is recomputed from the untouched transcript on every
-   turn, it is fully reversible: widening the context window (or raising the
-   threshold) simply re-admits older messages on the next call.
+   turn, both methods are fully reversible: widening the context window (or the
+   cut%) simply re-admits older messages on the next call.
 
-   Tool-call / tool-result pairs stay coherent: the anchor always ends on a
-   completed assistant reply, and any tool result whose originating tool_call
-   fell outside the window is dropped so no orphaned tool_call_ids are sent.
+   Tool-call / tool-result rounds stay coherent under both methods: turns are
+   atomic (a whole tool round lives inside one turn) and any tool result whose
+   originating tool_call fell outside the window is dropped, so no orphaned
+   tool_call_ids — and no partial tool blocks — are ever sent.
 */
 function _toolCallIds(m) {
   if (!Array.isArray(m.tool_calls)) return [];
@@ -3897,23 +3948,41 @@ function _overheadTokens() {
   return t;
 }
 
-// The token budget the model window is allowed to fill: context × threshold%.
-// This is the "new context limit" surfaced next to the threshold slider — the
-// point at which the oldest middle messages start peeling off.
-function effectiveLimit() {
+// Cut percentage for the ACTIVE cropping method: the rolling-block "Roll
+// Threshold" or the Standard-Culling "Fall-off Location". Drives the gauge
+// marker and the telemetry readouts so they track whichever method is live.
+function cropCutPct() {
   const c = state.settings;
-  return Math.max(1, Math.round((Number(c.context) || 0) * ((Number(c.threshold) || 0) / 100)));
+  return (c.croppingMethod === 'standard')
+    ? (Number(c.falloffLocation) || 0)
+    : (Number(c.threshold) || 0);
 }
 
-// Live-update the "new context limit" readout beside the threshold slider from
-// the in-progress form values, so editing context or threshold immediately
-// shows where the model's context will actually be cut (context × threshold%).
+// The token budget the model window is allowed to fill: context × cut%. For the
+// rolling-block method the cut% is the "Roll Threshold"; for Standard Culling it
+// is the "Fall-off Location" — the point at which the oldest messages peel off.
+// This is the "new context limit" surfaced next to the relevant control.
+function effectiveLimit() {
+  const c = state.settings;
+  return Math.max(1, Math.round((Number(c.context) || 0) * (cropCutPct() / 100)));
+}
+
+// Live-update the "new context limit" readouts beside both the Roll Threshold
+// (block) and the Fall-off Location (standard culling) controls from the
+// in-progress form values, so editing context / threshold / fall-off
+// immediately shows where the model's context will actually be cut.
 function syncThresholdEff() {
-  const el = $('cfg-threshold-eff');
-  if (!el) return;
   const ctx = parseInt($('cfg-ctx').value) || 0;
-  const thr = parseInt($('cfg-threshold').value) || 0;
-  el.textContent = Math.max(1, Math.round(ctx * (thr / 100)));
+  const thrEl = $('cfg-threshold-eff');
+  if (thrEl) {
+    const thr = parseInt($('cfg-threshold').value) || 0;
+    thrEl.textContent = Math.max(1, Math.round(ctx * (thr / 100)));
+  }
+  const foEl = $('cfg-falloff-eff');
+  if (foEl) {
+    const fo = parseInt($('cfg-falloff').value) || 0;
+    foEl.textContent = Math.max(1, Math.round(ctx * (fo / 100)));
+  }
 }
 
 // Break the transcript into "turns" (a.k.a. message pairs). Each turn begins at
@@ -3952,13 +4021,25 @@ function _dropOrphanToolResults(kept) {
   });
 }
 
-// Compute the subset of the transcript that fits the model budget. The window
-// always keeps, in full, the first two back-and-forth exchanges (the anchor)
-// and the most-recent `contextDepth` pairs; the oldest MIDDLE turns peel off
-// first, fluttering away as the conversation ages and the budget tightens.
-// state.messages is NEVER modified, so this is purely a view onto the model's
-// context — widening `context`/`threshold` re-admits older turns next call.
+// Compute the subset of the transcript that fits the model budget. Dispatches
+// to the active cropping method. state.messages is NEVER modified, so this is
+// purely a view onto the model's context — widening the context / cut% re-admits
+// older turns on the next call. Both methods preserve the system prompt (added
+// in buildOutgoing) and the first two back-and-forth exchanges, and both peel
+// off WHOLE turns so a tool-call / tool-result round is never split.
 function selectContextMessages() {
+  return (state.settings.croppingMethod === 'standard')
+    ? _selectStandardCull()
+    : _selectBlockWindow();
+}
+
+// ── ROLLING BLOCK ──────────────────────────────────────────────────────────
+// The window always keeps, in full, the first two back-and-forth exchanges (the
+// anchor) and the most-recent `contextDepth` pairs; the oldest MIDDLE turns peel
+// off first, fluttering away as the conversation ages and the budget tightens.
+// Because the most-recent `depth` block is held even when it alone exceeds the
+// budget, the model view moves in discrete blocks rather than smoothly.
+function _selectBlockWindow() {
   const c = state.settings;
   const msgs = _eligibleMessages();
   const limit = effectiveLimit();
@@ -3987,6 +4068,50 @@ function selectContextMessages() {
   // so the retained middle stays a contiguous block adjacent to the recent
   // window (no scattered gaps).
   for (let i = recentStart - 1; i >= anchorCount; i--) {
+    const cost = turnCost(turns[i]);
+    if (used + cost > limit) break;
+    used += cost;
+    kept.add(i);
+  }
+
+  const out = [];
+  for (let i = 0; i < turns.length; i++) if (kept.has(i)) for (const m of turns[i]) out.push(m);
+  return _dropOrphanToolResults(out);
+}
+
+// ── STANDARD CULLING ───────────────────────────────────────────────────────
+// A continuous rolling buffer. The first two back-and-forth exchanges (the
+// anchor) are always kept; beyond that the most-recent turns are admitted
+// newest-first until usage reaches the fall-off location (context × fall-off%).
+// There is NO fixed recent block: the oldest non-anchor turn peels off the
+// moment usage would pass the line, so history slides off one turn at a time as
+// the conversation grows. Turns are atomic, so a whole tool-call / tool-result
+// round falls off together — a partial block is never left in the sent context.
+function _selectStandardCull() {
+  const msgs = _eligibleMessages();
+  const limit = effectiveLimit();   // context × falloffLocation% (method-aware)
+  const overhead = _overheadTokens();
+
+  let total = overhead;
+  for (const m of msgs) total += msgTokens(m);
+  if (total <= limit) return msgs;            // whole transcript fits
+
+  const turns = _segmentTurns(msgs);
+  const anchorCount = Math.min(2, turns.length);                 // first two exchanges
+  const last = turns.length - 1;
+  const turnCost = t => t.reduce((s, m) => s + msgTokens(m), 0);
+
+  const kept = new Set();
+  let used = overhead;
+  // Anchor — always preserved (even if it alone exceeds the budget).
+  for (let i = 0; i < anchorCount; i++) { kept.add(i); used += turnCost(turns[i]); }
+  // Always keep the most-recent turn so the live prompt is never culled.
+  if (last >= anchorCount && !kept.has(last)) { kept.add(last); used += turnCost(turns[last]); }
+
+  // Admit remaining turns newest-first; the oldest beyond the anchor peel off
+  // naturally the instant usage would cross the fall-off line. Stop at the first
+  // that won't fit so the retained tail stays contiguous (no scattered gaps).
+  for (let i = last - 1; i >= anchorCount; i--) {
     const cost = turnCost(turns[i]);
     if (used + cost > limit) break;
     used += cost;
@@ -4271,7 +4396,10 @@ async function applyToForm() {
   $('cfg-ctx').value = c.context;
   $('cfg-threshold').value = c.threshold;
   $('cfg-depth').value = c.contextDepth;
+  $('cfg-crop-method').value = c.croppingMethod || 'block';
+  $('cfg-falloff').value = c.falloffLocation;
   $('cfg-max-recursion').value = c.maxToolRecursion;
+  applyCropMethodUI();
   syncThresholdEff();
   $('cfg-assistant-name').value = c.assistantName || '';
   $('cfg-sysprompt').value = c.systemPrompt;
@@ -4311,6 +4439,9 @@ function readForm() {
   c.context = parseInt($('cfg-ctx').value) || DEFAULTS.context;
   c.threshold = parseInt($('cfg-threshold').value) || DEFAULTS.threshold;
   c.contextDepth = Math.max(1, parseInt($('cfg-depth').value) || DEFAULTS.contextDepth);
+  c.croppingMethod = ($('cfg-crop-method').value === 'standard') ? 'standard' : 'block';
+  c.falloffLocation = parseInt($('cfg-falloff').value); if (isNaN(c.falloffLocation)) c.falloffLocation = DEFAULTS.falloffLocation;
+  c.falloffLocation = Math.min(99, Math.max(1, c.falloffLocation));
   c.maxToolRecursion = parseInt($('cfg-max-recursion').value) || 16;
   c.systemPrompt = $('cfg-sysprompt').value;
   c.assistantName = $('cfg-assistant-name').value.trim().slice(0, 32);
@@ -4439,11 +4570,21 @@ function attachWiring() {
     });
   });
 
-  // Keep the "new context limit" readout live as the operator edits either the
-  // context size or the roll threshold.
-  ['cfg-ctx', 'cfg-threshold'].forEach(id => {
+  // Keep the "new context limit" readouts live as the operator edits the
+  // context size, the roll threshold (block), or the fall-off location (standard).
+  ['cfg-ctx', 'cfg-threshold', 'cfg-falloff'].forEach(id => {
     const el = $(id);
     if (el) el.addEventListener('input', syncThresholdEff);
+  });
+
+  // Switch cropping method: show the matching controls and reflect the new
+  // cutoff in the gauge / telemetry immediately, then persist.
+  $('cfg-crop-method').addEventListener('change', () => {
+    state.settings.croppingMethod = ($('cfg-crop-method').value === 'standard') ? 'standard' : 'block';
+    applyCropMethodUI();
+    syncThresholdEff();
+    updateStatus(); renderEmptyCheck();
+    saveConfig();
   });
 
   $('btn-roll-now').addEventListener('click', () => {

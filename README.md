@@ -70,14 +70,26 @@ Without it, speech falls back to the built-in villager-talk blip SFX.
   MCP status all mirror. Spoken replies (SFX blips or Piper neural speech) are
   broadcast too, so the audio response plays through every synced window — not
   just the live one that ran the inference.
-- **Rolling context window** — when token usage crosses the threshold the
-  oldest middle messages fall out of the window until usage drops below the
-  cap. The first user message (original task) and the most recent turns are
-  always preserved. Tool-call / tool-result pairs drop atomically so the
-  trace stays coherent. The `ROLL` status pill in the bottom status bar
-  spins while it runs; a compact marker is left in the chat where the cut
-  happened. Each tool round gets a fresh `max_tokens` budget so tool calls
-  are not counted against the output-token cap.
+- **Context cropping (two methods)** — the full conversation is *always* kept
+  in the chat interface; nothing is ever deleted from the transcript. Only the
+  model's view is trimmed when token usage approaches the budget. Pick the
+  method in **Settings → § 3 CONTEXT CROPPING → Cropping Method**; the relevant
+  controls appear for whichever is selected:
+    - **Rolling Block** *(cut %)* — keeps a fixed recent block of `Context
+      Depth` pairs and drops the oldest *middle* turns once usage crosses the
+      cutoff (`context × Roll Threshold%`). The model view moves in blocks.
+    - **Standard Culling** *(fall-off)* — a continuous rolling buffer with no
+      fixed recent block: the oldest non-anchor turn peels off one at a time the
+      moment usage reaches the **Fall-off Location** (`context × fall-off%`), so
+      history slides off naturally as it ages.
+  Both methods always preserve the system prompt and the **first two**
+  back-and-forth exchanges (the original task), and both drop tool-call /
+  tool-result rounds *atomically* — a whole tool block falls off together, so
+  the trace never orphans a `tool_call_id` or leaves a partial block in the sent
+  context. The `ROLL` status pill in the bottom status bar spins while it runs;
+  the `CTX` meter marker tracks the active method's cutoff. Each tool round gets
+  a fresh `max_tokens` budget so tool calls are not counted against the
+  output-token cap.
 - **Per-MCP-server toggle** — flip an individual server on/off from the right
   panel. Disabled servers are not started and their tools are withheld from
   the model. Persists in `settings.json` (`mcpEnabled`).
