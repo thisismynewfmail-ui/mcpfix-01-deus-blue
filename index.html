@@ -3076,12 +3076,14 @@ function buildMessageEl(m, idx) {
   const disp = splitThinkForDisplay(m);
   if (disp.reasoning && disp.reasoning.trim()) body.appendChild(buildThinkBlock(disp.reasoning, !!m._streamingThink || disp.thinkOpen));
 
-  if (disp.content && disp.content.trim()) {
+  // Tool results render ONLY as the collapsible OUT block below — never as a
+  // plain inline body (that was double-rendering the full output, expanded).
+  if (m.role !== 'tool' && disp.content && disp.content.trim()) {
     const c = document.createElement('div');
     c.innerHTML = renderMarkdown(disp.content);
     if (m._streaming) c.classList.add('stream-cursor');
     body.appendChild(c);
-  } else if (m._streaming && !(disp.reasoning && disp.reasoning.trim())) {
+  } else if (m.role !== 'tool' && m._streaming && !(disp.reasoning && disp.reasoning.trim())) {
     const c = document.createElement('div');
     c.className = 'stream-cursor';
     c.innerHTML = '<span style="color:var(--text-faint); font-family:var(--mono); font-size:11px; letter-spacing:0.1em;">…RECEIVING…</span>';
