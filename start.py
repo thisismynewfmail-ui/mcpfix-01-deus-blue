@@ -76,6 +76,7 @@ DEFAULT_SETTINGS = {
     "streaming": True,
     "toolsEnabled": True,
     "toolsCollapsed": True,
+    "keepInputFocused": False,   # keep the chat composer focused after a send (lets you type the next message right away; keeps the mobile keyboard up)
     "useProxy": True,
     "soundEnabled": True,        # master VOICE FEEDBACK switch (gates both engines)
     "soundVolume": 0.35,         # villager-talk SFX volume

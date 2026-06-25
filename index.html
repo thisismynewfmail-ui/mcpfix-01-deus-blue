@@ -2695,6 +2695,14 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
         <span class="slot"></span>
         <span>SEND TOOLS TO MODEL</span>
       </label>
+      <label class="toggle" style="margin-bottom:6px; display:flex;">
+        <input type="checkbox" id="cfg-keep-focus" />
+        <span class="slot"></span>
+        <span>KEEP INPUT FOCUSED AFTER SEND</span>
+      </label>
+      <div class="help" style="font-family:var(--mono); font-size:9.5px; color:var(--text-faint); line-height:1.6; margin:0 0 4px 46px;">
+        After a message is sent (Enter or the SEND button) the composer keeps focus, so you can type the next line without clicking back in. On touch devices this also keeps the on-screen keyboard up.
+      </div>
     </div>
 
     <div class="sect">
@@ -2809,6 +2817,7 @@ const DEFAULTS = {
   streaming: true,
   toolsEnabled: true,
   toolsCollapsed: true,
+  keepInputFocused: false,  // after sending, keep the chat input focused so you can type the next message immediately (also keeps the mobile keyboard up)
   useProxy: true,
   soundEnabled: true,       // master VOICE FEEDBACK switch (gates both engines)
   soundVolume: 0.35,        // villager-talk SFX volume
@@ -5166,6 +5175,7 @@ async function applyToForm() {
   $('cfg-tools-collapsed').checked = c.toolsCollapsed;
   $('cfg-stream').checked = c.streaming;
   $('cfg-tools-enabled').checked = c.toolsEnabled;
+  $('cfg-keep-focus').checked = c.keepInputFocused;
   $('cfg-sound').checked = c.soundEnabled;
   $('cfg-sound-vol').value = c.soundVolume;
   $('cfg-sound-pitch').value = c.soundPitch;
@@ -5216,6 +5226,7 @@ function readForm() {
   c.toolsCollapsed = $('cfg-tools-collapsed').checked;
   c.streaming = $('cfg-stream').checked;
   c.toolsEnabled = $('cfg-tools-enabled').checked;
+  c.keepInputFocused = $('cfg-keep-focus').checked;
   c.soundEnabled = $('cfg-sound').checked;
   c.soundVolume = parseFloat($('cfg-sound-vol').value); if (isNaN(c.soundVolume)) c.soundVolume = 0.35;
   c.soundPitch = parseFloat($('cfg-sound-pitch').value); if (isNaN(c.soundPitch)) c.soundPitch = 1.0;
@@ -5551,14 +5562,21 @@ function attachWiring() {
   if (mq.addEventListener) mq.addEventListener('change', onBreak); else mq.addListener(onBreak);
 
   const ta = $('input');
+  // When "KEEP INPUT FOCUSED AFTER SEND" is on, re-focus the composer right after
+  // a send. This runs synchronously inside the originating user gesture (the
+  // sendUser() call above it is not awaited), which is what lets the on-screen
+  // keyboard stay up on mobile — a focus() deferred past an await would be
+  // rejected as a non-user-initiated focus on iOS/Android and the keyboard would
+  // close. preventScroll keeps the view from jumping on desktop.
+  const keepFocus = () => { if (state.settings.keepInputFocused) ta.focus({ preventScroll: true }); };
   ta.addEventListener('input', () => autoresize(ta));
   ta.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const t = ta.value; ta.value = ''; autoresize(ta); sendUser(t); }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); const t = ta.value; ta.value = ''; autoresize(ta); sendUser(t); keepFocus(); }
     else if (e.key === 'Escape' && state.abortCtrl) state.abortCtrl.abort();
   });
   $('btn-send').addEventListener('click', () => {
     if (state.status.streaming && state.abortCtrl) { state.abortCtrl.abort(); return; }
-    const t = ta.value; ta.value = ''; autoresize(ta); sendUser(t);
+    const t = ta.value; ta.value = ''; autoresize(ta); sendUser(t); keepFocus();
   });
 
   // ── Image attach: picker, paste, drag-and-drop ──
