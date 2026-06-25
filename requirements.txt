@@ -28,3 +28,19 @@
 # The synthesis wrapper in start.py supports the 1.2.x (synthesize_stream_raw)
 # and 1.3+ (synthesize_wav) APIs, so a newer release also works.
 piper-tts==1.2.0
+
+# ── Browser tool: local, self-hosted Playwright ───────────────────────────
+# Powers Settings → BROWSER and the in-terminal browser MCP server
+# (browser_mcp_server.py) — a real, headed Chromium driven locally with NO
+# npx, NO Docker and NO external Playwright server. The Chromium engine itself
+# is downloaded into a project-local ./.browser/ directory.
+#
+# Don't `pip install` this by hand — run the dedicated setup helper, which
+# installs the package AND the Chromium engine (and is what the UI's
+# "INSTALL ENGINE" button / the backend auto-installer call):
+#
+#     python browser_setup.py
+#
+# Left unpinned so `playwright install chromium` always fetches the matching
+# engine build (the package and its browser ship in lock-step).
+playwright>=1.40

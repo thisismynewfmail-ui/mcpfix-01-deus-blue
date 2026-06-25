@@ -33,6 +33,13 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from socketserver import ThreadingMixIn
 
+# Local browser subsystem helper (stdlib-only at import time; Playwright is
+# imported lazily inside it, so this stays a no-cost import even before setup).
+try:
+    import browser_setup
+except Exception:
+    browser_setup = None
+
 # ───────────────────────────── Paths ─────────────────────────────
 
 ROOT = Path(__file__).resolve().parent
@@ -91,7 +98,75 @@ DEFAULT_SETTINGS = {
     "leftCollapsed": False,
     "rightCollapsed": False,
     "theme": "sac",          # interface skin: "sac" (Stand Alone Complex) | "deusex" (UNATCO / Deus Ex)
+    # ── Local browser tool (Playwright) — passed to browser_mcp_server.py ──
+    "browserWidth": 1280,        # viewport width the browser spawns at
+    "browserHeight": 800,        # viewport height the browser spawns at
+    "browserDuration": 0,        # idle seconds before auto-closing the window; 0 = stay open until toggled off
+    "browserHeadless": False,    # False = always open a visible window with a viewport (as required)
+    "browserSnapshot": "compact",# auto snapshot returned after browser actions: "compact" | "full" | "off"
+    # ── Sampling presets + chat template ──
+    "samplingPresets": [],       # [{name, temperature, maxTokens, topP, topK, minP, ..., systemPrompt}]
+    "chatTemplate": "api",       # "api" (endpoint templates) | "gemma" | "qwen" (rendered client-side)
 }
+
+# ─────────────────────── Local browser subsystem ─────────────────────────
+# The browser tool is "just another MCP server" — a local Python script we
+# spawn over stdio — so it slots into the existing bridge, toggle and Settings
+# display unchanged. These helpers detect it and feed it the UI's browser
+# settings (resolution / duration / headless / snapshot) plus the project-local
+# engine + profile paths and a proxy CA bundle for downloads.
+
+BROWSER_SCRIPT_NAME = "browser_mcp_server.py"
+
+_PYTHON_NAMES = {"python", "python3", "python.exe", "python3.exe", "py", "py.exe"}
+
+
+def _is_browser_cfg(cfg: dict) -> bool:
+    if not isinstance(cfg, dict):
+        return False
+    return any(str(a).endswith(BROWSER_SCRIPT_NAME) for a in (cfg.get("args") or []))
+
+
+def _browser_env(settings: dict) -> dict:
+    """Environment for the browser MCP server, built from current UI settings."""
+    settings = settings or {}
+    env = {
+        "BROWSER_WIDTH": str(int(settings.get("browserWidth") or 1280)),
+        "BROWSER_HEIGHT": str(int(settings.get("browserHeight") or 800)),
+        "BROWSER_DURATION": str(int(settings.get("browserDuration") or 0)),
+        "BROWSER_HEADLESS": "1" if settings.get("browserHeadless") else "0",
+        "BROWSER_SNAPSHOT": str(settings.get("browserSnapshot") or "compact"),
+    }
+    if browser_setup is not None:
+        try:
+            p = browser_setup.paths()
+            env["PLAYWRIGHT_BROWSERS_PATH"] = p["browsers"]
+            env["BROWSER_USER_DATA_DIR"] = p["profile"]
+            env["BROWSER_SCREENSHOT_DIR"] = p["screenshots"]
+            ca = browser_setup.ca_bundle()
+            if ca:
+                env["NODE_EXTRA_CA_CERTS"] = ca
+        except Exception:
+            pass
+    return env
+
+
+def _resolve_command(command: str, args: list):
+    """Cross-platform launcher resolution. Run python-ish servers with THIS
+    interpreter (so a missing PATH 'python' doesn't break Windows/Linux), and
+    make relative *.py script paths absolute against the project root."""
+    cmd = command
+    if os.path.basename(str(command)).lower() in _PYTHON_NAMES:
+        cmd = sys.executable
+    out_args = []
+    for a in (args or []):
+        a = str(a)
+        if a.endswith(".py") and not os.path.isabs(a) and (ROOT / a).exists():
+            out_args.append(str(ROOT / a))
+        else:
+            out_args.append(a)
+    return shutil.which(cmd) or cmd, out_args
+
 
 # ─────────────────────────── MCP Client ──────────────────────────
 
@@ -121,9 +196,9 @@ class MCPClient:
             self.error = None
             full_env = os.environ.copy()
             full_env.update(self.env)
-            cmd = shutil.which(self.command) or self.command
+            cmd, args = _resolve_command(self.command, self.args)
             self.proc = subprocess.Popen(
-                [cmd, *self.args],
+                [cmd, *args],
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
@@ -160,11 +235,22 @@ class MCPClient:
     def _stop_quiet(self) -> None:
         if self.proc:
             try:
-                self.proc.terminate()
+                # Graceful first: closing stdin makes a well-behaved stdio server
+                # (our browser server) hit EOF and tear down its child browser —
+                # important on Windows where terminate() can orphan grandchildren.
                 try:
-                    self.proc.wait(timeout=3)
+                    if self.proc.stdin:
+                        self.proc.stdin.close()
+                except Exception:
+                    pass
+                try:
+                    self.proc.wait(timeout=4)
                 except subprocess.TimeoutExpired:
-                    self.proc.kill()
+                    self.proc.terminate()
+                    try:
+                        self.proc.wait(timeout=3)
+                    except subprocess.TimeoutExpired:
+                        self.proc.kill()
             except Exception:
                 pass
         self.proc = None
@@ -245,30 +331,34 @@ class MCPManager:
         self.clients: dict[str, MCPClient] = {}
         self._lock = threading.Lock()
 
+    def _make_client(self, name: str, cfg: dict, settings: dict) -> MCPClient:
+        """Build one client from config, injecting browser env + cwd when this is
+        the local browser server."""
+        env = cfg.get("env")
+        cwd = cfg.get("cwd")
+        if _is_browser_cfg(cfg):
+            env = {**(env or {}), **_browser_env(settings)}
+            cwd = cwd or str(ROOT)
+        client = MCPClient(name=name, command=cfg.get("command"),
+                           args=cfg.get("args", []), env=env, cwd=cwd)
+        enabled = cfg.get("enabled", True)
+        ov = (settings or {}).get("mcpEnabled", {}) or {}
+        if name in ov:
+            enabled = bool(ov[name])
+        client.enabled = enabled
+        return client
+
     def load(self, config: dict) -> None:
         with self._lock:
             for c in self.clients.values():
                 c.stop()
             self.clients = {}
             servers = (config or {}).get("mcpServers", {}) or {}
-            # honor per-server `enabled` flag (defaults to True if unset)
-            enabled_overrides = (load_settings() or {}).get("mcpEnabled", {}) or {}
+            settings = load_settings() or {}
             for name, cfg in servers.items():
                 if not isinstance(cfg, dict) or not cfg.get("command"):
                     continue
-                # config-level disable wins; otherwise settings override
-                enabled = cfg.get("enabled", True)
-                if name in enabled_overrides:
-                    enabled = bool(enabled_overrides[name])
-                client = MCPClient(
-                    name=name,
-                    command=cfg.get("command"),
-                    args=cfg.get("args", []),
-                    env=cfg.get("env"),
-                    cwd=cfg.get("cwd"),
-                )
-                client.enabled = enabled
-                self.clients[name] = client
+                self.clients[name] = self._make_client(name, cfg, settings)
             for client in list(self.clients.values()):
                 if not getattr(client, "enabled", True):
                     client.status = "disabled"
@@ -276,6 +366,55 @@ class MCPManager:
                 threading.Thread(target=self._start_then_publish,
                                  args=(client,),
                                  name=f"mcp-start-{client.name}", daemon=True).start()
+
+    def restart_server(self, name: str, config: dict) -> None:
+        """Stop (if running) and (re)start ONE server fresh from config — used by
+        the per-server power toggle and by browser-setting changes, so other
+        servers are left untouched and the browser is cleanly torn down/relaunched
+        with current settings."""
+        settings = load_settings() or {}
+        servers = (config or {}).get("mcpServers", {}) or {}
+        cfg = servers.get(name)
+        with self._lock:
+            old = self.clients.get(name)
+            if old:
+                old.stop()
+            if not isinstance(cfg, dict) or not cfg.get("command"):
+                self.clients.pop(name, None)
+                client = None
+            else:
+                client = self._make_client(name, cfg, settings)
+                self.clients[name] = client
+                if not client.enabled:
+                    client.status = "disabled"
+                    client = None
+        if client is not None:
+            threading.Thread(target=self._start_then_publish, args=(client,),
+                             name=f"mcp-start-{name}", daemon=True).start()
+        else:
+            BUS.publish("mcp", {"servers": self.status_summary(), "tools": self.list_tools()})
+
+    def stop_server(self, name: str) -> None:
+        """Disable + fully stop ONE server (closes its browser), leaving others."""
+        with self._lock:
+            c = self.clients.get(name)
+            if c:
+                c.enabled = False
+                c.stop()
+                c.status = "disabled"
+        BUS.publish("mcp", {"servers": self.status_summary(), "tools": self.list_tools()})
+
+    def browser_server(self, config: dict) -> tuple:
+        """Return (name, enabled) of the configured local browser server, if any."""
+        settings = load_settings() or {}
+        ov = settings.get("mcpEnabled", {}) or {}
+        for nm, cfg in ((config or {}).get("mcpServers", {}) or {}).items():
+            if _is_browser_cfg(cfg):
+                en = cfg.get("enabled", True)
+                if nm in ov:
+                    en = bool(ov[nm])
+                return nm, bool(en)
+        return None, False
 
     def _start_then_publish(self, client: MCPClient):
         client.start()
@@ -380,6 +519,78 @@ class EventBus:
 
 
 BUS = EventBus()
+
+
+# ───────────────────── Browser install orchestration ────────────────────
+# Auto-install + manual "INSTALL ENGINE" both run through here. Progress is
+# pushed over the SSE bus as `browser` events so the Settings panel can show a
+# live log, and the browser server is (re)started once the engine is ready.
+
+_BROWSER_INSTALL = {"running": False, "done": False, "ok": None, "log": [], "ts": 0}
+_BROWSER_INSTALL_LOCK = threading.Lock()
+
+
+def _browser_install_state() -> dict:
+    return {
+        "running": _BROWSER_INSTALL["running"],
+        "done": _BROWSER_INSTALL["done"],
+        "ok": _BROWSER_INSTALL["ok"],
+        "ts": _BROWSER_INSTALL["ts"],
+        "log": _BROWSER_INSTALL["log"][-50:],
+    }
+
+
+def _browser_status() -> dict:
+    if browser_setup is None:
+        st = {"ready": False, "playwright": False, "chromium": False,
+              "error": "browser_setup.py not found next to start.py"}
+    else:
+        try:
+            st = browser_setup.status()
+        except Exception as e:
+            st = {"ready": False, "error": str(e)}
+    st["install"] = _browser_install_state()
+    try:
+        nm, en = MGR.browser_server(load_tools_config())
+        st["serverName"] = nm
+        st["serverEnabled"] = en
+    except Exception:
+        st["serverName"] = None
+        st["serverEnabled"] = False
+    return st
+
+
+def _browser_install_worker(with_deps: bool = False):
+    if browser_setup is None:
+        return
+    with _BROWSER_INSTALL_LOCK:
+        if _BROWSER_INSTALL["running"]:
+            return
+        _BROWSER_INSTALL.update(running=True, done=False, ok=None, log=[], ts=int(time.time() * 1000))
+
+    def log(line):
+        _BROWSER_INSTALL["log"].append(str(line))
+        if len(_BROWSER_INSTALL["log"]) > 400:
+            _BROWSER_INSTALL["log"] = _BROWSER_INSTALL["log"][-400:]
+        BUS.publish("browser", {"install": _browser_install_state()})
+
+    try:
+        res = browser_setup.ensure(log=log, with_deps=with_deps)
+        _BROWSER_INSTALL.update(ok=bool(res.get("ok") and res.get("ready")))
+    except Exception as e:
+        log(f"ERROR: {e}")
+        _BROWSER_INSTALL.update(ok=False)
+    finally:
+        _BROWSER_INSTALL.update(running=False, done=True)
+        BUS.publish("browser", {"install": _browser_install_state(), "status": _browser_status()})
+        # Engine ready now — (re)start the browser server if it's enabled.
+        try:
+            cfg = load_tools_config()
+            nm, en = MGR.browser_server(cfg)
+            if nm and en and _BROWSER_INSTALL["ok"]:
+                MGR.restart_server(nm, cfg)
+        except Exception:
+            pass
 
 
 # ────────────────────────── Persistence ──────────────────────────
@@ -986,6 +1197,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json(200, {"messages": chat.get("messages", [])})
             if path == "/api/health":
                 return self._send_json(200, {"ok": True, "version": "2.0", "servers": len(MGR.clients)})
+            if path == "/api/browser/status":
+                return self._send_json(200, _browser_status())
             if path == "/api/tts/status":
                 return self._send_json(200, TTS.status())
             if path == "/api/tts/voices":
@@ -1011,10 +1224,30 @@ class Handler(BaseHTTPRequestHandler):
             body = self._read_body()
             origin = self._origin()
             if path == "/api/config":
-                merged = {**load_settings(), **(body or {})}
+                before = load_settings()
+                merged = {**before, **(body or {})}
                 save_settings(merged)
                 BUS.publish("settings", merged, origin=origin)
+                # Browser launch params apply at spawn time. If any changed and
+                # the browser server is enabled, respawn it so the new viewport /
+                # duration / headless / snapshot take effect (old window closed).
+                bkeys = ("browserWidth", "browserHeight", "browserDuration",
+                         "browserHeadless", "browserSnapshot")
+                if any(before.get(k) != merged.get(k) for k in bkeys):
+                    cfg = load_tools_config()
+                    nm, en = MGR.browser_server(cfg)
+                    if nm and en:
+                        threading.Thread(target=MGR.restart_server, args=(nm, cfg),
+                                         name="browser-restart", daemon=True).start()
                 return self._send_json(200, merged)
+            if path == "/api/browser/install":
+                if browser_setup is None:
+                    return self._send_json(503, {"ok": False, "error": "browser_setup.py not found"})
+                with_deps = bool((body or {}).get("withDeps"))
+                threading.Thread(target=_browser_install_worker,
+                                 kwargs={"with_deps": with_deps},
+                                 name="browser-install", daemon=True).start()
+                return self._send_json(200, {"ok": True, "started": True, "status": _browser_status()})
             if path == "/api/tools-config":
                 cfg = body if isinstance(body, dict) else (json.loads(body) if isinstance(body, str) else {})
                 save_tools_config(cfg)
@@ -1034,7 +1267,13 @@ class Handler(BaseHTTPRequestHandler):
                 m[name] = enabled
                 s["mcpEnabled"] = m
                 save_settings(s)
-                MGR.load(load_tools_config())
+                # Surgical start/stop of just this server — others stay running,
+                # and disabling fully stops the process (closing its browser).
+                cfg = load_tools_config()
+                if enabled:
+                    MGR.restart_server(name, cfg)
+                else:
+                    MGR.stop_server(name)
                 BUS.publish("settings", s, origin=origin)
                 BUS.publish("mcp", {"servers": MGR.status_summary(),
                                     "tools": MGR.list_tools()})
@@ -1410,6 +1649,22 @@ def main():
         except Exception as e:
             print(f"   ! mcp boot failure: {e}")
 
+        # Auto-prepare the local browser engine if its server is enabled but the
+        # Chromium engine isn't downloaded yet (first run). Runs in the
+        # background; progress streams to the UI over the SSE bus.
+        if browser_setup is not None:
+            try:
+                nm, en = MGR.browser_server(cfg)
+                if nm and en and not browser_setup.is_ready():
+                    print("   ▸ local browser engine not installed — auto-installing in background "
+                          "(or use Settings → BROWSER → INSTALL ENGINE)…")
+                    threading.Thread(target=_browser_install_worker, name="browser-install-boot",
+                                     daemon=True).start()
+                elif nm and en:
+                    print(f"   browser      engine ready · {browser_setup.find_chromium() or 'bundled'}")
+            except Exception as e:
+                print(f"   ! browser auto-setup check failed: {e}")
+
     server = ThreadingHTTPServer((host, port), Handler)
     print(f"\n   → http://{host if host != '0.0.0.0' else '127.0.0.1'}:{port}")
     if host == "0.0.0.0":
@@ -1418,11 +1673,11 @@ def main():
 
     def shutdown(*_):
         print("\n   ▸ stopping MCP servers…")
-        MGR.stop_all()
-        try:
-            server.shutdown()
-        finally:
-            sys.exit(0)
+        MGR.stop_all()   # closes the browser + any other MCP subprocesses first
+        # server.shutdown() blocks until serve_forever() returns, so it must NOT
+        # run in this (main) thread — the signal handler interrupted serve_forever
+        # itself. Run it on a side thread to avoid a self-deadlock on Ctrl-C/SIGTERM.
+        threading.Thread(target=server.shutdown, daemon=True).start()
 
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
@@ -1431,6 +1686,7 @@ def main():
         server.serve_forever()
     finally:
         MGR.stop_all()
+    sys.exit(0)
 
 
 if __name__ == "__main__":

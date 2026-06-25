@@ -21,6 +21,8 @@ in real time across the LAN.
 | `start.py`          | HTTP server + MCP stdio bridge + SSE event bus       |
 | `index.html`        | UI, served by `start.py` at `/`                      |
 | `tools.json`        | MCP server config (Claude-Desktop format)            |
+| `browser_mcp_server.py` | local, self-hosted Playwright browser MCP server (stdio) |
+| `browser_setup.py`  | one-shot installer for the local browser engine (Playwright + Chromium) |
 | `settings.json`     | persisted UI settings (auto-created)                 |
 | `data/`             | per-session chat files (one `.json` per chat) + `index.json` |
 | `voices/`           | Piper TTS voice models (`<key>.onnx` + `.onnx.json`) + `previews/` |
@@ -54,6 +56,20 @@ pip install piper-tts
 ```
 
 Without it, speech falls back to the built-in villager-talk blip SFX.
+
+**Optional — local browser tool:** the in-terminal **BROWSER** (Settings → **§ 6
+BROWSER**) drives a real, headed Chromium *locally* via Playwright — no npx, no
+Docker, no external Playwright server. Install the engine once (the UI's
+**INSTALL / REPAIR ENGINE** button does this for you, and the backend also
+auto-installs on first launch when the `browser` server is enabled):
+
+```bash
+python browser_setup.py          # installs playwright + Chromium into ./.browser/
+```
+
+Everything (engine binaries + a persistent login profile + screenshots) lives in
+a project-local `./.browser/` directory. Cross-platform (Windows + Linux). Power
+it on/off with the **browser** switch in **§ 2 MCP / NODES**.
 
 ## ◢ Features
 
@@ -119,6 +135,31 @@ Without it, speech falls back to the built-in villager-talk blip SFX.
       synthesise a short audition clip next to each not-yet-previewed voice.
       Only one model is held in memory at a time; switching voices or leaving
       the Piper engine frees it (`gc.collect()` + `/api/tts/unload`).
+- **Local browser tool** — a self-hosted Playwright browser exposed as the
+  `browser` MCP server (`browser_mcp_server.py`). It runs entirely on the local
+  machine (no npx / Docker / remote Playwright). Toggling the **browser** switch
+  in **§ 2 MCP / NODES** spawns/kills the server and fully closes the Chromium
+  window. Settings → **§ 6 BROWSER** sets the spawn **viewport resolution**, an
+  **idle auto-close duration**, headless on/off, and the install/repair button.
+  The window always opens with an explicit viewport; a persistent profile keeps
+  logins/cookies; adaptive **bot-detection prevention** (masked `webdriver`,
+  realistic UA/locale, WebGL + plugin spoofing, `AutomationControlled` off) lets
+  it work on account / secure sites. Tools include `browser_navigate`,
+  `browser_click`, `browser_type`, `browser_screenshot`, tab control, and both
+  **`browser_snapshot`** (full a11y tree with `[ref=eN]` handles) and
+  **`browser_snapshot_compact`** (interactive + landmarks only) so the agent can
+  trade detail for saved context. Actions also auto-return a snapshot
+  (compact/full/off, configurable).
+- **Sampling presets** — save the full sampling bundle *and* the system prompt
+  as a named preset (Settings → **§ 2**), then Load / Save / Rename / Copy /
+  Delete from the dropdown. Stored in `settings.json` (`samplingPresets`).
+- **Chat template selector** — Settings → **§ 4** chooses how the prompt reaches
+  the model: **API PROVIDED** (default; structured `/chat/completions`, the
+  endpoint applies the model's template), **QWEN3** (ChatML `<|im_start|>`,
+  `<think>`, `<tool_call>`), or **GEMMA** (`<start_of_turn>`/`<end_of_turn>`,
+  system folded into the first user turn). QWEN3/GEMMA render the exact prompt
+  client-side — special/channel tokens, thinking and tool-call structure — and
+  POST it to `/completions`, parsing tool calls back out of the raw output.
 
 ## ◢ HTTP API
 
@@ -134,7 +175,10 @@ Used by the UI; usable directly if you want to script it.
 | `GET  /api/tools`                    | lists OpenAI-format tools from running MCP  |
 | `GET  /api/servers`                  | per-server status, recent stderr, errors    |
 | `POST /api/servers/reload`           | respawns all MCP servers                    |
+| `POST /api/servers/toggle`           | `{name, enabled}` → start/stop ONE server   |
 | `POST /api/tools/call`               | `{name, arguments}` → MCP `tools/call`      |
+| `GET  /api/browser/status`           | local browser engine readiness + install log |
+| `POST /api/browser/install`          | install/repair the Playwright Chromium engine |
 | `GET  /api/chats`                    | list chats + active id                      |
 | `POST /api/chats`                    | create chat                                 |
 | `GET  /api/chats/{id}`               | fetch full chat                             |
@@ -159,6 +203,17 @@ Used by the UI; usable directly if you want to script it.
 Standard MCP config — same shape Claude Desktop uses. Each entry under
 `mcpServers` is keyed by display name and specifies the executable to launch.
 Each server must be on `PATH` and speak MCP over stdio.
+
+The bundled local browser ships as a normal entry:
+
+```json
+{ "mcpServers": { "browser": { "command": "python", "args": ["browser_mcp_server.py"] } } }
+```
+
+`start.py` resolves `python` to the interpreter running the backend (so it works
+on Windows and Linux without a `PATH` `python`), makes the script path absolute,
+and injects the browser settings + project-local engine/profile paths as
+`BROWSER_*` / `PLAYWRIGHT_BROWSERS_PATH` env vars when it spawns.
 
 ## ◢ Aesthetic
 
