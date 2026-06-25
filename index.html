@@ -119,6 +119,18 @@ body::after {
 .app.left-collapsed aside.left  { transform: translateX(-100%); }
 .app.right-collapsed aside.right { transform: translateX(100%); }
 
+/* Scrim behind a mobile side drawer — inert on desktop (only shown inside the
+   mobile media query when a drawer is open). */
+.mobile-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(2,8,13,0.6);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
 /* Header-mounted panel toggles — kept tiny and unobtrusive */
 .panel-toggle {
   background: transparent;
@@ -1519,27 +1531,89 @@ footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
 @media (max-width: 1100px) {
   .app { grid-template-columns: var(--left-w, 220px) minmax(0, 1fr) var(--right-w, 240px); }
 }
+
+/* ════════════════ MOBILE (≤ 820px) — single column + overlay drawers ═════════
+   The header collapses to one slim instrument strip; the CHATS and OPS rails
+   become off-canvas drawers that slide in BELOW the header (so their own toggle
+   buttons are never covered) over a tap-to-dismiss scrim. Drawer open/close is
+   LOCAL device state (.app.m-left / .app.m-right) — the synced collapsed flags
+   that drive the desktop grid are left alone, so cross-instance sync is intact. */
 @media (max-width: 820px) {
   .app {
-    grid-template-columns: var(--left-w, 0px) minmax(0, 1fr) var(--right-w, 0px);
+    --m-head-h: 52px;
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--m-head-h) 1fr auto;
     grid-template-areas:
-      "head head head"
-      "main main main"
-      "foot foot foot";
+      "head"
+      "main"
+      "foot";
   }
+
+  /* ── Compact header: brand + the panel toggles + settings, one row ── */
+  header {
+    height: var(--m-head-h);
+    padding: 0 10px;
+    gap: 8px;
+    z-index: 80;                       /* always above the drawers + scrim */
+  }
+  .brand { gap: 9px; min-width: 0; }
+  .brand .glyph { width: 30px; height: 30px; font-size: 15px; }
+  .brand .glyph::after { inset: -3px; }
+  .brand h1 { font-size: 15px; letter-spacing: 0.16em; }
+  .brand h1 .sub { font-size: 0.6em; letter-spacing: 0.18em; }
+  .brand .row1 { display: none; }      /* drop the long subtitle line */
+  /* The verbose status pills move off the header to stop it stacking 3 rows
+     tall — the live status they mirror still lives in the footer strip. */
+  .header-status .pill { display: none; }
+  .header-status { gap: 6px; flex-wrap: nowrap; }
+  .hdr-panel-toggles { border-left: none; margin-left: 0; padding: 0; gap: 6px; }
+  .panel-toggle { width: 34px; height: 34px; font-size: 14px; }
+  #btn-settings { width: 34px; height: 34px; font-size: 15px; }
+
+  /* ── Side rails → off-canvas drawers, anchored below the header ── */
   aside.left, aside.right {
-    position: fixed; top: 0; bottom: 0; width: 280px; z-index: 60;
-    box-shadow: 0 0 30px rgba(0,0,0,0.6);
+    position: fixed;
+    top: var(--m-head-h); bottom: 0;
+    width: min(86vw, 330px);
+    z-index: 60;
+    box-shadow: 0 0 34px rgba(0,0,0,0.65);
+    transition: transform 0.25s ease;
   }
-  aside.left  { left: 0; transform: translateX(-100%); }
-  aside.right { right: 0; transform: translateX(100%); }
-  .app:not(.left-collapsed)  aside.left  { transform: translateX(0); }
-  .app:not(.right-collapsed) aside.right { transform: translateX(0); }
-  .msg { grid-template-columns: 70px 1fr; gap: 10px; }
-  .chat-scroll { padding: 22px 16px; }
-  .composer-wrap { padding: 12px 14px; }
+  aside.left  { left: 0;  border-right: 1px solid var(--line-strong); transform: translateX(-100%); }
+  aside.right { right: 0; border-left:  1px solid var(--line-strong); transform: translateX(100%); }
+  /* Visibility driven ONLY by the local mobile-drawer classes (never by the
+     synced collapsed flags), so a sync update can't pop a drawer open here. */
+  .app.m-left  aside.left  { transform: translateX(0); }
+  .app.m-right aside.right { transform: translateX(0); }
+  .app.m-left  .mobile-backdrop,
+  .app.m-right .mobile-backdrop { display: block; top: var(--m-head-h); }
+
+  /* ── Conversation + composer breathing room ── */
+  .msg { grid-template-columns: 64px minmax(0,1fr); gap: 10px; }
+  .chat-scroll { padding: 20px 14px; }
+  .composer-wrap { padding: 10px 12px; }
   .drawer { width: 100vw; }
-  .brand h1 { font-size: 18px; }
+
+  /* No hover on touch — keep the per-message EDIT / CONTINUE controls visible. */
+  .msg-actions { opacity: 1; pointer-events: auto; position: static; display: flex;
+    justify-content: flex-end; margin-top: 6px; }
+  .msg.assistant .msg-body, .msg.user .msg-body { padding-bottom: 6px; }
+
+  /* Footer status strip scrolls horizontally instead of overflowing/clipping. */
+  footer { gap: 14px; overflow-x: auto; overflow-y: hidden; white-space: nowrap;
+    scrollbar-width: none; }
+  footer::-webkit-scrollbar { display: none; }
+  footer .group { flex: 0 0 auto; }
+  footer .spacer { display: none; }
+}
+
+/* Very small phones — reclaim the meta gutter by stacking it above the bubble. */
+@media (max-width: 480px) {
+  .brand h1 .sub { display: none; }
+  .msg { grid-template-columns: 1fr; gap: 4px; }
+  .msg-meta { text-align: left; padding-top: 0; display: flex; gap: 8px; align-items: baseline; }
+  .msg-meta .ts, .msg-meta .idx { display: inline-block; margin-top: 0; }
+  .chat-scroll { padding: 16px 11px; }
 }
 
 /* ───────────── Interface-skin toggle (top of settings) ───────────── */
@@ -2111,6 +2185,9 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
       <button class="icon-btn" id="btn-settings" title="Settings (⌘,)">⚙</button>
     </div>
   </header>
+
+  <!-- Mobile-only scrim behind an open side drawer; tap to dismiss -->
+  <div class="mobile-backdrop" id="mobile-backdrop" aria-hidden="true"></div>
 
   <aside class="left" id="aside-left">
 
@@ -2785,6 +2862,9 @@ const state = {
   saveTimer: null,
   pendingImages: [],   // attachments staged in the composer, not yet sent
   popoverChatId: null,
+  // Mobile side-panel overlay state — LOCAL & per-device (never synced/persisted),
+  // so the global leftCollapsed/rightCollapsed (desktop layout) stays untouched.
+  mobileDrawer: null,  // null | 'left' | 'right'
   scheduler: {
     nextId: 1,
     jobs: [],
@@ -3144,6 +3224,7 @@ async function selectChat(id) {
     state.activeChatId = id;
     await loadActiveChat();
     renderChatList(); renderMessages(); updateStatus();
+    if (isMobile()) setMobileDrawer(null);   // reveal the conversation after picking it
   } catch (e) { showToast('SELECT FAILED', e.message, 'red'); }
 }
 
@@ -5414,8 +5495,10 @@ function attachWiring() {
     if (btn) cancelScheduledJob(parseInt(btn.dataset.jobId));
   });
 
-  // Left / right sidebar toggles
+  // Left / right sidebar toggles. On mobile the rails are local overlay drawers
+  // (no persistence/sync); on desktop they toggle the synced collapsed layout.
   const toggleSide = (which) => {
+    if (isMobile()) { setMobileDrawer(state.mobileDrawer === which ? null : which); return; }
     const app = document.querySelector('.app');
     const cls = which + '-collapsed';
     app.classList.toggle(cls);
@@ -5428,6 +5511,16 @@ function attachWiring() {
   };
   $('toggle-left').addEventListener('click', () => toggleSide('left'));
   $('toggle-right').addEventListener('click', () => toggleSide('right'));
+
+  // Tap the scrim to dismiss whichever mobile drawer is open.
+  const mb = $('mobile-backdrop');
+  if (mb) mb.addEventListener('click', () => setMobileDrawer(null));
+
+  // Crossing the mobile/desktop boundary: clear any mobile overlay so the
+  // desktop grid (driven by the synced collapsed flags) renders cleanly.
+  const mq = window.matchMedia('(max-width: 820px)');
+  const onBreak = () => { setMobileDrawer(null); updateToggleIcons(); };
+  if (mq.addEventListener) mq.addEventListener('change', onBreak); else mq.addListener(onBreak);
 
   const ta = $('input');
   ta.addEventListener('input', () => autoresize(ta));
@@ -5484,20 +5577,37 @@ function attachWiring() {
   });
 }
 
+// ≤820px viewport → side rails behave as local overlay drawers.
+function isMobile() { return window.matchMedia('(max-width: 820px)').matches; }
+
+// Open ('left'/'right') or close (null) the mobile drawer. Mutually exclusive,
+// so the two rails can never stack and bury each other's controls. Purely local
+// view state — nothing here is persisted or broadcast over the sync bus.
+function setMobileDrawer(which) {
+  state.mobileDrawer = (which === 'left' || which === 'right') ? which : null;
+  const app = document.querySelector('.app');
+  app.classList.toggle('m-left',  state.mobileDrawer === 'left');
+  app.classList.toggle('m-right', state.mobileDrawer === 'right');
+  updateToggleIcons();
+}
+
 function updateToggleIcons() {
   const app = document.querySelector('.app');
+  const mobile = isMobile();
   const lt = $('toggle-left'); const rt = $('toggle-right');
   if (lt) {
-    const hidden = app.classList.contains('left-collapsed');
+    // On mobile the "active" lamp reflects the open overlay; on desktop the
+    // persisted layout (whether the rail is expanded in the grid).
+    const open = mobile ? (state.mobileDrawer === 'left') : !app.classList.contains('left-collapsed');
     lt.textContent = '◧';
-    lt.classList.toggle('active', !hidden);
-    lt.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+    lt.classList.toggle('active', open);
+    lt.setAttribute('aria-pressed', open ? 'true' : 'false');
   }
   if (rt) {
-    const hidden = app.classList.contains('right-collapsed');
+    const open = mobile ? (state.mobileDrawer === 'right') : !app.classList.contains('right-collapsed');
     rt.textContent = '◨';
-    rt.classList.toggle('active', !hidden);
-    rt.setAttribute('aria-pressed', hidden ? 'false' : 'true');
+    rt.classList.toggle('active', open);
+    rt.setAttribute('aria-pressed', open ? 'true' : 'false');
   }
 }
 

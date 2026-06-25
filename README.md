@@ -80,6 +80,15 @@ it on/off with the **browser** switch in **§ 2 MCP / NODES**.
 - **Collapsible side panels** — toggle the left chat list and the right
   options/MCP/telemetry panel independently using the edge buttons on the
   main pane. Collapsed state persists across reloads.
+- **Responsive / mobile layout** — at ≤ 820px the three-column grid folds to a
+  single column: the header collapses to one slim instrument strip and the
+  CHATS / OPS rails become off-canvas drawers that slide in *below* the header
+  (so their own toggle buttons stay reachable) over a tap-to-dismiss scrim, one
+  at a time. Picking a chat closes the drawer to reveal the conversation. Drawer
+  open/close is local, per-device state — it never touches the synced
+  `leftCollapsed` / `rightCollapsed` desktop layout, so cross-instance sync is
+  unaffected. Per-message EDIT / CONTINUE controls (no hover on touch) stay
+  visible, and both the *Stand Alone Complex* and *Deus Ex* skins carry through.
 - **Cross-instance sync** — every browser/window subscribes to a Server-Sent
   Events stream. Send a message on one monitor and it appears on every other
   connected viewer immediately. Settings, chat list, active selection, and
