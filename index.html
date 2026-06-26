@@ -648,7 +648,10 @@ main {
 .chat-scroll {
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 28px 40px 24px 40px;
+  /* Horizontal wall-gap scales with the viewport and caps lower than before,
+     so bubbles/labels sit tighter to both walls and the gap shrinks smoothly
+     as the pane narrows — no abrupt desktop→tablet step. */
+  padding: 28px clamp(14px, 2vw, 24px) 24px;
   scroll-behavior: smooth;
   position: relative;
   min-width: 0;
@@ -719,8 +722,11 @@ main {
 /* Message rows */
 .msg {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 18px;
+  /* The meta gutter is sized to the widest meta line (the HH:MM:SS timestamp),
+     so the right-aligned labels sit ~40px off the left wall — matching the
+     bubble's gap to the right wall instead of floating in a wide void. */
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 14px;
   margin-bottom: 20px;
   align-items: start;
   min-width: 0;
@@ -1604,7 +1610,9 @@ footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
   .app.m-right .mobile-backdrop { display: block; top: var(--m-head-h); }
 
   /* ── Conversation + composer breathing room ── */
-  .msg { grid-template-columns: 64px minmax(0,1fr); gap: 10px; }
+  /* Gutter holds at the desktop 56px (never wider than desktop as the pane
+     narrows) — just enough for the HH:MM:SS timestamp without wrapping. */
+  .msg { grid-template-columns: 56px minmax(0,1fr); gap: 10px; }
   .chat-scroll { padding: 20px 14px; }
   .composer-wrap { padding: 10px 12px; }
   .drawer { width: 100vw; }
