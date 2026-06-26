@@ -34,6 +34,13 @@
   --green:        #4cf09a;
   --warn:         #ffd166;
   --crit:         #ff4060;
+  /* ── Chroma FX knobs (Adjust Colors). Identity defaults = the look you see now.
+        --glow-rgb / --panel-rgb carry the rgb triplet of the primary accent /
+        panel base so glow + translucency rules can build rgba() at any hue. ── */
+  --fx-glow:      1;          /* accent bloom multiplier (0 = flat, 2 = intense) */
+  --fx-atmo:      1;          /* scanline + grain atmospherics multiplier        */
+  --glow-rgb:     0,230,255;  /* primary accent as r,g,b (for bloom rgba)         */
+  --panel-rgb:    6,17,22;    /* panel base as r,g,b (for translucency rgba)      */
   --mono:         'Share Tech Mono', 'JetBrains Mono', ui-monospace, monospace;
   --display:      'Chakra Petch', system-ui, sans-serif;
   --display-alt:  'Major Mono Display', monospace;
@@ -57,7 +64,7 @@ body::before {
   content: '';
   position: fixed; inset: 0;
   background-image: var(--grain);
-  opacity: 0.30;
+  opacity: calc(0.30 * var(--fx-atmo, 1));
   pointer-events: none;
   z-index: 9999;
   mix-blend-mode: overlay;
@@ -68,6 +75,7 @@ body::after {
   background:
     repeating-linear-gradient(0deg, rgba(0,230,255,0.022) 0 1px, transparent 1px 3px),
     linear-gradient(0deg, rgba(0,230,255,0.04) 0%, transparent 18%);
+  opacity: var(--fx-atmo, 1);
   pointer-events: none;
   z-index: 9998;
 }
@@ -100,7 +108,9 @@ body::after {
   z-index: 6;
   animation: scan 7s linear infinite;
   mix-blend-mode: screen;
+  opacity: var(--fx-atmo, 1);
 }
+.scanline[hidden] { display: none; }
 
 /* ──────────── App shell ──────────── */
 .app {
@@ -1573,7 +1583,7 @@ footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
   .header-status { gap: 6px; flex-wrap: nowrap; }
   .hdr-panel-toggles { border-left: none; margin-left: 0; padding: 0; gap: 6px; }
   .panel-toggle { width: 34px; height: 34px; font-size: 14px; }
-  #btn-settings { width: 34px; height: 34px; font-size: 15px; }
+  #btn-settings, #btn-chroma { width: 34px; height: 34px; font-size: 15px; }
 
   /* ── Side rails → off-canvas drawers, anchored below the header ── */
   aside.left, aside.right {
@@ -1677,6 +1687,213 @@ footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
 .theme-chip::after { content: ' ⇄'; opacity: 0.6; }
 
 /* ════════════════════════════════════════════════════════════════════
+   CHROMA FX  ·  glow / atmospherics / translucency / borders
+   ──────────────────────────────────────────────────────────────────
+   Driven by the "Adjust Colors" panel. Every rule is identity at its
+   default (--fx-glow:1, --fx-atmo:1, data-fx-translucent:0, data-fx-
+   borders:1) so a fresh terminal looks exactly as it did before. The
+   colour the bloom/glass tint takes is carried in --glow-rgb / --panel-rgb,
+   which the panel rewrites from your chosen palette so they track any hue.
+   ════════════════════════════════════════════════════════════════════ */
+/* Accent bloom — additive, scales with --fx-glow, hue from --glow-rgb. */
+.brand .glyph { filter: drop-shadow(0 0 calc(6px * var(--fx-glow)) rgba(var(--glow-rgb), 0.55)); }
+.sect-head    { text-shadow: 0 0 calc(5px * var(--fx-glow)) rgba(var(--glow-rgb), 0.30); }
+.btn.primary  { box-shadow: 0 0 calc(10px * var(--fx-glow)) rgba(var(--glow-rgb), calc(0.22 * var(--fx-glow))); }
+.pill .dot    { box-shadow: 0 0 calc(4px * var(--fx-glow)) rgba(var(--glow-rgb), 0.8); }
+
+/* Translucency — opt-in glassy panels. rgba tint from --panel-rgb. */
+html[data-fx-translucent="1"] .drawer,
+html[data-fx-translucent="1"] aside.left,
+html[data-fx-translucent="1"] aside.right,
+html[data-fx-translucent="1"] .chroma-modal {
+  background: rgba(var(--panel-rgb), 0.74) !important;
+  backdrop-filter: blur(9px) saturate(1.15);
+  -webkit-backdrop-filter: blur(9px) saturate(1.15);
+}
+html[data-fx-translucent="1"] header {
+  background: rgba(var(--panel-rgb), 0.80) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Borders visible — off hides the decorative HUD frame (functional 1px
+   edges on inputs/buttons stay, matching the reference's "HUD Borders"). */
+html[data-fx-borders="0"] .reg,
+html[data-fx-borders="0"] header::before,
+html[data-fx-borders="0"] header::after,
+html[data-fx-borders="0"] .drawer-head::before,
+html[data-fx-borders="0"] .chroma-head::before { opacity: 0 !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   ADJUST COLORS  ·  panel  (base / Stand-Alone-Complex skin)
+   ──────────────────────────────────────────────────────────────────
+   A centred instrument window — palette pickers + live preview + presets,
+   echoing the Deus Ex "Adjust Colors" screen. Pure restyle per skin; the
+   deusex block later re-skins it as the gunmetal "Adjust Colors" window.
+   ════════════════════════════════════════════════════════════════════ */
+.chroma-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.62);
+  backdrop-filter: blur(2px);
+  z-index: 1100; display: none;
+}
+.chroma-backdrop.open { display: block; }
+.chroma-modal {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -48%) scale(0.97);
+  width: min(940px, 94vw); max-height: min(88vh, 760px);
+  background: var(--bg-1);
+  border: 1px solid var(--cyan);
+  box-shadow: 0 0 0 1px rgba(0,230,255,0.10), 0 24px 80px rgba(0,0,0,0.72), 0 0 40px rgba(0,230,255,0.12);
+  z-index: 1101;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.chroma-backdrop.open ~ .chroma-modal,
+.chroma-modal.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
+.chroma-head {
+  position: relative;
+  padding: 13px 18px 11px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #061a24 0%, #04131a 100%);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.chroma-head::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--cyan) 0 5px, transparent 5px 17px);
+  opacity: 0.55;
+}
+.chroma-head .ttl {
+  font-family: var(--display); font-size: 16px; letter-spacing: 0.24em;
+  color: var(--text); font-weight: 700; display: flex; align-items: center; gap: 10px;
+}
+.chroma-head .ttl .glyph { color: var(--cyan); }
+.chroma-head .skin-tag {
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--cyan-soft);
+  border: 1px solid var(--line-strong); padding: 2px 7px; margin-left: 6px;
+}
+.chroma-body {
+  flex: 1; overflow-y: auto;
+  display: grid; grid-template-columns: 1.25fr 1fr; gap: 0;
+}
+.chroma-body::-webkit-scrollbar { width: 8px; }
+.chroma-body::-webkit-scrollbar-thumb { background: var(--line-strong); border: 2px solid var(--bg-1); }
+.chroma-controls { padding: 16px 18px; border-right: 1px solid var(--line-soft); }
+.chroma-group { margin-bottom: 18px; }
+.chroma-group:last-child { margin-bottom: 0; }
+.chroma-group > .hd {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--cyan); margin-bottom: 11px;
+  display: flex; align-items: center; gap: 8px;
+}
+.chroma-group > .hd::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.chroma-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px 14px; }
+.chroma-slot { display: flex; align-items: center; gap: 9px; }
+.chroma-slot label {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--text-dim);
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.chroma-swatch {
+  width: 34px; height: 26px; padding: 0; flex-shrink: 0;
+  border: 1px solid var(--line-strong); background: var(--bg);
+  cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.chroma-swatch:hover { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,230,255,0.25); }
+.chroma-swatch::-webkit-color-swatch-wrapper { padding: 2px; }
+.chroma-swatch::-webkit-color-swatch { border: none; }
+.chroma-swatch::-moz-color-swatch { border: none; }
+.chroma-hex {
+  width: 74px; flex-shrink: 0; text-transform: uppercase;
+  background: var(--bg) !important; border: 1px solid var(--line-strong);
+  color: var(--text); font-family: var(--mono); font-size: 11px;
+  padding: 6px 6px; outline: none;
+}
+.chroma-hex:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,230,255,0.20); }
+.chroma-fx-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 7px 0; border-bottom: 1px dashed var(--line-soft);
+}
+.chroma-fx-row:last-child { border-bottom: none; }
+.chroma-fx-row .lbl {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.10em;
+  text-transform: uppercase; color: var(--text-dim);
+}
+.chroma-fx-row .lbl .sub { display: block; color: var(--text-faint); font-size: 8.5px; letter-spacing: 0.06em; margin-top: 2px; }
+.chroma-fx-row input[type=range] { width: 150px; accent-color: var(--cyan); }
+.chroma-fx-row .rng-val {
+  font-family: var(--mono); font-size: 10px; color: var(--cyan); min-width: 38px; text-align: right;
+}
+.chroma-preset { display: flex; gap: 8px; align-items: center; }
+.chroma-preset select {
+  flex: 1; width: 100%;
+  background: var(--bg); border: 1px solid var(--line-strong); color: var(--text);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  padding: 8px 9px; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+}
+.chroma-preset select:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(0,230,255,0.20); }
+
+/* Live preview plate (the reference's "Title Bar / Sample Text" pane) */
+.chroma-preview { padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.chroma-preview .pv-cap {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--text-faint);
+}
+.pv-window {
+  border: 1px solid var(--cyan-soft); background: var(--bg-2);
+  box-shadow: 0 0 18px rgba(0,0,0,0.4); overflow: hidden;
+}
+.pv-titlebar {
+  background: linear-gradient(180deg, rgba(0,230,255,0.16), rgba(0,230,255,0.04));
+  border-bottom: 1px solid var(--cyan-soft);
+  color: var(--cyan); font-family: var(--display); font-weight: 700;
+  font-size: 12px; letter-spacing: 0.18em; padding: 7px 12px;
+}
+.pv-content { padding: 12px; display: flex; flex-direction: column; gap: 9px; }
+.pv-line.strong { color: var(--text); font-weight: 700; font-size: 13px; }
+.pv-line.dim { color: var(--text-dim); font-size: 12px; }
+.pv-bar { height: 6px; background: var(--bg); border: 1px solid var(--line-strong); overflow: hidden; }
+.pv-bar > i { display: block; height: 100%; width: 64%; background: linear-gradient(90deg, var(--cyan), var(--amber) 70%, var(--crit) 95%); }
+.pv-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.pv-btn {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 6px 12px; border: 1px solid var(--line-strong); color: var(--text-dim); background: var(--bg-1);
+}
+.pv-btn.pressed { background: var(--cyan); color: #02080d; border-color: var(--cyan); }
+.pv-btn.amber { color: var(--amber); border-color: var(--amber); }
+.pv-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.pv-chip {
+  width: 26px; height: 26px; border: 1px solid rgba(255,255,255,0.18);
+  position: relative;
+}
+.pv-chip::after {
+  content: attr(data-k); position: absolute; left: 0; right: 0; bottom: -13px;
+  font-family: var(--mono); font-size: 7px; letter-spacing: 0.05em; text-align: center; color: var(--text-faint);
+}
+.chroma-help {
+  font-family: var(--mono); font-size: 9px; line-height: 1.6; color: var(--text-faint);
+  margin-top: auto; padding-top: 8px; border-top: 1px dashed var(--line-soft);
+}
+.chroma-foot {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 18px; border-top: 1px solid var(--line);
+  background: linear-gradient(0deg, #061a24 0%, #04131a 100%);
+}
+.chroma-foot .spacer { flex: 1; }
+
+/* Mobile: stack controls over preview, full-bleed window */
+@media (max-width: 720px) {
+  .chroma-modal { width: 100vw; max-width: 100vw; height: 100%; max-height: 100%; top: 0; left: 0; transform: none; border-left: none; border-right: none; }
+  .chroma-backdrop.open ~ .chroma-modal, .chroma-modal.open { transform: none; }
+  .chroma-body { grid-template-columns: 1fr; }
+  .chroma-controls { border-right: none; border-bottom: 1px solid var(--line-soft); }
+  .chroma-grid { grid-template-columns: 1fr; }
+  .chroma-fx-row input[type=range] { width: 120px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════
    ALTERNATE SKIN  ·  "UNATCO / OmniBrain Augment"
    A visual parody of the Deus Ex (2000) Options menu — gunmetal beveled
    panels, glossy blue title bar, gold accents, recessed inset value
@@ -1705,6 +1922,11 @@ html[data-theme="deusex"] {
   --green:        #87c069;
   --warn:         #d9a441;
   --crit:         #c2533f;
+  /* Flat & metallic skin: very little bloom, no scan-lines (grain only). */
+  --fx-glow:      0.5;
+  --fx-atmo:      1;
+  --glow-rgb:     138,166,214;
+  --panel-rgb:    27,33,40;
   --display:      'Tahoma','Verdana','Geneva',system-ui,sans-serif;
   --mono:         'Tahoma','Verdana','Geneva',system-ui,sans-serif;
 }
@@ -1712,13 +1934,13 @@ html[data-theme="deusex"] {
 html[data-theme="deusex"] body {
   background: radial-gradient(ellipse at 50% -20%, #11151b 0%, #07090b 62%) fixed;
 }
-html[data-theme="deusex"] body::before { opacity: 0.06; mix-blend-mode: normal; }
+html[data-theme="deusex"] body::before { opacity: calc(0.06 * var(--fx-atmo, 1)); mix-blend-mode: normal; }
 html[data-theme="deusex"] body::after  { background: none; }
 html[data-theme="deusex"] .scanline    { display: none; }
 
 /* Header → glossy blue UNATCO command bar */
 html[data-theme="deusex"] header {
-  background: linear-gradient(180deg,#4f6ea4 0%,#2c4878 48%,#1c3056 100%);
+  background: var(--dx-header);
   border-bottom: 2px solid #0a0d10;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 2px 6px rgba(0,0,0,0.5);
 }
@@ -1736,7 +1958,7 @@ html[data-theme="deusex"] .drawer {
 }
 /* Title bar — the signature glossy blue "Options" strip */
 html[data-theme="deusex"] .drawer-head {
-  background: linear-gradient(180deg,#5a7cb2 0%,#345086 46%,#223860 100%);
+  background: var(--dx-blue);
   border-bottom: 2px solid #0a0d10;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.4);
   padding: 10px 18px;
@@ -1794,13 +2016,13 @@ html[data-theme="deusex"] .mini-btn:hover {
 }
 html[data-theme="deusex"] .btn:active { box-shadow: inset 2px 2px 4px rgba(0,0,0,0.6); }
 html[data-theme="deusex"] .btn.primary {
-  background: linear-gradient(180deg,#4f74b4 0%,#2f5391 55%,#23406f 100%);
+  background: var(--dx-blue-btn);
   color: #eef3fb; border-color: #0a0d10;
   box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3), inset -1px -1px 0 rgba(0,0,0,0.5);
 }
 html[data-theme="deusex"] .btn.primary:hover { color: #fff; filter: brightness(1.12); }
 html[data-theme="deusex"] .btn.amber {
-  background: linear-gradient(180deg,#e6b352,#a87b22); color: #1a130a; border-color: #0a0d10;
+  background: var(--dx-gold); color: #1a130a; border-color: #0a0d10;
 }
 html[data-theme="deusex"] .btn.amber:hover { filter: brightness(1.1); color: #1a130a; }
 html[data-theme="deusex"] .btn.danger {
@@ -1819,17 +2041,17 @@ html[data-theme="deusex"] .toggle .slot::after {
   box-shadow: inset 1px 1px 0 rgba(255,255,255,0.2);
 }
 html[data-theme="deusex"] .toggle input:checked + .slot {
-  background: linear-gradient(180deg,#2f5391,#23406f); border-color: #0a0d10;
+  background: var(--dx-blue-btn); border-color: #0a0d10;
 }
 html[data-theme="deusex"] .toggle input:checked + .slot::after {
-  background: linear-gradient(180deg,#f0c860,#d9a441);
+  background: var(--dx-gold-knob);
   box-shadow: 0 0 4px rgba(217,164,65,0.7);
 }
 
 /* The skin toggle itself → the blue "Render 3D"-style selected value chip */
 html[data-theme="deusex"] .theme-row-label { color: #cfd5de; }
 html[data-theme="deusex"] .theme-chip {
-  background: linear-gradient(180deg,#4f74b4 0%,#2f5391 55%,#23406f 100%);
+  background: var(--dx-blue-btn);
   color: #eef3fb; border: 1px solid #0a0d10;
   box-shadow: inset 1px 1px 0 rgba(255,255,255,0.3), inset -1px -1px 0 rgba(0,0,0,0.5);
 }
@@ -1871,8 +2093,11 @@ html[data-theme="deusex"] {
   --dx-inset:      #0e1217;                                            /* recessed value-field well */
   --dx-raised:     linear-gradient(180deg,#2b323a 0%,#222932 100%);    /* gunmetal panel            */
   --dx-raised-hi:  linear-gradient(180deg,#46505b 0%,#323a44 55%,#2a313a 100%); /* hovered panel    */
+  --dx-header:     linear-gradient(180deg,#4f6ea4 0%,#2c4878 48%,#1c3056 100%); /* UNATCO command bar */
   --dx-blue:       linear-gradient(180deg,#5a7cb2 0%,#345086 46%,#223860 100%); /* glossy title bar  */
   --dx-blue-btn:   linear-gradient(180deg,#4f74b4 0%,#2f5391 55%,#23406f 100%); /* "Render 3D" chip  */
+  --dx-gold:       linear-gradient(180deg,#e6b352 0%,#a87b22 100%);    /* conspiracy-gold button    */
+  --dx-gold-knob:  linear-gradient(180deg,#f0c860 0%,#d9a441 100%);    /* brighter gold toggle knob */
   --dx-red:        linear-gradient(180deg,#b9503c 0%,#7e3022 100%);    /* danger / stop             */
   --dx-bevel:      inset 1px 1px 0 rgba(255,255,255,0.16), inset -1px -1px 0 rgba(0,0,0,0.55); /* raised */
   --dx-bevel-in:   inset 2px 2px 4px rgba(0,0,0,0.7), inset -1px -1px 0 rgba(255,255,255,0.05); /* sunk */
@@ -2179,7 +2404,57 @@ html[data-theme="deusex"] .toggle {
 html[data-theme="deusex"] .toggle .slot { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
 html[data-theme="deusex"] .toggle .slot::after { background: linear-gradient(180deg,#6b7480,#3a424c); box-shadow: inset 1px 1px 0 rgba(255,255,255,0.2); }
 html[data-theme="deusex"] .toggle input:checked + .slot { background: var(--dx-blue-btn); border-color: var(--dx-edge); }
-html[data-theme="deusex"] .toggle input:checked + .slot::after { background: linear-gradient(180deg,#f0c860,#d9a441); box-shadow: 0 0 5px rgba(217,164,65,0.7); }
+html[data-theme="deusex"] .toggle input:checked + .slot::after { background: var(--dx-gold-knob); box-shadow: 0 0 5px rgba(217,164,65,0.7); }
+
+/* ──────────── ADJUST COLORS panel · Deus Ex re-skin ────────────
+   The reference screen: raised gunmetal window, glossy blue "Adjust
+   Colors" title strip, recessed inset value fields, beveled buttons,
+   a live "Title Bar / Sample Text" preview plate. */
+html[data-theme="deusex"] .chroma-backdrop { background: rgba(0,0,0,0.72); }
+html[data-theme="deusex"] .chroma-modal {
+  background: var(--dx-raised); border: 2px solid var(--dx-edge);
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,0.14), inset -2px -2px 0 rgba(0,0,0,0.5), 0 26px 70px rgba(0,0,0,0.78);
+}
+html[data-theme="deusex"] .chroma-head {
+  background: var(--dx-blue); border-bottom: 2px solid var(--dx-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -2px 4px rgba(0,0,0,0.4);
+}
+html[data-theme="deusex"] .chroma-head::before { display: none; }
+html[data-theme="deusex"] .chroma-head .ttl { color: #eef2f8; text-transform: capitalize; letter-spacing: 0.02em; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+html[data-theme="deusex"] .chroma-head .ttl .glyph { color: #eef2f8; }
+html[data-theme="deusex"] .chroma-head .skin-tag { color: #d7e0f2; border-color: var(--dx-edge); background: rgba(0,0,0,0.2); }
+html[data-theme="deusex"] .chroma-controls { border-right: 1px solid var(--dx-edge); }
+html[data-theme="deusex"] .chroma-group > .hd { color: var(--amber); }
+html[data-theme="deusex"] .chroma-group > .hd::after { background: var(--dx-edge); }
+html[data-theme="deusex"] .chroma-slot label,
+html[data-theme="deusex"] .chroma-fx-row .lbl { color: #aeb7c4; }
+html[data-theme="deusex"] .chroma-swatch { border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .chroma-swatch:hover { border-color: var(--amber); box-shadow: var(--dx-bevel-in), 0 0 0 1px rgba(217,164,65,0.4); }
+html[data-theme="deusex"] .chroma-hex { background: var(--dx-inset) !important; border: 1px solid var(--dx-edge); color: #d7dde6; box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .chroma-hex:focus { border-color: var(--amber); box-shadow: var(--dx-bevel-in), 0 0 0 1px rgba(217,164,65,0.45); }
+html[data-theme="deusex"] .chroma-fx-row { border-bottom-color: var(--dx-edge); }
+html[data-theme="deusex"] .chroma-fx-row input[type=range] { accent-color: var(--amber); }
+html[data-theme="deusex"] .chroma-fx-row .rng-val { color: var(--amber); }
+html[data-theme="deusex"] .pv-window { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .pv-titlebar {
+  background: var(--dx-blue); border-bottom: 1px solid var(--dx-edge);
+  color: #eef2f8; text-transform: capitalize; letter-spacing: 0.02em;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+}
+html[data-theme="deusex"] .pv-btn { background: var(--dx-raised); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel); color: #cfd5de; }
+html[data-theme="deusex"] .pv-btn.pressed { background: var(--dx-blue-btn); color: #eef3fb; box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .pv-btn.amber { background: var(--dx-gold); color: #1a130a; border-color: var(--dx-edge); }
+html[data-theme="deusex"] .pv-bar { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
+html[data-theme="deusex"] .pv-chip { border-color: var(--dx-edge); }
+html[data-theme="deusex"] .chroma-help { color: var(--text-faint); border-top-color: var(--dx-edge); }
+html[data-theme="deusex"] .chroma-foot {
+  background: var(--dx-raised); border-top: 2px solid var(--dx-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+}
+html[data-theme="deusex"] .chroma-preset select {
+  background: var(--dx-inset); border: 1px solid var(--dx-edge); color: #d7dde6; box-shadow: var(--dx-bevel-in);
+}
+html[data-theme="deusex"] .chroma-preset select:focus { border-color: var(--amber); box-shadow: var(--dx-bevel-in), 0 0 0 1px rgba(217,164,65,0.45); }
 </style>
 </head>
 <body>
@@ -2224,6 +2499,7 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
         <button class="panel-toggle" id="toggle-left"  title="Toggle CHATS panel"  aria-label="Toggle chats panel"   aria-pressed="true">◧</button>
         <button class="panel-toggle" id="toggle-right" title="Toggle OPS / TELEMETRY panel" aria-label="Toggle options panel" aria-pressed="true">◨</button>
       </span>
+      <button class="icon-btn" id="btn-chroma" title="Adjust Colors — recolour the interface" aria-label="Adjust colors">◑</button>
       <button class="icon-btn" id="btn-settings" title="Settings (⌘,)">⚙</button>
     </div>
   </header>
@@ -2442,6 +2718,125 @@ html[data-theme="deusex"] .toggle input:checked + .slot::after { background: lin
 <div class="img-lightbox" id="img-lightbox">
   <button class="lb-close" id="lb-close" title="Close (Esc)">✕ CLOSE</button>
   <img id="lb-img" src="" alt="attachment" />
+</div>
+
+<!-- Adjust Colors panel -->
+<div class="chroma-backdrop" id="chroma-backdrop"></div>
+<div class="chroma-modal" id="chroma-modal" role="dialog" aria-modal="true" aria-label="Adjust Colors">
+  <div class="chroma-head">
+    <div class="ttl"><span class="glyph">◑</span><span>ADJUST COLORS</span><span class="skin-tag" id="chroma-skin-tag">SKIN</span></div>
+    <button class="icon-btn" id="btn-chroma-close" title="Cancel" aria-label="Close">✕</button>
+  </div>
+
+  <div class="chroma-body">
+    <div class="chroma-controls">
+
+      <div class="chroma-group">
+        <div class="hd">Colour Scheme</div>
+        <div class="chroma-preset">
+          <select id="chroma-preset" aria-label="Preset colour scheme"></select>
+        </div>
+      </div>
+
+      <div class="chroma-group">
+        <div class="hd">Palette</div>
+        <div class="chroma-grid">
+          <div class="chroma-slot">
+            <label for="chroma-col-primary">Primary Accent</label>
+            <input type="color" class="chroma-swatch" id="chroma-col-primary" data-slot="primary" aria-label="Primary accent colour" />
+            <input type="text" class="chroma-hex" id="chroma-hex-primary" data-slot="primary" maxlength="7" spellcheck="false" />
+          </div>
+          <div class="chroma-slot">
+            <label for="chroma-col-secondary">Secondary Accent</label>
+            <input type="color" class="chroma-swatch" id="chroma-col-secondary" data-slot="secondary" aria-label="Secondary accent colour" />
+            <input type="text" class="chroma-hex" id="chroma-hex-secondary" data-slot="secondary" maxlength="7" spellcheck="false" />
+          </div>
+          <div class="chroma-slot">
+            <label for="chroma-col-alert">Alert / Critical</label>
+            <input type="color" class="chroma-swatch" id="chroma-col-alert" data-slot="alert" aria-label="Alert colour" />
+            <input type="text" class="chroma-hex" id="chroma-hex-alert" data-slot="alert" maxlength="7" spellcheck="false" />
+          </div>
+          <div class="chroma-slot">
+            <label for="chroma-col-positive">Positive / OK</label>
+            <input type="color" class="chroma-swatch" id="chroma-col-positive" data-slot="positive" aria-label="Positive colour" />
+            <input type="text" class="chroma-hex" id="chroma-hex-positive" data-slot="positive" maxlength="7" spellcheck="false" />
+          </div>
+          <div class="chroma-slot">
+            <label for="chroma-col-background">Background</label>
+            <input type="color" class="chroma-swatch" id="chroma-col-background" data-slot="background" aria-label="Background colour" />
+            <input type="text" class="chroma-hex" id="chroma-hex-background" data-slot="background" maxlength="7" spellcheck="false" />
+          </div>
+          <div class="chroma-slot">
+            <label for="chroma-col-text">Text / Foreground</label>
+            <input type="color" class="chroma-swatch" id="chroma-col-text" data-slot="text" aria-label="Text colour" />
+            <input type="text" class="chroma-hex" id="chroma-hex-text" data-slot="text" maxlength="7" spellcheck="false" />
+          </div>
+        </div>
+      </div>
+
+      <div class="chroma-group">
+        <div class="hd">Atmospherics &amp; FX</div>
+        <div class="chroma-fx-row">
+          <span class="lbl">Glow / Bloom <span class="sub">accent halo intensity</span></span>
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="range" id="chroma-fx-glow" min="0" max="200" step="5" aria-label="Glow intensity" />
+            <span class="rng-val" id="chroma-fx-glow-val">100%</span>
+          </span>
+        </div>
+        <div class="chroma-fx-row">
+          <span class="lbl">Atmospherics <span class="sub">scan-lines + grain</span></span>
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="range" id="chroma-fx-atmo" min="0" max="150" step="5" aria-label="Atmospherics intensity" />
+            <span class="rng-val" id="chroma-fx-atmo-val">100%</span>
+          </span>
+        </div>
+        <div class="chroma-fx-row">
+          <span class="lbl">Menu Translucency <span class="sub">glassy see-through panels</span></span>
+          <label class="toggle"><input type="checkbox" id="chroma-fx-translucent" /><span class="slot"></span></label>
+        </div>
+        <div class="chroma-fx-row">
+          <span class="lbl">HUD Borders Visible <span class="sub">decorative frame ticks</span></span>
+          <label class="toggle"><input type="checkbox" id="chroma-fx-borders" /><span class="slot"></span></label>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="chroma-preview">
+      <div class="pv-cap">Live Preview</div>
+      <div class="pv-window">
+        <div class="pv-titlebar">Title Bar</div>
+        <div class="pv-content">
+          <div class="pv-line strong">Sample Text</div>
+          <div class="pv-line dim">Sample Text · diagnostic readout</div>
+          <div class="pv-bar"><i></i></div>
+          <div class="pv-btns">
+            <span class="pv-btn pressed">Pressed</span>
+            <span class="pv-btn">Normal</span>
+            <span class="pv-btn amber">Accent</span>
+          </div>
+          <div class="pv-chips">
+            <span class="pv-chip" data-k="PRI" style="background:var(--cyan);"></span>
+            <span class="pv-chip" data-k="SEC" style="background:var(--amber);"></span>
+            <span class="pv-chip" data-k="ALT" style="background:var(--magenta);"></span>
+            <span class="pv-chip" data-k="POS" style="background:var(--green);"></span>
+            <span class="pv-chip" data-k="BG"  style="background:var(--bg);"></span>
+            <span class="pv-chip" data-k="TXT" style="background:var(--text);"></span>
+          </div>
+        </div>
+      </div>
+      <div class="chroma-help" id="chroma-help">
+        Colours apply live to the whole interface and are saved per skin. <strong>OK</strong> keeps them &amp; writes <code>settings.json</code>; <strong>Cancel</strong> reverts. Synced to every connected window.
+      </div>
+    </div>
+  </div>
+
+  <div class="chroma-foot">
+    <button class="btn" id="btn-chroma-restore" title="Reset this skin to its default scheme">▸ RESTORE DEFAULTS</button>
+    <span class="spacer"></span>
+    <button class="btn" id="btn-chroma-cancel">▸ CANCEL</button>
+    <button class="btn primary" id="btn-chroma-ok">▸ OK</button>
+  </div>
 </div>
 
 <!-- Settings drawer -->
@@ -2877,6 +3272,7 @@ const DEFAULTS = {
   leftCollapsed: false,
   rightCollapsed: false,
   theme: 'sac',             // interface skin: 'sac' (Stand Alone Complex) | 'deusex' (UNATCO / Deus Ex)
+  chroma: {},               // per-theme colour + FX overrides: { sac:{…}, deusex:{…} }. Empty ⇒ skin defaults.
   // ── Local browser tool (Playwright) ──
   browserWidth: 1280,
   browserHeight: 800,
@@ -5275,6 +5671,7 @@ function applyTheme() {
   document.documentElement.setAttribute('data-theme', t);
   const v = $('theme-chip-val');
   if (v) v.textContent = THEMES[t].label;
+  applyChroma();   // re-paint the per-skin colour scheme for the skin we just swapped to
 }
 // Flip to the other skin, persist + broadcast so every synced window swaps in lock-step.
 function toggleTheme() {
@@ -5282,6 +5679,259 @@ function toggleTheme() {
   applyTheme();
   saveConfig();   // POST /api/config → persisted to settings.json + BUS.publish('settings')
   showToast('INTERFACE SKIN', 'Theme → ' + THEMES[currentTheme()].label, 'amber');
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   CHROMA  ·  per-theme colour + FX customisation ("Adjust Colors")
+   ──────────────────────────────────────────────────────────────────
+   Both skins describe their whole palette as CSS custom properties. We
+   override only the variables the user actually changed — emitted into a
+   single generated <style> scoped to html[data-theme="…"] — so a default
+   scheme is byte-for-byte the skin you already had (extreme compatibility),
+   while any tweak instantly recolours every var(--…) surface in the UI.
+   Derived shades (bg-1/2/3, soft/deep accents, text-dim, and the Deus Ex
+   blue/gold chrome gradients) are computed from your picks, so a single
+   primary swap cascades through the entire skin — extreme colour shifting.
+   ════════════════════════════════════════════════════════════════════ */
+const CHROMA_SLOTS = ['primary','secondary','alert','positive','background','text'];
+// Built-in default scheme per skin — these mirror the skin's own CSS values,
+// so "Restore Defaults" returns to exactly the stock look.
+const CHROMA_DEFAULTS = {
+  sac: {
+    primary:'#00e6ff', secondary:'#ffb84a', alert:'#ff2a6d', positive:'#4cf09a',
+    background:'#02080d', text:'#d3eef5',
+    glow:100, atmo:100, translucent:false, borders:true,
+  },
+  deusex: {
+    primary:'#8aa6d6', secondary:'#d9a441', alert:'#c2533f', positive:'#87c069',
+    background:'#07090b', text:'#cfd5de',
+    glow:50, atmo:100, translucent:false, borders:true,
+  },
+};
+// Preset schemes — the "Colour Scheme" dropdown (à la Deus Ex Cool Green / Cool
+// Blue). Each only sets the 6 palette slots; FX knobs are left as-is.
+const CHROMA_PRESETS = {
+  sac: {
+    'Section 9 Teal (default)': null,   // null ⇒ the skin default palette
+    'Tachikoma Blue':   { primary:'#3aa0ff', secondary:'#ffd166', alert:'#ff5d8f', positive:'#5cf0c0', background:'#02060f', text:'#cfe6ff' },
+    'Laughing Man Green': { primary:'#4cf09a', secondary:'#9effd1', alert:'#ff4d6d', positive:'#7dffb0', background:'#02100a', text:'#d6f7e6' },
+    'Major Magenta':    { primary:'#ff3d9a', secondary:'#7af7ff', alert:'#ff5252', positive:'#62f0c8', background:'#0a0410', text:'#f6dcf0' },
+    'Amber Alert':      { primary:'#ffb02e', secondary:'#ff6a3d', alert:'#ff3b3b', positive:'#9bd64a', background:'#0d0702', text:'#f6e6cf' },
+    'Mono Phosphor':    { primary:'#7dffb0', secondary:'#b6ffce', alert:'#ff7a7a', positive:'#7dffb0', background:'#020806', text:'#cdeede' },
+    'Crimson Net':      { primary:'#ff4060', secondary:'#ffa83d', alert:'#ff2a2a', positive:'#4cf09a', background:'#0c0307', text:'#f5d9df' },
+  },
+  deusex: {
+    'UNATCO Blue (default)': null,
+    'Cool Blue':        { primary:'#7fb2e6', secondary:'#d9a441', alert:'#c2533f', positive:'#87c069', background:'#070a0d', text:'#cdd8e6' },
+    'Cool Green':       { primary:'#7fbf7a', secondary:'#c9b15a', alert:'#bf5a45', positive:'#9fd07a', background:'#070b09', text:'#cdd9cf' },
+    'Conspiracy Gold':  { primary:'#d9a441', secondary:'#e8c66a', alert:'#c2533f', positive:'#9bbf5a', background:'#0b0905', text:'#e6dcc4' },
+    'MJ12 Red':         { primary:'#c0584a', secondary:'#d99a41', alert:'#e0402f', positive:'#9fb56a', background:'#0c0807', text:'#e6cfc9' },
+    'NSF Amber':        { primary:'#cf8f4a', secondary:'#e0b85a', alert:'#c24f3f', positive:'#94bf6a', background:'#0a0806', text:'#e2d2bb' },
+    'Grayscale Steel':  { primary:'#9aa7b8', secondary:'#c2c8d0', alert:'#b86a5e', positive:'#9fb3a0', background:'#0a0b0d', text:'#d2d7df' },
+  },
+};
+
+/* ── colour helpers (hex ⇄ rgb, mix, lighten/darken, desaturate) ── */
+function _hexN(h){ h=String(h||'').trim().replace(/^#/,''); if(h.length===3) h=h.split('').map(c=>c+c).join(''); const n=parseInt(h,16); return (h.length===6 && !isNaN(n)) ? n : null; }
+function isHex(h){ return _hexN(h)!==null; }
+function hexToRgb(h){ const n=_hexN(h); if(n===null) return {r:0,g:0,b:0}; return {r:(n>>16)&255, g:(n>>8)&255, b:n&255}; }
+function _h2(v){ return Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0'); }
+function rgbToHex(r,g,b){ return '#'+_h2(r)+_h2(g)+_h2(b); }
+function rgbStr(h){ const {r,g,b}=hexToRgb(h); return `${r},${g},${b}`; }
+function mix(a,b,t){ const x=hexToRgb(a), y=hexToRgb(b); return rgbToHex(x.r+(y.r-x.r)*t, x.g+(y.g-x.g)*t, x.b+(y.b-x.b)*t); }
+function lighten(h,t){ return mix(h,'#ffffff',t); }
+function darken(h,t){ return mix(h,'#000000',t); }
+function desat(h,t){ const {r,g,b}=hexToRgb(h); const L=0.299*r+0.587*g+0.114*b; return rgbToHex(r+(L-r)*t, g+(L-g)*t, b+(L-b)*t); }
+
+// Resolve the stored scheme for a skin = its defaults with any saved overrides on top.
+function resolvedChroma(theme){
+  const base = CHROMA_DEFAULTS[theme] || CHROMA_DEFAULTS.sac;
+  const saved = (state.settings.chroma && state.settings.chroma[theme]) || {};
+  return { ...base, ...saved };
+}
+
+/* Build the scoped override stylesheet for a skin. Only slots/knobs that
+   differ from the skin default are emitted, so defaults stay pixel-identical
+   to the stock CSS. Each changed slot also writes its derived companions. */
+function buildChromaCSS(theme, c){
+  const d = CHROMA_DEFAULTS[theme];
+  const v = [];
+  if (isHex(c.primary) && c.primary !== d.primary){
+    const p = c.primary;
+    v.push(`--cyan:${p}`, `--cyan-soft:${darken(desat(p,0.42),0.10)}`, `--cyan-deep:${darken(p,0.5)}`, `--glow-rgb:${rgbStr(p)}`);
+    if (theme==='deusex'){
+      // Recompute the signature UNATCO-blue chrome gradients from the accent.
+      const top=darken(p,0.10), mid=darken(p,0.40), bot=darken(p,0.60), hb=darken(p,0.18);
+      v.push(`--dx-header:linear-gradient(180deg,${darken(p,0.16)} 0%,${darken(p,0.45)} 48%,${darken(p,0.66)} 100%)`);
+      v.push(`--dx-blue:linear-gradient(180deg,${lighten(mid,0.18)} 0%,${mid} 46%,${bot} 100%)`);
+      v.push(`--dx-blue-btn:linear-gradient(180deg,${top} 0%,${darken(p,0.34)} 55%,${bot} 100%)`);
+    }
+  }
+  if (isHex(c.secondary) && c.secondary !== d.secondary){
+    const s = c.secondary;
+    v.push(`--amber:${s}`, `--warn:${s}`);
+    if (theme==='deusex') v.push(
+      `--dx-gold:linear-gradient(180deg,${lighten(s,0.07)} 0%,${darken(s,0.22)} 100%)`,
+      `--dx-gold-knob:linear-gradient(180deg,${lighten(s,0.18)} 0%,${s} 100%)`);
+  }
+  if (isHex(c.alert) && c.alert !== d.alert){ v.push(`--magenta:${c.alert}`, `--crit:${c.alert}`); }
+  if (isHex(c.positive) && c.positive !== d.positive){ v.push(`--green:${c.positive}`); }
+  if (isHex(c.background) && c.background !== d.background){
+    const b = c.background;
+    v.push(`--bg:${b}`, `--bg-1:${lighten(b,0.06)}`, `--bg-2:${lighten(b,0.12)}`, `--bg-3:${lighten(b,0.02)}`,
+           `--bg-glass:rgba(${rgbStr(lighten(b,0.06))},0.55)`, `--panel-rgb:${rgbStr(lighten(b,0.06))}`,
+           `--line:${lighten(b,0.12)}`, `--line-soft:${lighten(b,0.07)}`, `--line-strong:${mix(lighten(b,0.20),(isHex(c.primary)?c.primary:d.primary),0.22)}`);
+  }
+  if (isHex(c.text) && c.text !== d.text){
+    const t = c.text, b = isHex(c.background)?c.background:d.background;
+    v.push(`--text:${t}`, `--text-dim:${mix(t,b,0.45)}`, `--text-faint:${mix(t,b,0.68)}`);
+  }
+  // FX knobs (numeric → multipliers). Always safe to emit; identity = default.
+  const glow = (typeof c.glow==='number'?c.glow:d.glow)/100;
+  const atmo = (typeof c.atmo==='number'?c.atmo:d.atmo)/100;
+  v.push(`--fx-glow:${glow}`, `--fx-atmo:${atmo}`);
+  return `html[data-theme="${theme}"]{${v.join(';')}}`;
+}
+
+let _chromaStyleEl = null;
+// Paint the active skin's scheme: write the override stylesheet + flip the FX
+// data-attributes. While the panel is open we paint the live draft instead.
+function applyChroma(){
+  const theme = currentTheme();
+  const c = (chromaState.open && chromaState.theme===theme) ? chromaState.draft : resolvedChroma(theme);
+  if (!_chromaStyleEl){ _chromaStyleEl = document.createElement('style'); _chromaStyleEl.id='chroma-style'; document.head.appendChild(_chromaStyleEl); }
+  _chromaStyleEl.textContent = buildChromaCSS(theme, c);
+  const root = document.documentElement;
+  root.setAttribute('data-fx-translucent', c.translucent ? '1' : '0');
+  // data-fx-borders="0" HIDES the decorative frame; borders=true ⇒ keep it ⇒ "1".
+  root.setAttribute('data-fx-borders', c.borders ? '1' : '0');
+  // The roaming scan-line element is purely atmospheric — drop it entirely at 0.
+  const sl = document.querySelector('.scanline');
+  if (sl) sl.hidden = ((typeof c.atmo==='number' ? c.atmo : 100) <= 0);
+}
+
+/* ── Adjust Colors panel: open / preview / commit / revert ── */
+const chromaState = { open:false, theme:'sac', draft:null, snapshot:null };
+
+function openChroma(){
+  const theme = currentTheme();
+  chromaState.theme = theme;
+  chromaState.snapshot = JSON.parse(JSON.stringify((state.settings.chroma && state.settings.chroma[theme]) || {}));
+  chromaState.draft = resolvedChroma(theme);
+  chromaState.open = true;
+  buildChromaPresetOptions(theme);
+  chromaFormFromDraft();
+  $('chroma-skin-tag').textContent = (theme==='deusex') ? 'DEUS EX' : 'SECTION 9';
+  $('chroma-backdrop').classList.add('open');
+  $('chroma-modal').classList.add('open');
+  applyChroma();   // begin live preview from current values
+}
+function closeChromaModal(){
+  chromaState.open = false;
+  $('chroma-backdrop').classList.remove('open');
+  $('chroma-modal').classList.remove('open');
+  applyChroma();   // repaint from whatever is now in settings
+}
+// Cancel / Esc / backdrop — discard the draft, restore the pre-edit scheme.
+function cancelChroma(){
+  if (chromaState.snapshot && Object.keys(chromaState.snapshot).length){
+    state.settings.chroma = { ...(state.settings.chroma||{}), [chromaState.theme]: chromaState.snapshot };
+  } else if (state.settings.chroma) {
+    const cp = { ...state.settings.chroma }; delete cp[chromaState.theme]; state.settings.chroma = cp;
+  }
+  closeChromaModal();
+}
+// OK — fold the draft's *non-default* values into settings.chroma, persist, sync.
+function commitChroma(){
+  const theme = chromaState.theme, d = CHROMA_DEFAULTS[theme], draft = chromaState.draft;
+  const diff = {};
+  for (const k of CHROMA_SLOTS){ if (isHex(draft[k]) && draft[k].toLowerCase() !== d[k].toLowerCase()) diff[k] = draft[k].toLowerCase(); }
+  for (const k of ['glow','atmo']){ if (typeof draft[k]==='number' && draft[k] !== d[k]) diff[k] = draft[k]; }
+  for (const k of ['translucent','borders']){ if (!!draft[k] !== !!d[k]) diff[k] = !!draft[k]; }
+  const next = { ...(state.settings.chroma||{}) };
+  if (Object.keys(diff).length) next[theme] = diff; else delete next[theme];
+  state.settings.chroma = next;
+  closeChromaModal();
+  saveConfig();
+  showToast('ADJUST COLORS', (Object.keys(diff).length ? 'Scheme saved' : 'Default scheme') + ' · ' + (theme==='deusex'?'Deus Ex':'Section 9'), 'amber');
+}
+function restoreChromaDefaults(){
+  chromaState.draft = { ...CHROMA_DEFAULTS[chromaState.theme] };
+  $('chroma-preset').value = '';
+  chromaFormFromDraft();
+  applyChroma();
+}
+
+// Populate the preset <select> for a skin (default option first).
+function buildChromaPresetOptions(theme){
+  const sel = $('chroma-preset'); if (!sel) return;
+  sel.innerHTML = '';
+  const o0 = document.createElement('option'); o0.value=''; o0.textContent='(custom · live values)'; sel.appendChild(o0);
+  for (const name of Object.keys(CHROMA_PRESETS[theme]||{})){
+    const o = document.createElement('option'); o.value=name; o.textContent=name; sel.appendChild(o);
+  }
+}
+// Apply a chosen preset to the draft palette (FX untouched).
+function applyChromaPreset(name){
+  const theme = chromaState.theme;
+  const presets = CHROMA_PRESETS[theme] || {};
+  if (!(name in presets)) return;
+  const pal = presets[name] || CHROMA_DEFAULTS[theme];   // null ⇒ skin default palette
+  for (const k of CHROMA_SLOTS){ if (pal[k]) chromaState.draft[k] = pal[k]; }
+  chromaFormFromDraft(true);   // keep the preset selection
+  applyChroma();
+}
+
+// Reflect the draft into every control. keepPreset avoids clobbering the dropdown.
+function chromaFormFromDraft(keepPreset){
+  const c = chromaState.draft;
+  for (const k of CHROMA_SLOTS){
+    const col = $('chroma-col-'+k), hex = $('chroma-hex-'+k);
+    const val = isHex(c[k]) ? c[k] : '#000000';
+    if (col) col.value = val;
+    if (hex) hex.value = val.toUpperCase();
+  }
+  const g=$('chroma-fx-glow'), gv=$('chroma-fx-glow-val'), a=$('chroma-fx-atmo'), av=$('chroma-fx-atmo-val');
+  if (g){ g.value = c.glow; } if (gv){ gv.textContent = Math.round(c.glow)+'%'; }
+  if (a){ a.value = c.atmo; } if (av){ av.textContent = Math.round(c.atmo)+'%'; }
+  const tr=$('chroma-fx-translucent'), bd=$('chroma-fx-borders');
+  if (tr) tr.checked = !!c.translucent;
+  if (bd) bd.checked = !!c.borders;
+  if (!keepPreset){ const ps=$('chroma-preset'); if (ps) ps.value=''; }
+}
+
+// Wire every control once; edits mutate the draft + live-preview immediately.
+function attachChromaWiring(){
+  $('btn-chroma').addEventListener('click', openChroma);
+  $('btn-chroma-close').addEventListener('click', cancelChroma);
+  $('chroma-backdrop').addEventListener('click', cancelChroma);
+  $('btn-chroma-cancel').addEventListener('click', cancelChroma);
+  $('btn-chroma-ok').addEventListener('click', commitChroma);
+  $('btn-chroma-restore').addEventListener('click', restoreChromaDefaults);
+  $('chroma-preset').addEventListener('change', e => applyChromaPreset(e.target.value));
+
+  for (const k of CHROMA_SLOTS){
+    const col = $('chroma-col-'+k), hex = $('chroma-hex-'+k);
+    if (col) col.addEventListener('input', () => {
+      chromaState.draft[k] = col.value;
+      if (hex) hex.value = col.value.toUpperCase();
+      const ps=$('chroma-preset'); if (ps) ps.value='';
+      applyChroma();
+    });
+    if (hex) hex.addEventListener('input', () => {
+      let val = hex.value.trim(); if (val && val[0] !== '#') val = '#'+val;
+      if (isHex(val)){ chromaState.draft[k] = val; if (col) col.value = val.length===4 ? '#'+val.slice(1).split('').map(c=>c+c).join('') : val;
+        const ps=$('chroma-preset'); if (ps) ps.value=''; applyChroma(); }
+    });
+  }
+  const g=$('chroma-fx-glow'), a=$('chroma-fx-atmo');
+  if (g) g.addEventListener('input', () => { chromaState.draft.glow = parseInt(g.value)||0; $('chroma-fx-glow-val').textContent = chromaState.draft.glow+'%'; applyChroma(); });
+  if (a) a.addEventListener('input', () => { chromaState.draft.atmo = parseInt(a.value)||0; $('chroma-fx-atmo-val').textContent = chromaState.draft.atmo+'%'; applyChroma(); });
+  const tr=$('chroma-fx-translucent'), bd=$('chroma-fx-borders');
+  if (tr) tr.addEventListener('change', () => { chromaState.draft.translucent = tr.checked; applyChroma(); });
+  if (bd) bd.addEventListener('change', () => { chromaState.draft.borders = bd.checked; applyChroma(); });
+
+  document.addEventListener('keydown', e => { if (e.key==='Escape' && chromaState.open){ e.preventDefault(); cancelChroma(); } });
 }
 
 async function applyToForm() {
@@ -5508,6 +6158,7 @@ function attachWiring() {
   $('btn-close-drawer').addEventListener('click', closeDrawer);
   $('drawer-backdrop').addEventListener('click', closeDrawer);
   $('btn-theme-toggle').addEventListener('click', toggleTheme);
+  attachChromaWiring();
 
   $('btn-test').addEventListener('click', async () => { readForm(); await saveConfig(); await testConnection(true); });
   $('btn-fetch-models').addEventListener('click', async () => { readForm(); await saveConfig(); await listModels(); });

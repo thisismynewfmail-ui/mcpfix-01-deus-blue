@@ -99,6 +99,11 @@ DEFAULT_SETTINGS = {
     "leftCollapsed": False,
     "rightCollapsed": False,
     "theme": "sac",          # interface skin: "sac" (Stand Alone Complex) | "deusex" (UNATCO / Deus Ex)
+    # ── Per-theme colour customisation ("Adjust Colors") ──
+    # { "sac": {palette+fx overrides}, "deusex": {palette+fx overrides} }. Empty
+    # means "use the skin's built-in default scheme". The client owns the whole
+    # object and POSTs it entire, so the shallow config merge replaces it cleanly.
+    "chroma": {},
     # ── Local browser tool (Playwright) — passed to browser_mcp_server.py ──
     "browserWidth": 1280,        # viewport width the browser spawns at
     "browserHeight": 800,        # viewport height the browser spawns at
