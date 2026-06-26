@@ -3657,11 +3657,16 @@ function normalizeChannelTokens(text, { streaming = false } = {}) {
   s = s.replace(thinkTail, (_, body) =>
     streaming ? `<think>\n${body.replace(/\s+$/, '')}` : `<think>\n${body.trim()}\n</think>\n`);
 
-  // 5) strip leftover channel headers (keep any visible content they introduce),
-  //    plus stray message / control special tokens.
-  s = s.replace(/<\|?channel\|?>[ \t]*[A-Za-z_]*[ \t]*:?[ \t]*/g, '');
-  s = s.replace(/<\|?message\|?>/g, '');
-  s = s.replace(/<\|?(?:start|end|return|call|im_start|im_end)\|?>/g, '');
+  // 5) Strip leftover channel/control markers — carefully. A channel *label* (a
+  //    word naming the channel) is only consumed when an explicit <|message|>
+  //    token bounds it (harmony-style "<|channel|>final<|message|>…"); thought-type
+  //    headers were already folded above. Every other marker is treated as a bare
+  //    transition (e.g. <channel|>I'm well…) and ONLY the marker is dropped — never
+  //    a following word — so the reply's leading character/token is never eaten.
+  s = s.replace(/<\|?channel\|?>[ \t]*[\w.\-]*[ \t]*<\|?message\|?>/g, '');   // labeled header bounded by a message token
+  s = s.replace(/<\|?channel\|?>[ \t]*/g, '');                               // bare transition marker
+  s = s.replace(/<\|?message\|?>/g, '');                                     // stray message token
+  s = s.replace(/<\|?(?:start|end|return|call|im_start|im_end)\|?>/g, '');   // stray control tokens
 
   // 6) drop a trailing, still-incomplete tool-call opener while streaming so its
   //    half-written tokens never flash into the bubble (re-renders once closed).
