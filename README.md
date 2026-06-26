@@ -91,6 +91,33 @@ it on/off with the **browser** switch in **§ 2 MCP / NODES**.
   are tap-revealed: tap a bubble to show its controls, tap elsewhere to hide them
   (one bubble at a time). Both the *Stand Alone Complex* and *Deus Ex* skins
   carry through.
+- **Adjust Colors — per-skin chroma customisation** — a dedicated **◑** button
+  in the header (next to the ⚙ gear) opens an **ADJUST COLORS** panel, a parody
+  of the *Deus Ex* "Adjust Colors" screen: glossy blue title strip, recessed
+  inset value fields, beveled OK / Cancel / Restore-Defaults, and a live "Title
+  Bar / Sample Text / Pressed / Normal" preview plate. Under the *Stand Alone
+  Complex* skin the same panel reads as a teal HUD instrument. Each skin keeps
+  its **own** scheme:
+    - **Palette** — six live colour pickers (Primary / Secondary accents, Alert,
+      Positive, Background, Text). Every surface is var-driven, so a pick recolours
+      the *whole* interface instantly; companion shades (panel tints, soft/deep
+      accents, dim text) and — under *Deus Ex* — the signature UNATCO-blue / gold
+      chrome gradients (header, title bars, buttons, toggles) are **derived** from
+      your picks, so one Primary swap cascades through the entire skin.
+    - **Colour Scheme presets** — a dropdown of ready-made schemes per skin
+      (Deus Ex: *Cool Blue / Cool Green / Conspiracy Gold / MJ12 Red / NSF Amber /
+      Grayscale*; Section 9: *Tachikoma Blue / Laughing-Man Green / Major Magenta /
+      Amber Alert / Mono Phosphor / Crimson Net*), echoing the game's "Cool Green"
+      selector.
+    - **Atmospherics & FX** — *Glow / Bloom* intensity, *Atmospherics* (scan-line +
+      grain) intensity, *Menu Translucency* (glassy panels) and *HUD Borders
+      Visible* toggles — the last two lifted straight from the reference menu.
+  Edits **preview live** across the UI; **OK** writes `settings.json` and mirrors
+  to every synced window, **Cancel / Esc** reverts to the scheme you opened with,
+  and **Restore Defaults** returns the skin to its stock look. Only values that
+  differ from a skin's default are stored (under `chroma.{sac,deusex}`), so an
+  untouched terminal is byte-for-byte the skin you already had. Fully responsive:
+  on a phone the panel goes full-screen and stacks controls above the preview.
 - **Cross-instance sync** — every browser/window subscribes to a Server-Sent
   Events stream. Send a message on one monitor and it appears on every other
   connected viewer immediately. Settings, chat list, active selection, and
