@@ -719,8 +719,11 @@ main {
 /* Message rows */
 .msg {
   display: grid;
-  grid-template-columns: 110px minmax(0, 1fr);
-  gap: 18px;
+  /* The meta gutter is sized to the widest meta line (the HH:MM:SS timestamp),
+     so the right-aligned labels sit ~40px off the left wall — matching the
+     bubble's gap to the right wall instead of floating in a wide void. */
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 14px;
   margin-bottom: 20px;
   align-items: start;
   min-width: 0;
