@@ -973,6 +973,57 @@ main {
 .msg-body pre code { white-space: pre; }
 .msg-body table { display: block; overflow-x: auto; max-width: 100%; }
 .msg-body pre code { background: none; border: none; padding: 0; color: inherit; }
+
+/* ── Fenced code block → distinct, copy-able instrument panel ───────────────
+   A model code/markup block renders set apart from the prose: a thin header bar
+   (language tag at the left, a COPY button at the top-right that fades in on
+   hover / tap) sits flush above the code body so the two read as one framed
+   unit. Everything is var-driven, so both skins (Section 9 / Deus Ex) recolour
+   from their own palette with no extra work. */
+.code-wrap {
+  margin: 10px 0;
+  border: 1px solid var(--line-strong);
+  border-left: 2px solid var(--cyan-soft);
+  background: var(--bg-1);
+  max-width: 100%;
+  overflow: hidden;
+}
+.code-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  min-height: 24px;
+  padding: 3px 6px 3px 10px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+}
+.code-lang {
+  font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--text-faint); user-select: none; white-space: nowrap;
+}
+/* COPY chip — hidden until the block is hovered (pointer) or tap-revealed
+   (touch), then anchored at the bar's top-right corner. */
+.code-copy-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--mono);
+  font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text-dim);
+  background: var(--bg-1);
+  border: 1px solid var(--line-strong);
+  padding: 2px 8px; line-height: 1.5;
+  cursor: pointer; user-select: none; white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.12s ease, color 0.12s, border-color 0.12s, background 0.12s;
+}
+.code-wrap:hover .code-copy-btn,
+.code-wrap:focus-within .code-copy-btn,
+.code-wrap.revealed .code-copy-btn { opacity: 1; pointer-events: auto; }
+.code-copy-btn:hover,
+.code-copy-btn:focus-visible { color: var(--cyan); border-color: var(--cyan); background: var(--bg-2); outline: none; }
+.code-copy-btn:active { transform: translateY(1px); }
+.code-copy-btn.copied { opacity: 1; color: var(--green); border-color: var(--green); background: var(--bg-2); }
+.code-copy-btn .cc-ico { font-size: 11px; line-height: 1; }
+/* Body sits flush under the bar — drop the standalone-pre frame inside the wrap. */
+.msg-body .code-wrap pre { margin: 0; border: 0; background: transparent; }
 .msg-body ul, .msg-body ol { margin: 0.4em 0 0.8em 1.4em; }
 .msg-body li { margin-bottom: 0.2em; }
 .msg-body a { color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; }
@@ -2184,6 +2235,29 @@ html[data-theme="deusex"] .msg-body pre {
   box-shadow: inset 2px 2px 6px rgba(0,0,0,0.6); color: #c8d0da;
 }
 html[data-theme="deusex"] .msg-body pre code { box-shadow: none; }
+/* Code panel → recessed gunmetal well with a conspiracy-gold body rail; COPY
+   chip matches the skin's beveled hover-control look. */
+html[data-theme="deusex"] .code-wrap {
+  background: #0c1015;
+  border: 1px solid var(--dx-edge); border-left: 2px solid var(--amber);
+  box-shadow: inset 2px 2px 6px rgba(0,0,0,0.6);
+}
+html[data-theme="deusex"] .code-bar {
+  background: linear-gradient(180deg,#2b323a 0%,#222932 100%);
+  border-bottom: 1px solid var(--dx-edge);
+  box-shadow: var(--dx-bevel);
+}
+html[data-theme="deusex"] .code-lang { color: var(--text-faint); }
+html[data-theme="deusex"] .code-copy-btn {
+  background: var(--dx-raised); border: 1px solid var(--dx-edge);
+  box-shadow: var(--dx-bevel); color: #aab4c4;
+}
+html[data-theme="deusex"] .code-copy-btn:hover,
+html[data-theme="deusex"] .code-copy-btn:focus-visible {
+  color: var(--amber); border-color: var(--dx-edge); background: var(--dx-raised-hi);
+}
+html[data-theme="deusex"] .code-copy-btn.copied { color: var(--green); border-color: var(--dx-edge); background: var(--dx-raised); }
+html[data-theme="deusex"] .msg-body .code-wrap pre { background: transparent; border: 0; box-shadow: none; color: #c8d0da; }
 html[data-theme="deusex"] .msg-body h1 { color: var(--amber); }
 html[data-theme="deusex"] .msg-body th { background: #1b2128; color: var(--amber); }
 html[data-theme="deusex"] .msg.roll-marker .msg-body { background: rgba(255,255,255,0.03); border-left-color: #5a6675; }
@@ -3359,7 +3433,23 @@ function renderMarkdown(src) {
   const codeBlocks = [];
   s = s.replace(/```([a-zA-Z0-9_+-]*)\n?([\s\S]*?)```/g, (_, lang, code) => {
     const i = codeBlocks.length;
-    codeBlocks.push(`<pre><code class="lang-${escapeHtml(lang)}">${escapeHtml(code.replace(/\n$/,''))}</code></pre>`);
+    const label = escapeHtml((lang || 'code').toUpperCase());
+    // Each fenced block renders as its own framed panel: a thin instrument header
+    // (language tag + a COPY button that fades in on hover / tap) above the code
+    // body. The button has NO inline handler — a single delegated listener on
+    // #chat-scroll reads the <code> textContent, so copy survives the streaming
+    // re-renders that rebuild every bubble token-by-token.
+    codeBlocks.push(
+      `<div class="code-wrap">` +
+        `<div class="code-bar">` +
+          `<span class="code-lang">${label}</span>` +
+          `<button type="button" class="code-copy-btn" title="Copy code" aria-label="Copy code to clipboard">` +
+            `<span class="cc-ico" aria-hidden="true">⧉</span><span class="cc-label">COPY</span>` +
+          `</button>` +
+        `</div>` +
+        `<pre><code class="lang-${escapeHtml(lang)}">${escapeHtml(code.replace(/\n$/,''))}</code></pre>` +
+      `</div>`
+    );
     return ` CB${i} `;
   });
   s = escapeHtml(s);
@@ -4359,6 +4449,56 @@ function updateStatus() {
   else if (state.status.backendOk === true) { pm.classList.add('connecting'); $('mcp-status').textContent = `${onl}/${state.servers.length}`; }
   else if (state.status.backendOk === false) { pm.classList.add('offline'); $('mcp-status').textContent = 'DOWN'; }
   else { $('mcp-status').textContent = '—'; }
+}
+
+/* ───────────────── Clipboard ───────────────── */
+// Copy helper that works in BOTH a secure context (https / localhost, where the
+// async Clipboard API exists) AND a plain-HTTP LAN session (where it does not —
+// this terminal can bind 0.0.0.0). Falls back to a hidden-textarea execCommand
+// so the per-code-block COPY button is reliable on every reachable origin.
+async function copyTextToClipboard(text) {
+  text = String(text ?? '');
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; } catch {}
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch { return false; }
+}
+
+// Copy a rendered code block's source straight from its COPY button, reading the
+// <code> textContent (the original characters — HTML entities decode back). The
+// confirmation lives on the pressed control, so there's no per-copy toast spam.
+async function handleCodeCopy(btn) {
+  const codeEl = btn.closest('.code-wrap')?.querySelector('pre code');
+  if (!codeEl) return;
+  const ok = await copyTextToClipboard(codeEl.textContent || '');
+  const label = btn.querySelector('.cc-label');
+  const ico = btn.querySelector('.cc-ico');
+  clearTimeout(btn._ccTimer);
+  if (ok) {
+    btn.classList.add('copied');
+    if (label) label.textContent = 'COPIED';
+    if (ico) ico.textContent = '✓';
+    btn._ccTimer = setTimeout(() => {
+      btn.classList.remove('copied');
+      if (label) label.textContent = 'COPY';
+      if (ico) ico.textContent = '⧉';
+    }, 1600);
+  } else {
+    if (label) label.textContent = 'FAILED';
+    btn._ccTimer = setTimeout(() => { if (label) label.textContent = 'COPY'; }, 1600);
+    showToast('COPY FAILED', 'clipboard unavailable', 'red');
+  }
 }
 
 function showToast(title, body, kind = 'amber') {
@@ -6406,6 +6546,18 @@ function attachWiring() {
   $('img-lightbox').addEventListener('click', (e) => { if (e.target.id !== 'lb-img') closeLightbox(); });
   $('lb-close').addEventListener('click', closeLightbox);
 
+  // Code-block COPY — delegated on the scroll container so it keeps working
+  // across the streaming re-renders that rebuild each bubble token-by-token.
+  // stopPropagation keeps a press on the chip from doubling as a tap-reveal
+  // toggle on the very block it lives in.
+  $('chat-scroll').addEventListener('click', (e) => {
+    const btn = e.target.closest('.code-copy-btn');
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    handleCodeCopy(btn);
+  });
+
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === ',') { e.preventDefault(); openDrawer(); }
     if (e.key === 'Escape' && $('img-lightbox').classList.contains('open')) closeLightbox();
@@ -6426,6 +6578,12 @@ function attachWiring() {
     if (isMobile()) {
       const bubble = e.target.closest('.msg.user, .msg.assistant');
       setRevealedMsg(bubble ? Number(bubble.dataset.idx) : null);
+      // Touch has no hover, so a tap on a code block reveals its COPY button;
+      // a tap elsewhere (or on a different block) clears it. The COPY chip stops
+      // propagation, so pressing it never collapses the block it sits in.
+      const cw = e.target.closest('.code-wrap');
+      document.querySelectorAll('.code-wrap.revealed').forEach(w => { if (w !== cw) w.classList.remove('revealed'); });
+      if (cw) cw.classList.add('revealed');
     }
   });
 }
