@@ -3580,13 +3580,110 @@ async function continueFromMessage(idx) {
   }
 }
 
+/* ───────────────── Channel-token normalisation (raw templates) ─────────────────
+   Some local models — when driven through the GEMMA / QWEN client-side templates
+   (raw /completions, no server-side template applied) — ignore the <think> + tool
+   syntax our templates ask for and instead emit their own *channel* protocol:
+
+       <|channel|>thought
+       …chain of thought…
+       <channel|><tool_call>call:NAME{arg:<|">value<|">}
+       <tool_call|>
+
+   Left untouched these tokens leak into the bubble as raw text — the reasoning is
+   neither collapsed nor hidden, and the tool call never parses. This folds that
+   channel protocol back onto the canonical forms the rest of the app already
+   understands: a "thought" channel → <think>…</think> (so it lands in the
+   collapsible REASONING trace), and a tool-call channel → a ```tool_call fenced
+   block (so PromptTemplates.parseToolCalls lifts it into a structured call).
+
+   It is a strict NO-OP on any text without channel tokens, so QWEN / GEMMA / API
+   output that already uses <think> / <tool_call> / fenced calls is never altered. */
+const _CHAN_THINK = 'thoughts|thought|thinking|analysis|reasoning|reason|think';
+
+// Channel signals that no QWEN/GEMMA/ChatML/API stream ever produces — Qwen closes
+// tool calls with </tool_call> (slash), never tool_call|> (pipe) — so detection
+// can't false-positive on a normal template and turn the normaliser on by mistake.
+function _hasChannelSignals(s) {
+  return /<\|?channel\|?>/.test(s) || /<\|"\|?>/.test(s) || /tool_call\|>/.test(s) || /<\|message\|>/.test(s);
+}
+
+// One channel tool-call payload → a {"name","arguments"} JSON string (or null).
+function _channelCallToJson(body) {
+  let b = String(body || '').trim().replace(/^call\s*:\s*/i, '');
+  // Form A — NAME{ …args… }, args may use bare keys: {url:"x"} → {"url":"x"}
+  let m = b.match(/^([\w.\-]+)\s*(\{[\s\S]*\})\s*$/);
+  if (m) {
+    const name = m[1], argsRaw = m[2];
+    let args = {};
+    const argsJson = argsRaw.replace(/([{,]\s*)([A-Za-z_$][\w$.\-]*)\s*:/g, '$1"$2":');
+    try { args = JSON.parse(argsJson); }
+    catch { try { args = JSON.parse(argsRaw); } catch { args = {}; } }
+    return JSON.stringify({ name, arguments: args });
+  }
+  // Form B — already a JSON object carrying a name
+  try { const o = JSON.parse(b); if (o && o.name) return JSON.stringify({ name: o.name, arguments: o.arguments || {} }); } catch {}
+  // Form C — bare NAME, no args
+  m = b.match(/^([\w.\-]+)/);
+  return m ? JSON.stringify({ name: m[1], arguments: {} }) : null;
+}
+
+// Fold a model's channel protocol back onto <think> + ```tool_call. `streaming`
+// leaves a final, still-unterminated "thought" channel as an OPEN <think> (no
+// closing tag) so the reasoning trace collapses live from the first token, exactly
+// like a streaming <think>; once complete (or on finalisation) the think is closed.
+function normalizeChannelTokens(text, { streaming = false } = {}) {
+  let s = String(text || '');
+  if (!_hasChannelSignals(s)) return s;                       // NO-OP for normal Qwen/Gemma/API text
+
+  // 1) quote token  <|">  /  <|"|>  → a literal "
+  s = s.replace(/<\|"\|?>/g, '"');
+
+  // 2) complete tool-call channels → fenced ```tool_call blocks (parser-ready)
+  s = s.replace(/<\|?tool_call\|?>\s*([\s\S]*?)\s*<\|?\/?tool_call\|?>/g, (_, body) => {
+    const json = _channelCallToJson(body);
+    return json ? `\n\`\`\`tool_call\n${json}\n\`\`\`\n` : '';
+  });
+
+  // 3) terminated "thought" channels → <think>…</think>
+  const thinkTerm = new RegExp(
+    '<\\|?channel\\|?>[ \\t]*(?:' + _CHAN_THINK + ')\\b[ \\t]*:?[ \\t]*(?:<\\|?message\\|?>)?[ \\t]*\\n?([\\s\\S]*?)' +
+    '(?=<\\|?channel\\|?>|```tool_call|<\\|?tool_call\\|?>)', 'gi');
+  s = s.replace(thinkTerm, (_, body) => `<think>\n${body.trim()}\n</think>\n`);
+
+  // 4) a final, still-open "thought" channel (mid-stream, or the model stopped in it)
+  const thinkTail = new RegExp(
+    '<\\|?channel\\|?>[ \\t]*(?:' + _CHAN_THINK + ')\\b[ \\t]*:?[ \\t]*(?:<\\|?message\\|?>)?[ \\t]*\\n?([\\s\\S]*)$', 'i');
+  s = s.replace(thinkTail, (_, body) =>
+    streaming ? `<think>\n${body.replace(/\s+$/, '')}` : `<think>\n${body.trim()}\n</think>\n`);
+
+  // 5) Strip leftover channel/control markers — carefully. A channel *label* (a
+  //    word naming the channel) is only consumed when an explicit <|message|>
+  //    token bounds it (harmony-style "<|channel|>final<|message|>…"); thought-type
+  //    headers were already folded above. Every other marker is treated as a bare
+  //    transition (e.g. <channel|>I'm well…) and ONLY the marker is dropped — never
+  //    a following word — so the reply's leading character/token is never eaten.
+  s = s.replace(/<\|?channel\|?>[ \t]*[\w.\-]*[ \t]*<\|?message\|?>/g, '');   // labeled header bounded by a message token
+  s = s.replace(/<\|?channel\|?>[ \t]*/g, '');                               // bare transition marker
+  s = s.replace(/<\|?message\|?>/g, '');                                     // stray message token
+  s = s.replace(/<\|?(?:start|end|return|call|im_start|im_end)\|?>/g, '');   // stray control tokens
+
+  // 6) drop a trailing, still-incomplete tool-call opener while streaming so its
+  //    half-written tokens never flash into the bubble (re-renders once closed).
+  if (streaming) s = s.replace(/<\|?tool_call\|?>(?![\s\S]*<\|?\/?tool_call\|?>)[\s\S]*$/, '');
+
+  return s;
+}
+
 // Non-destructively split a message into reasoning + visible content for DISPLAY.
 // Folds complete <think>…</think> blocks into reasoning, and — crucially — when a
 // <think> is still open mid-stream, treats everything after it as reasoning-so-far
 // so the think trace is enclosed in its collapsible block from the first token.
+// Channel-protocol output is first folded back onto <think> / ```tool_call so it
+// collapses and hides the same way (a no-op for templates that don't use it).
 function splitThinkForDisplay(m) {
   let reasoning = m.reasoning || '';
-  let content = m.content || '';
+  let content = normalizeChannelTokens(m.content || '', { streaming: !!m._streaming });
   let thinkOpen = false;
   if (content.indexOf('<think>') !== -1) {
     content = content.replace(/<think>([\s\S]*?)<\/think>/g, (_, inner) => {
@@ -3923,6 +4020,7 @@ const SFX = {
 function cleanForSpeech(s) {
   if (!s) return '';
   let t = s;
+  t = normalizeChannelTokens(t);                        // channel protocol → <think> / ```fences (no-op otherwise)
   t = t.replace(/<think>[\s\S]*?<\/think>/gi, ' ');     // drop closed reasoning
   t = t.replace(/```[\s\S]*?```/g, ' ');                // drop fenced code
   t = t.replace(/`([^`]*)`/g, '$1');                    // inline code → text
@@ -5051,6 +5149,11 @@ async function runTurn(depth = 0, opts = {}) {
     state.status.streaming = false; state.abortCtrl = null;
     $('btn-send').textContent = 'TRANSMIT'; $('btn-send').classList.remove('stop');
     $('streaming-indicator').textContent = '';
+    // Raw templates (gemma/qwen): some models answer with their own *channel*
+    // protocol (<|channel|>thought … <tool_call|>) instead of the <think>/tool
+    // syntax we asked for. Fold it back onto the canonical forms FIRST, so the
+    // reasoning lands in the trace and the call parses out below (no-op otherwise).
+    if (useCompletion && !aborted) ai.content = normalizeChannelTokens(ai.content || '');
     extractThinkTags(ai);
     // Raw-template tool calls are emitted as text — parse them out into structured
     // tool_calls and strip them from the visible content.
