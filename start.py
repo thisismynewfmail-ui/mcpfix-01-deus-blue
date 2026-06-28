@@ -1294,12 +1294,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send_json(200, {"ok": True, "result": text, "raw": result})
             if path == "/api/events/publish":
                 # Relay a client-originated event to every OTHER connected window.
-                # Used so a spoken reply mirrors across all synced terminals, not
-                # just the live window that ran the inference. `origin` is stamped
-                # so the broadcasting window ignores its own echo.
+                # Used so a reply mirrors across all synced terminals, not just the
+                # live window that ran the inference: `speak` carries spoken audio
+                # blocks; `stream` mirrors the in-progress reply + STOP state as it
+                # streams; `stream-abort` lets a synced STOP cancel it. `origin` is
+                # stamped so the broadcasting window ignores its own echo.
                 kind = (body or {}).get("kind")
                 payload = (body or {}).get("payload") or {}
-                if kind not in ("speak",):
+                if kind not in ("speak", "stream", "stream-abort"):
                     return self._send_json(400, {"error": "unsupported event kind"})
                 BUS.publish(kind, payload, origin=origin)
                 return self._send_json(200, {"ok": True})

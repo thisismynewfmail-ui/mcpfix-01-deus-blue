@@ -50,6 +50,24 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
+
+/* ── Global themed scrollbars ──────────────────────────────────────────────
+   Every scroll surface — the side rails, drawers, the chat column, AND the
+   horizontal bars that appear under wide markup (code fences / tables) inside a
+   chat bubble, plus the reasoning & tool-output panes — carries the active
+   skin's chrome instead of the raw OS scrollbar. Driven entirely by the theme's
+   own CSS vars, so the Deus Ex skin recolours all of them with zero extra
+   rules. Firefox reads scrollbar-color (inherited from <html>); WebKit/Blink use
+   the ::-webkit-scrollbar pseudo-elements. The element-specific rules further
+   down (aside / .chat-scroll / .drawer-body / .think-content …) stay more
+   specific, so where a surface already defines its own bar it still wins. */
+html { scrollbar-color: var(--line-strong) transparent; }
+* { scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); }
+::-webkit-scrollbar-thumb:hover { background: var(--cyan-deep); }
+::-webkit-scrollbar-corner { background: transparent; }
 body {
   font-family: var(--display);
   background: radial-gradient(ellipse at 30% -10%, #051c25 0%, var(--bg) 55%) fixed;
@@ -973,6 +991,13 @@ main {
 .msg-body pre code { white-space: pre; }
 .msg-body table { display: block; overflow-x: auto; max-width: 100%; }
 .msg-body pre code { background: none; border: none; padding: 0; color: inherit; }
+/* Wide markup overflows sideways inside the bubble — keep that horizontal bar
+   discrete and in-skin (it inherits the global var-driven colours; we only slim
+   it down so it reads as part of the code panel, not the OS). */
+.msg-body pre::-webkit-scrollbar,
+.msg-body table::-webkit-scrollbar,
+.msg-body .code-wrap::-webkit-scrollbar { width: 8px; height: 8px; }
+.msg-body pre, .msg-body table, .msg-body .code-wrap { scrollbar-width: thin; }
 
 /* ── Fenced code block → distinct, copy-able instrument panel ───────────────
    A model code/markup block renders set apart from the prose: a thin header bar
@@ -1388,6 +1413,27 @@ footer .net-pill {
   border: 1px solid var(--line-strong);
 }
 footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
+/* Discrete new-chat control on the status bar, tucked beside the CHAT readout.
+   A bare "+" glyph (symbol, not text/emoji) styled like the footer's own pills
+   so it reads as part of the instrument strip; it lifts to the accent on hover.
+   Fully var-driven, so it carries through both the Section 9 and Deus Ex skins. */
+footer .foot-newchat {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 17px; height: 16px; padding: 0; margin-left: 1px;
+  border: 1px solid var(--line-strong);
+  background: rgba(0,0,0,0.3);
+  color: var(--text-dim);
+  font-family: var(--mono); font-size: 13px; line-height: 1;
+  cursor: pointer; user-select: none;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+footer .foot-newchat:hover,
+footer .foot-newchat:focus-visible {
+  color: var(--cyan); border-color: var(--cyan);
+  background: rgba(var(--glow-rgb), 0.10);
+  outline: none;
+}
+footer .foot-newchat:active { transform: translateY(1px); }
 
 /* Settings drawer */
 .drawer-backdrop {
@@ -2283,7 +2329,10 @@ html[data-theme="deusex"] .tool-call.result.err  { border-left-color: var(--crit
 html[data-theme="deusex"] .tool-call-head:hover  { background: rgba(255,255,255,0.05); }
 html[data-theme="deusex"] .tool-call-detail      { border-top-color: var(--dx-edge); }
 html[data-theme="deusex"] .tool-call-body::-webkit-scrollbar-thumb,
-html[data-theme="deusex"] .tool-call-result::-webkit-scrollbar-thumb { background: #3a424c; }
+html[data-theme="deusex"] .tool-call-result::-webkit-scrollbar-thumb,
+html[data-theme="deusex"] .msg-body pre::-webkit-scrollbar-thumb,
+html[data-theme="deusex"] .msg-body table::-webkit-scrollbar-thumb,
+html[data-theme="deusex"] .msg-body .code-wrap::-webkit-scrollbar-thumb { background: #3a424c; }
 
 /* In-chat image frames → square gunmetal mounts (drop the angled SAC corners) */
 html[data-theme="deusex"] .img-frame {
@@ -2459,6 +2508,15 @@ html[data-theme="deusex"] footer .compaction-state.busy { color: var(--amber); b
 html[data-theme="deusex"] footer .net-pill { background: var(--dx-inset); border: 1px solid var(--dx-edge); box-shadow: var(--dx-bevel-in); }
 html[data-theme="deusex"] footer .net-pill.lan { color: var(--magenta); border-color: var(--magenta); }
 html[data-theme="deusex"] footer .blink { color: var(--amber); }
+/* New-chat "+" → recessed gunmetal cell that lights gold on hover (UNATCO chrome) */
+html[data-theme="deusex"] footer .foot-newchat {
+  background: var(--dx-inset); border: 1px solid var(--dx-edge);
+  box-shadow: var(--dx-bevel-in); color: var(--text-dim);
+}
+html[data-theme="deusex"] footer .foot-newchat:hover,
+html[data-theme="deusex"] footer .foot-newchat:focus-visible {
+  color: var(--amber); border-color: var(--amber); background: var(--dx-inset);
+}
 
 /* ───────── Settings window — description plates + DX option rows ───────── */
 /* Per-field help text → recessed Deus-Ex "description" plate (gold tick). */
@@ -2781,7 +2839,7 @@ html[data-theme="deusex"] .chroma-preset select:focus { border-color: var(--ambe
       </span>
     </div>
     <div class="group"><span class="lbl">MCP</span><span class="val" id="foot-mcp">0/0</span></div>
-    <div class="group"><span class="lbl">CHAT</span><span class="val" id="foot-chat">—</span></div>
+    <div class="group"><span class="lbl">CHAT</span><span class="val" id="foot-chat">—</span><button class="foot-newchat" id="btn-foot-newchat" title="New chat session" aria-label="New chat session">+</button></div>
     <div class="spacer"></div>
     <div class="group">
       <span class="net-pill" id="foot-net"><span>LOCAL</span></span>
@@ -2965,6 +3023,11 @@ html[data-theme="deusex"] .chroma-preset select:focus { border-color: var(--ambe
         <span class="slot"></span>
         <span>ROUTE THROUGH BACKEND PROXY (recommended; avoids CORS)</span>
       </label>
+      <div class="field">
+        <label>API Request Timeout (seconds)</label>
+        <input type="number" id="cfg-api-timeout" min="5" max="3600" step="5" placeholder="600" />
+        <div class="help">How long a single request/retry may run before it is aborted. Applies to both the backend proxy and direct mode. Raise it for slow local models or long tool turns; lower it to fail fast.</div>
+      </div>
       <div class="row-actions">
         <button class="btn primary" id="btn-test">▸ TEST CONNECTION</button>
         <button class="btn" id="btn-fetch-models">▸ LIST MODELS</button>
@@ -3333,6 +3396,7 @@ const DEFAULTS = {
   toolsCollapsed: true,
   keepInputFocused: false,  // after sending, keep the chat input focused so you can type the next message immediately (also keeps the mobile keyboard up)
   useProxy: true,
+  apiTimeout: 600,          // seconds the LLM request may run before aborting (proxy + direct paths). Per request/retry.
   soundEnabled: true,       // master VOICE FEEDBACK switch (gates both engines)
   soundVolume: 0.35,        // villager-talk SFX volume
   soundPitch: 1.0,          // villager-talk SFX pitch
@@ -3397,6 +3461,7 @@ const state = {
   // Index of the bubble whose EDIT/CONTINUE controls are tap-revealed (touch);
   // null hides them all. Local view state only.
   tapRevealIdx: null,
+  remoteStreaming: false,   // another synced window is generating a reply into the chat we're viewing
   scheduler: {
     nextId: 1,
     jobs: [],
@@ -3508,6 +3573,11 @@ async function loadActiveChat() {
   if (!state.activeChatId) return;
   state._editingIdx = null;   // drop any in-flight inline edit when the chat changes
   state.tapRevealIdx = null;  // and any tap-revealed controls
+  // Switching chats drops any mirrored-streaming STOP carried from the old chat;
+  // a frame for the new chat (if it's live elsewhere) re-arms it immediately.
+  if (typeof RemoteStream !== 'undefined') { RemoteStream._clear(); }
+  state.remoteStreaming = false;
+  if (typeof refreshSendButton === 'function') refreshSendButton();
   try {
     const j = await apiGet('/api/chats/' + state.activeChatId);
     state.messages = (j.chat?.messages) || [];
@@ -3598,6 +3668,15 @@ function handleEvent(evt) {
     // A reply spoken on another window — mirror it here so audio plays
     // through every synced terminal, not just the live one.
     RemoteSpeech.handle(evt.payload);
+  } else if (evt.kind === 'stream') {
+    // A reply streaming on another window — render it here in real time and
+    // flip this composer to STOP, so every synced display stays in lock-step.
+    RemoteStream.handle(evt.payload);
+  } else if (evt.kind === 'stream-abort') {
+    // A synced window pressed STOP for the reply THIS window is generating.
+    if (state.status.streaming && state.abortCtrl && evt.payload && evt.payload.chatId === state.activeChatId) {
+      state.abortCtrl.abort();
+    }
   }
 }
 
@@ -3859,24 +3938,39 @@ function buildMessageEl(m, idx) {
     return wrap;
   }
 
-  // Split out reasoning for DISPLAY — handles an in-flight <think> that hasn't
-  // closed yet, so the think block is enclosed/collapsed from the first streamed
-  // token (not only once </think> arrives).
-  const disp = splitThinkForDisplay(m);
-  if (disp.reasoning && disp.reasoning.trim()) body.appendChild(buildThinkBlock(disp.reasoning, !!m._streamingThink || disp.thinkOpen));
-
-  // Tool results render ONLY as the collapsible OUT block below — never as a
-  // plain inline body (that was double-rendering the full output, expanded).
-  if (m.role !== 'tool' && disp.content && disp.content.trim()) {
-    const c = document.createElement('div');
-    c.innerHTML = renderMarkdown(disp.content);
-    if (m._streaming) c.classList.add('stream-cursor');
-    body.appendChild(c);
-  } else if (m.role !== 'tool' && m._streaming && !(disp.reasoning && disp.reasoning.trim())) {
-    const c = document.createElement('div');
-    c.className = 'stream-cursor';
-    c.innerHTML = '<span style="color:var(--text-faint); font-family:var(--mono); font-size:11px; letter-spacing:0.1em;">…RECEIVING…</span>';
-    body.appendChild(c);
+  // Render reasoning + visible text as ORDERED segments so any <think> block —
+  // even one in the centre of the reply — is caught and collapsed exactly where
+  // it sits, instead of being pulled to the top. Tool results render ONLY as the
+  // collapsible OUT block below (never as a plain inline body).
+  if (m.role !== 'tool') {
+    const segs = splitThinkSegments(m);
+    let lastEl = null;
+    for (const seg of segs) {
+      if (seg.type === 'think') {
+        if (!seg.text) continue;
+        lastEl = buildThinkBlock(seg.text, seg.streaming);
+        body.appendChild(lastEl);
+      } else {
+        if (!seg.text.trim()) continue;
+        const c = document.createElement('div');
+        c.innerHTML = renderMarkdown(seg.text);
+        body.appendChild(c);
+        lastEl = c;
+      }
+    }
+    if (m._streaming) {
+      // Park the live cursor on the last visible TEXT block. If the tail is a
+      // (streaming) think block it carries its own ● indicator; if nothing has
+      // arrived yet, show the RECEIVING placeholder.
+      if (lastEl && !lastEl.classList.contains('think-block')) {
+        lastEl.classList.add('stream-cursor');
+      } else if (!lastEl) {
+        const c = document.createElement('div');
+        c.className = 'stream-cursor';
+        c.innerHTML = '<span style="color:var(--text-faint); font-family:var(--mono); font-size:11px; letter-spacing:0.1em;">…RECEIVING…</span>';
+        body.appendChild(c);
+      }
+    }
   }
 
   if (Array.isArray(m.images) && m.images.length) body.appendChild(buildImagesBlock(m.images));
@@ -4169,29 +4263,43 @@ function normalizeChannelTokens(text, { streaming = false } = {}) {
   return s;
 }
 
-// Non-destructively split a message into reasoning + visible content for DISPLAY.
-// Folds complete <think>…</think> blocks into reasoning, and — crucially — when a
-// <think> is still open mid-stream, treats everything after it as reasoning-so-far
-// so the think trace is enclosed in its collapsible block from the first token.
-// Channel-protocol output is first folded back onto <think> / ```tool_call so it
-// collapses and hides the same way (a no-op for templates that don't use it).
-function splitThinkForDisplay(m) {
-  let reasoning = m.reasoning || '';
-  let content = normalizeChannelTokens(m.content || '', { streaming: !!m._streaming });
-  let thinkOpen = false;
-  if (content.indexOf('<think>') !== -1) {
-    content = content.replace(/<think>([\s\S]*?)<\/think>/g, (_, inner) => {
-      reasoning += (reasoning ? '\n\n' : '') + inner.trim();
-      return '';
-    });
-    const open = content.indexOf('<think>');
-    if (open !== -1) {                       // unclosed <think> — still streaming
-      reasoning += (reasoning ? '\n\n' : '') + content.slice(open + '<think>'.length);
-      content = content.slice(0, open);
-      thinkOpen = true;
-    }
+// Non-destructively split a message into an ORDERED list of display segments so
+// every <think> block is caught and collapsed exactly WHERE it sits — including
+// the middle of a reply, not just yanked to the top. Each segment is either
+// { type:'text', text } or { type:'think', text, streaming }. The out-of-band
+// `reasoning` field (API reasoning_content, which has no position inside the
+// content) leads as the first think segment. A still-open <think> mid-stream (or
+// a model that stopped inside its reasoning) becomes an open, streaming think in
+// place. Channel-protocol output is first folded back onto <think> / ```tool_call
+// so it collapses the same way (a no-op for templates that don't use it).
+function splitThinkSegments(m) {
+  const segments = [];
+  const sepReasoning = (m.reasoning || '').trim();
+  if (sepReasoning) segments.push({ type: 'think', text: sepReasoning, streaming: !!m._streamingThink });
+
+  const content = normalizeChannelTokens(m.content || '', { streaming: !!m._streaming });
+  const re = /<think>([\s\S]*?)<\/think>/g;
+  let last = 0, mm;
+  while ((mm = re.exec(content))) {
+    const before = content.slice(last, mm.index);
+    if (before.trim()) segments.push({ type: 'text', text: before });
+    const inner = mm[1].trim();
+    if (inner) segments.push({ type: 'think', text: inner, streaming: false });
+    last = re.lastIndex;
   }
-  return { reasoning: reasoning.trim(), content: content.trim(), thinkOpen };
+  const tail = content.slice(last);
+  const open = tail.indexOf('<think>');
+  if (open !== -1) {
+    // Unclosed <think> — everything after it is reasoning-so-far. Collapse it in
+    // place as a streaming think so it hides from the very first token.
+    const before = tail.slice(0, open);
+    if (before.trim()) segments.push({ type: 'text', text: before });
+    const inner = tail.slice(open + '<think>'.length).trim();
+    segments.push({ type: 'think', text: inner, streaming: true });
+  } else if (tail.trim()) {
+    segments.push({ type: 'text', text: tail });
+  }
+  return segments;
 }
 
 // Compress oversized tool payloads/results for the CHAT view only. The full text
@@ -4561,12 +4669,36 @@ const SFX = {
    strictly in order, so speech begins almost immediately and stays coherent.
    The master ENABLE VOICE FEEDBACK toggle (settings.soundEnabled) gates all
    playback for both engines. */
+// Strip emoji / pictographs so neither speech engine ever tries to pronounce
+// them. Extended_Pictographic is the right class here — unlike \p{Emoji} it
+// EXCLUDES plain digits, '#' and '*', so numbers and punctuation read normally.
+// We also drop flag pairs (regional indicators), skin-tone modifiers, the ZWJ
+// and the variation selectors that glue multi-codepoint emoji together. A
+// try/catch falls back to surrogate-range matching on engines without \p{…}.
+function stripEmoji(t) {
+  if (!t) return t;
+  try {
+    return t
+      .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, '')                  // regional-indicator letters (flag halves)
+      .replace(/[\u{1F3FB}-\u{1F3FF}]/gu, '')                  // skin-tone modifiers
+      .replace(/[\u{FE0E}\u{FE0F}\u{200D}\u{20E3}]/gu, '')     // VS15 / VS16 / ZWJ / keycap combiner
+      .replace(/\p{Extended_Pictographic}/gu, ' ');            // the emoji glyphs themselves
+  } catch {
+    return t.replace(/[☀-➿⬀-⯿︎️‍⃣]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|\uD83E[\uDD00-\uDFFF]/g, ' ');
+  }
+}
+
 function cleanForSpeech(s) {
   if (!s) return '';
   let t = s;
   t = normalizeChannelTokens(t);                        // channel protocol → <think> / ```fences (no-op otherwise)
   t = t.replace(/<think>[\s\S]*?<\/think>/gi, ' ');     // drop closed reasoning
-  t = t.replace(/```[\s\S]*?```/g, ' ');                // drop fenced code
+  // Tool calls must never be spoken. The channel protocol is already folded into
+  // ```tool_call fences (stripped below); QWEN emits XML-style <tool_call> blocks
+  // that the fence rule misses, so drop those (and any inlined tool output) here.
+  t = t.replace(/<tool_call>[\s\S]*?<\/tool_call>/gi, ' ');
+  t = t.replace(/<tool_response>[\s\S]*?<\/tool_response>/gi, ' ');
+  t = t.replace(/```[\s\S]*?```/g, ' ');                // drop fenced code (incl. ```tool_call / ```json calls)
   t = t.replace(/`([^`]*)`/g, '$1');                    // inline code → text
   t = t.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1');       // image → alt
   t = t.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');        // link  → text
@@ -4576,6 +4708,7 @@ function cleanForSpeech(s) {
   t = t.replace(/^[ \t]*\d+[.)][ \t]+/gm, '');          // numbered markers
   t = t.replace(/(\*\*|\*|__|_|~~)/g, '');              // emphasis markers
   t = t.replace(/\|/g, ' ');                            // table pipes
+  t = stripEmoji(t);                                    // never pronounce emoji
   return t;
 }
 
@@ -4632,6 +4765,8 @@ const Speech = {
     let end = raw.length;
     const tOpen = raw.lastIndexOf('<think>');
     if (tOpen > raw.lastIndexOf('</think>')) end = Math.min(end, tOpen);   // unclosed think
+    const cOpen = raw.lastIndexOf('<tool_call>');
+    if (cOpen > raw.lastIndexOf('</tool_call>')) end = Math.min(end, cOpen); // unclosed tool call — don't speak a half-written call
     if (((raw.match(/```/g) || []).length) % 2 === 1) {                    // unclosed fence
       const f = raw.lastIndexOf('```');
       if (f >= 0) end = Math.min(end, f);
@@ -4836,6 +4971,109 @@ const RemoteSpeech = {
   },
 };
 
+/* ───────────────── Live streaming mirror (synced windows) ─────────────────
+   The window running inference broadcasts its in-progress reply over the SSE
+   bus so EVERY synced display shows the answer streaming in — and flips its
+   composer to STOP — in lock-step, not just the live window. Image base64 is
+   stripped from the mirrored snapshot (kept light); receivers re-attach the
+   images they already hold from the normal chat sync. A heartbeat + watchdog
+   makes the STOP state self-healing if a frame is dropped. */
+
+// Strip heavy image payloads before mirroring a snapshot; everything else
+// (text, reasoning, tool calls, streaming flags) travels as-is.
+function slimForSync(msgs) {
+  return (msgs || []).map(m => {
+    if (Array.isArray(m.images) && m.images.length) {
+      return { ...m, images: m.images.map(im => ({ _omitted: true, name: im && im.name })) };
+    }
+    return m;
+  });
+}
+// Apply a mirrored snapshot, restoring image data we already hold (the snapshot
+// omits base64) and dropping placeholders we can't back-fill.
+function applyStreamSnapshot(msgs) {
+  const prev = state.messages;
+  state.messages = (msgs || []).map((m, i) => {
+    if (Array.isArray(m.images) && m.images.some(im => im && im._omitted)) {
+      const have = (prev[i] && Array.isArray(prev[i].images) && prev[i].images.length === m.images.length) ? prev[i].images : null;
+      if (have) return { ...m, images: have };
+      const { images, ...rest } = m;
+      return rest;
+    }
+    return m;
+  });
+}
+
+// Single source of truth for the composer's SEND ⇄ STOP state. STOP shows while
+// THIS window is generating OR a synced window is generating into the chat we're
+// viewing, so the button matches everywhere.
+function refreshSendButton() {
+  const btn = $('btn-send'); if (!btn) return;
+  const ind = $('streaming-indicator');
+  const local = state.status.streaming;
+  const remote = !!state.remoteStreaming;
+  if (local || remote) {
+    btn.textContent = 'STOP'; btn.classList.add('stop');
+    if (ind) ind.textContent = local ? '◢ RECEIVING…' : '◢ RECEIVING · SYNC…';
+  } else {
+    btn.textContent = 'TRANSMIT'; btn.classList.remove('stop');
+    if (ind) ind.textContent = '';
+  }
+}
+
+const StreamSync = {
+  _timer: null, _t0: 0, _inflight: false,
+  // Idempotent — safe to call at the start of every (recursive) tool round.
+  begin() {
+    if (this._timer) return;
+    this.push(true);
+    this._timer = setInterval(() => { if (state.status.streaming) this.push(true); }, 150);
+  },
+  end() {
+    if (this._timer) { clearInterval(this._timer); this._timer = null; }
+    this.push(false, true);   // force the final frame so receivers clear instantly
+  },
+  push(streaming, force) {
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+    if (!force && (this._inflight || (streaming && now - this._t0 < 120))) return;   // throttle + no pile-up
+    this._t0 = now; this._inflight = true;
+    apiPost('/api/events/publish', {
+      kind: 'stream',
+      payload: { chatId: state.activeChatId, streaming: !!streaming, messages: slimForSync(state.messages) },
+    }).catch(() => {}).finally(() => { this._inflight = false; });
+  },
+  // A synced window pressed STOP for a reply this window is generating.
+  requestRemoteAbort() {
+    apiPost('/api/events/publish', { kind: 'stream-abort', payload: { chatId: state.activeChatId } }).catch(() => {});
+  },
+};
+
+// Receiver side: render frames mirrored from the live window + drive the STOP
+// state, but only for the chat THIS window is currently viewing.
+const RemoteStream = {
+  _watchdog: null, _settledUntil: 0,
+  handle(p) {
+    if (!p) return;
+    if (!p.chatId || p.chatId !== state.activeChatId) return;   // only mirror the chat we're looking at
+    const now = Date.now();
+    // Ignore a straggler "still streaming" frame that races in just after a clean
+    // finish (POSTs can arrive out of order) so STOP doesn't flicker back on.
+    if (p.streaming && now < this._settledUntil) return;
+    if (Array.isArray(p.messages)) { applyStreamSnapshot(p.messages); renderMessages(); }
+    if (p.streaming) { state.remoteStreaming = true; this._arm(); }
+    else { this._settledUntil = now + 600; this._clear(); }
+    refreshSendButton(); updateStatus();
+  },
+  _arm() {
+    clearTimeout(this._watchdog);
+    this._watchdog = setTimeout(() => { this._clear(); refreshSendButton(); }, 2200);   // no frames for ~2s ⇒ assume done
+  },
+  _clear() {
+    clearTimeout(this._watchdog); this._watchdog = null;
+    state.remoteStreaming = false;
+  },
+};
+
 /* ───────────────── Piper voice UI (settings → § 7 SPEECH) ───────────────── */
 let _piperVoices = [];
 
@@ -4951,7 +5189,15 @@ function authHeaders() { const h = {}; if (state.settings.apiKey) h['Authorizati
 function epBase() { return (state.settings.endpoint || '').replace(/\/+$/,''); }
 function epRoot() { return epBase().replace(/\/v1$/,''); }
 
+// Resolve the per-request timeout (seconds): an explicit caller value wins,
+// otherwise the operator-configurable § 1 setting, otherwise the 600s default.
+function apiTimeoutSecs(override) {
+  const v = Number(override) || Number(state.settings.apiTimeout) || DEFAULTS.apiTimeout;
+  return Math.max(5, v);   // floor so a stray 0/blank can never abort instantly
+}
+
 async function llmFetch(url, opts = {}, opts2 = {}) {
+  const timeoutSecs = apiTimeoutSecs(opts2.timeout);
   // Backend proxy: retries / timeout are handled server-side.
   if (state.settings.useProxy) {
     return fetch('/api/llm/proxy', {
@@ -4962,7 +5208,7 @@ async function llmFetch(url, opts = {}, opts2 = {}) {
         headers: { ...(opts.headers || {}), ...authHeaders() },
         body: opts.body ? JSON.parse(opts.body) : {},
         stream: !!opts2.stream,
-        timeout: opts2.timeout || 600,
+        timeout: timeoutSecs,
         retries: opts2.retries || 3,
       }),
       signal: opts.signal,
@@ -4970,7 +5216,7 @@ async function llmFetch(url, opts = {}, opts2 = {}) {
   }
   // Direct: retry on transient failures (network / timeout / 5xx).
   const maxRetries = opts2.retries || 3;
-  const tmoMs = (opts2.timeout || 600) * 1000;
+  const tmoMs = timeoutSecs * 1000;
   let backoff = 1000;
   let lastErr = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -5532,14 +5778,17 @@ function buildOutgoing(opts = {}) {
   // state.messages so the chat interface still shows everything.
   for (const m of selectContextMessages()) {
     const o = { role: m.role };
+    // Reasoning is display-only — strip <think> from assistant turns so the
+    // model never receives its own (collapsed, in-place) chain of thought.
+    const textContent = (m.role === 'assistant') ? stripThinkForModel(m.content) : (m.content || '');
     if (Array.isArray(m.images) && m.images.length) {
       // OpenAI-compatible multimodal content: text part (if any) + image_url parts.
       const parts = [];
-      if (m.content && m.content.trim()) parts.push({ type: 'text', text: m.content });
+      if (textContent && textContent.trim()) parts.push({ type: 'text', text: textContent });
       for (const img of m.images) parts.push({ type: 'image_url', image_url: { url: img.url } });
       o.content = parts;
     } else if (m.content !== undefined) {
-      o.content = m.content;
+      o.content = textContent;
     }
     // Only attach a non-empty tool_calls array — a trailing assistant message
     // (e.g. during CONTINUE) must not carry tool_calls: [] which some servers reject.
@@ -5640,8 +5889,8 @@ async function runTurn(depth = 0, opts = {}) {
   renderMessages();
   Speech.beginTurn(depth === 0);
   state.status.streaming = true;
-  $('btn-send').textContent = 'STOP'; $('btn-send').classList.add('stop');
-  $('streaming-indicator').textContent = '◢ RECEIVING…';
+  refreshSendButton();
+  StreamSync.begin();          // mirror this in-progress reply (+ STOP state) to every synced window
   state.abortCtrl = new AbortController();
 
   let aborted = false;
@@ -5691,8 +5940,7 @@ async function runTurn(depth = 0, opts = {}) {
     ai._streaming = false; ai._streamingThink = false;
     if (aborted) Speech.stop(); else Speech.endTurn();
     state.status.streaming = false; state.abortCtrl = null;
-    $('btn-send').textContent = 'TRANSMIT'; $('btn-send').classList.remove('stop');
-    $('streaming-indicator').textContent = '';
+    refreshSendButton();
     // Raw templates (gemma/qwen): some models answer with their own *channel*
     // protocol (<|channel|>thought … <tool_call|>) instead of the <think>/tool
     // syntax we asked for. Fold it back onto the canonical forms FIRST, so the
@@ -5729,13 +5977,30 @@ async function runTurn(depth = 0, opts = {}) {
     // Final text reply — make sure persisted
     await persistActiveChat();
   }
+  // The whole turn (this round + every nested tool round) is finished once the
+  // outermost call unwinds — clear the mirrored streaming/STOP state everywhere.
+  if (depth === 0) StreamSync.end();
 }
 
+// Finalise a completed turn's <think> blocks. We deliberately LEAVE the closed
+// blocks inside ai.content so they keep rendering collapsed at their original
+// position (splitThinkSegments handles that, mid-reply included). The only fixup
+// here is closing a dangling, unterminated <think> — the model stopped inside its
+// reasoning — so it reads as a finished, collapsed block instead of a perpetual
+// "streaming" one. Reasoning is stripped from what is actually SENT to the model
+// (buildOutgoing for API mode; the raw templates already _stripThink on render).
 function extractThinkTags(ai) {
   if (!ai.content) return;
-  const m = ai.content.match(/^\s*<think>([\s\S]*?)<\/think>\s*/);
-  if (m) { ai.reasoning = (ai.reasoning ? ai.reasoning + '\n' : '') + m[1].trim(); ai.content = ai.content.slice(m[0].length); }
-  ai.content = ai.content.replace(/<think>([\s\S]*?)<\/think>/g, (_, inner) => { ai.reasoning = (ai.reasoning ? ai.reasoning + '\n\n' : '') + inner.trim(); return ''; });
+  const lastOpen = ai.content.lastIndexOf('<think>');
+  if (lastOpen !== -1 && lastOpen > ai.content.lastIndexOf('</think>')) {
+    ai.content = ai.content.replace(/\s*$/, '') + '\n</think>';
+  }
+}
+
+// Strip <think>…</think> reasoning from text before it is sent to the model.
+// Display keeps the blocks (collapsed, in place); the model never sees them.
+function stripThinkForModel(s) {
+  return String(s || '').replace(/<think>[\s\S]*?<\/think>\s*/g, '');
 }
 
 async function streamChat(body, ai) {
@@ -6123,6 +6388,7 @@ async function applyToForm() {
   applyTtsEngineUI();
   $('cfg-network').checked = c.networkVisible;
   $('cfg-proxy').checked = c.useProxy;
+  $('cfg-api-timeout').value = c.apiTimeout ?? DEFAULTS.apiTimeout;
   $('cfg-chat-template').value = c.chatTemplate || 'api';
   // Browser (§ 6)
   $('cfg-browser-w').value = c.browserWidth;
@@ -6175,6 +6441,7 @@ function readForm() {
   c.piperRate = parseFloat($('cfg-piper-rate').value); if (isNaN(c.piperRate)) c.piperRate = 1.0;
   c.networkVisible = $('cfg-network').checked;
   c.useProxy = $('cfg-proxy').checked;
+  c.apiTimeout = Math.min(3600, Math.max(5, parseInt($('cfg-api-timeout').value) || DEFAULTS.apiTimeout));
   c.chatTemplate = (['gemma','qwen'].includes($('cfg-chat-template').value)) ? $('cfg-chat-template').value : 'api';
   // Browser (§ 6)
   c.browserWidth = Math.max(320, parseInt($('cfg-browser-w').value) || DEFAULTS.browserWidth);
@@ -6418,6 +6685,11 @@ function attachWiring() {
 
   $('btn-open-settings').addEventListener('click', openDrawer);
 
+  // Status-bar quick "new chat" — spins up a fresh session (same path as the
+  // CHATS rail ▾ SESSION → NEW), so it syncs across windows like any other.
+  const footNew = $('btn-foot-newchat');
+  if (footNew) footNew.addEventListener('click', () => createChat(''));
+
   // Right-side ACTIVE SESSION ops (mirror of session menu)
   document.querySelectorAll('[data-act-act]').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -6515,6 +6787,9 @@ function attachWiring() {
   });
   $('btn-send').addEventListener('click', () => {
     if (state.status.streaming && state.abortCtrl) { state.abortCtrl.abort(); return; }
+    // STOP pressed on a synced window for a reply another window is generating →
+    // ask that window to abort over the bus (it owns the AbortController).
+    if (state.remoteStreaming) { StreamSync.requestRemoteAbort(); return; }
     const t = ta.value; ta.value = ''; autoresize(ta); sendUser(t); keepFocus();
   });
 
